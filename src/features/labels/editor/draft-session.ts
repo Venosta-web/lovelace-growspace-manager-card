@@ -65,7 +65,23 @@ export type RasterStanding =
 export interface SessionState {
   /** The live document, mid-edit. */
   document: LabelDocument;
-  /** Which element the inspector and the keyboard act on. */
+  /**
+   * Everything the toolbar, the keyboard and the canvas act on, in the order
+   * the user picked it.
+   *
+   * A list rather than one id because alignment, distribution and paint
+   * ordering are operations on a *set*, and a selection model that held one
+   * element would make each of them a different feature bolted beside the
+   * editor rather than the same selection acting differently.
+   */
+  selectedIds: readonly string[];
+  /**
+   * The element the inspector shows: the last one picked, or nothing.
+   *
+   * Derived, never set. The inspector edits one element's style and content,
+   * so it needs a single subject even while six are selected — and deriving
+   * it means the two can never disagree about what is selected.
+   */
   selectedId: string | null;
   /** The stored draft, as the backend last described it. */
   draft: TemplateDraft | null;
@@ -137,8 +153,10 @@ export class DraftSession {
       schedule?: (run: () => void, ms: number) => ReturnType<typeof setTimeout>;
     } = {}
   ) {
+    this.#opened = document;
     this.#state = {
       document,
+      selectedIds: [],
       selectedId: null,
       draft: null,
       dirty: false,
@@ -180,8 +198,16 @@ export class DraftSession {
    */
   #emit(patch: Partial<SessionState>): void {
     const merged = { ...this.#state, ...patch };
+    // A selection survives only as long as what it names. Deleting, undoing
+    // past a duplication, or adopting another draft all leave ids behind that
+    // no element answers to, and a toolbar acting on one of those would be
+    // acting on nothing while looking as though it acted.
+    const present = merged.document.elements.map((element) => element.id);
+    const selectedIds = merged.selectedIds.filter((id) => present.includes(id));
     this.#state = {
       ...merged,
+      selectedIds,
+      selectedId: selectedIds[selectedIds.length - 1] ?? null,
       rasterStanding: this.#standing(merged),
       canUndo: this.#undo.length > 0,
       canRedo: this.#redo.length > 0,
@@ -213,6 +239,11 @@ export class DraftSession {
     this.#redo = [];
     this.#edits = 0;
     this.#savedEdits = 0;
+    // What Reset goes back to. The document this session was handed, not the
+    // Factory Template behind it: a draft resumed from unsaved work is work
+    // somebody wants back, and a Reset that reached past it to the shipped
+    // layout would be a second, silent discard wearing a gentler name.
+    this.#opened = draft.document;
     // A render belongs to the draft it came from. Adopting another one --
     // after a reload, or after switching templates -- leaves the raster
     // describing something that is no longer on screen.
@@ -228,8 +259,30 @@ export class DraftSession {
     });
   }
 
+  /** Select exactly this element, or nothing. */
   select(elementId: string | null): void {
-    this.#emit({ selectedId: elementId });
+    this.#emit({ selectedIds: elementId === null ? [] : [elementId] });
+  }
+
+  /** Select exactly these, in the order given. */
+  selectMany(elementIds: readonly string[]): void {
+    this.#emit({ selectedIds: [...elementIds] });
+  }
+
+  /**
+   * Add this element to the selection, or take it out again.
+   *
+   * The verb a shift-click and a list checkbox share. Re-adding moves it to
+   * the end, so the inspector follows the element the user just touched
+   * rather than one they picked four clicks ago.
+   */
+  toggleSelected(elementId: string): void {
+    const current = this.#state.selectedIds;
+    this.#emit({
+      selectedIds: current.includes(elementId)
+        ? current.filter((id) => id !== elementId)
+        : [...current, elementId],
+    });
   }
 
   setName(name: string): void {
@@ -250,22 +303,68 @@ export class DraftSession {
    * started rather than to the previous mouse position.
    */
   moveElement(elementId: string, frame: LabelFrame, gesture: string | null = null): void {
+    this.apply(withFrame(this.#state.document, elementId, frame), gesture);
+  }
+
+  /**
+   * Apply one edited document as a single undoable command.
+   *
+   * Everything that changes a layout goes through here — a drag, a nudge, a
+   * typed millimetre, a style change, an alignment of six elements, a
+   * duplication, a deletion, a Reset. One entry point rather than one method
+   * per operation is what makes undo uniform: the stack holds documents, so a
+   * command nobody wrote an inverse for is still exactly as reversible as one
+   * somebody did.
+   *
+   * `selectedIds` rides along because several operations change what is
+   * selected as part of what they do — duplication selects the copies,
+   * deletion selects nothing — and doing that in a second call would leave
+   * one render where the selection and the document disagreed.
+   */
+  apply(
+    document: LabelDocument,
+    gesture: string | null = null,
+    selectedIds?: readonly string[]
+  ): void {
     const before = this.#state.document;
-    const after = withFrame(before, elementId, frame);
-    if (after === before) return;
+    if (document === before) return;
 
     const top = this.#undo[this.#undo.length - 1];
     if (gesture !== null && top?.gesture === gesture) {
-      top.after = after;
+      top.after = document;
     } else {
-      this.#undo.push({ before, after, gesture });
+      this.#undo.push({ before, after: document, gesture });
       if (this.#undo.length > UNDO_LIMIT) this.#undo.shift();
     }
     this.#redo = [];
     this.#edits += 1;
-    this.#emit({ document: after, dirty: true });
+    this.#emit({
+      document,
+      dirty: true,
+      ...(selectedIds === undefined ? {} : { selectedIds: [...selectedIds] }),
+    });
     this.#schedule();
   }
+
+  /**
+   * Put the layout back the way this session found it.
+   *
+   * An ordinary command, which is the whole point: Reset is the operation
+   * users reach for when they have made a mess, and one that could not be
+   * undone would be the most dangerous button on the surface. It is also why
+   * it is not a discard — the draft, its version and its history all survive.
+   */
+  reset(): void {
+    this.apply(this.#opened, null, []);
+  }
+
+  /** Whether Reset would change anything. */
+  get isReset(): boolean {
+    return this.#state.document === this.#opened;
+  }
+
+  /** The document this session opened onto. */
+  #opened: LabelDocument;
 
   /** Close a gesture so the next edit starts a new undo step. */
   endGesture(): void {

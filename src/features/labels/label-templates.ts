@@ -47,6 +47,13 @@ export class GrowspaceLabelTemplates extends LitElement {
   /** The negotiated capability. Nothing renders without one. */
   @property({ attribute: false }) capability?: LabelTemplateCapability;
   @property({ type: String }) language = 'en';
+  /**
+   * Whether the editor has taken the surface.
+   *
+   * Reflected, because the host's own layout has to change with it and a
+   * shadow stylesheet can only see the host through an attribute.
+   */
+  @property({ type: Boolean, reflect: true }) editing = false;
 
   @state() private _choice?: PreviewChoice;
   @state() private _preview: FactoryTemplatePreview | null = null;
@@ -70,6 +77,23 @@ export class GrowspaceLabelTemplates extends LitElement {
     css`
       :host {
         display: block;
+      }
+
+      /* The editor is a task mode that fills the dialog, and filling it means
+         a definite height to fill: its own layout scrolls internally, which a
+         pane of automatic height cannot ask for. Without this the canvas, its
+         toolbars and both panels became one tall block that scrolled as a
+         unit, taking the canvas off screen the moment anybody reached the
+         inspector. */
+      :host([editing]) {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        height: 100%;
+      }
+
+      growspace-label-editor {
+        min-height: 0;
       }
 
       .sizes,
@@ -421,6 +445,7 @@ export class GrowspaceLabelTemplates extends LitElement {
    * store, because exactly one dialog is ever listening.
    */
   #announceEditing(editing: boolean): void {
+    this.editing = editing;
     this.dispatchEvent(
       new CustomEvent('editing', { detail: { editing }, bubbles: true, composed: true })
     );

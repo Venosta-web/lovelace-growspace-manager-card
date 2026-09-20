@@ -63,8 +63,16 @@ export const TextStyleSchema = z.object({
   vertical_align: z.enum(['top', 'center', 'bottom']),
   line_spacing: z.string(),
   overflow: z.enum(['clip', 'ellipsis', 'shrink', 'shrink_ellipsis']),
-  minimum_font_size_mm: z.number().optional(),
-  maximum_lines: z.number().int().optional(),
+  /**
+   * Both required, because the canonical schema's text style is closed and
+   * these two are in it. They read like the optional half of an auto-fit
+   * policy, and declaring them so would parse every draft the backend sends
+   * — and then let the editor write a style without them, which comes back
+   * as `schema.missing_field` on the user's own save rather than as a
+   * compile error here.
+   */
+  minimum_font_size_mm: z.number(),
+  maximum_lines: z.number().int(),
 });
 
 export const LogoStyleSchema = z.object({

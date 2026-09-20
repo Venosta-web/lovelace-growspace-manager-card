@@ -43,8 +43,15 @@ const CONTAINER_STYLE = 'max-width: 920px; width: 100%; height: 720px; max-heigh
  * A canvas that has to share a bounded modal with the catalogue it was
  * reached from is too small to place a 0.5 mm nudge in and leaves the
  * catalogue too cramped to read, so the surface commits to one job at a time.
+ *
+ * "As big as the dialog surface goes", not `100vw` by `100vh`. The surface
+ * this sits on is inset from the viewport by the underlying Home Assistant
+ * dialog's own margins, so viewport units made the container wider and taller
+ * than the thing holding it: the editor was clipped at both sides, the
+ * Publish button among the casualties, and the whole editor scrolled as one
+ * block instead of the canvas staying put while its panels moved.
  */
-const EDITOR_CONTAINER_STYLE = 'width: 100vw; max-width: 100vw; height: 100vh; max-height: 100vh';
+const EDITOR_CONTAINER_STYLE = 'width: 100%; max-width: 100%; height: 92vh; max-height: 92vh';
 
 @customElement('label-templates-dialog')
 export class LabelTemplatesDialog extends LitElement {

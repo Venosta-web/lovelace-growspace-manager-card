@@ -33,6 +33,8 @@ const TEXT_STYLE = {
   vertical_align: 'center',
   line_spacing: 'growspace.spacing.compact.v1',
   overflow: 'shrink_ellipsis',
+  minimum_font_size_mm: 3,
+  maximum_lines: 2,
 } as const;
 
 const DOCUMENT: LabelDocument = {

@@ -49,6 +49,8 @@ const DOCUMENT: LabelDocument = {
         vertical_align: 'center',
         line_spacing: 'growspace.spacing.compact.v1',
         overflow: 'shrink_ellipsis',
+        minimum_font_size_mm: 3,
+        maximum_lines: 2,
       },
     },
   ],
@@ -445,5 +447,124 @@ describe('recovering', () => {
     editor.moveElement('name', FRAME);
 
     expect(editor.state.dirty).toBe(true);
+  });
+});
+
+describe('the selection', () => {
+  it('is a list, because alignment and ordering are operations on several', () => {
+    const editor = session();
+    const second = { ...DOCUMENT.elements[0], id: 'other' };
+    editor.apply({ ...DOCUMENT, elements: [...DOCUMENT.elements, second] });
+
+    editor.selectMany(['name', 'other']);
+    expect(editor.state.selectedIds).toEqual(['name', 'other']);
+
+    // And `select` is the replacing verb, not an adding one.
+    editor.select('other');
+    expect(editor.state.selectedIds).toEqual(['other']);
+  });
+
+  it('follows the element picked last, which is what the inspector edits', () => {
+    const editor = session();
+    const second = { ...DOCUMENT.elements[0], id: 'other' };
+    editor.apply({ ...DOCUMENT, elements: [...DOCUMENT.elements, second] });
+
+    editor.select('name');
+    editor.toggleSelected('other');
+
+    expect(editor.state.selectedIds).toEqual(['name', 'other']);
+    expect(editor.state.selectedId).toBe('other');
+  });
+
+  it('takes an element back out again on a second toggle', () => {
+    const editor = session();
+    editor.select('name');
+    editor.toggleSelected('name');
+
+    expect(editor.state.selectedIds).toEqual([]);
+    expect(editor.state.selectedId).toBeNull();
+  });
+
+  it('forgets an element the document no longer has', () => {
+    // A toolbar acting on an id nothing answers to would look as though it
+    // acted. Deleting, and undoing past a duplication, both produce this.
+    const editor = session();
+    editor.select('name');
+    editor.apply({ ...DOCUMENT, elements: [] });
+
+    expect(editor.state.selectedIds).toEqual([]);
+  });
+});
+
+describe('reset', () => {
+  it('goes back to the document the session opened with', () => {
+    const editor = session();
+    editor.moveElement('name', FRAME);
+    expect(editor.isReset).toBe(false);
+
+    editor.reset();
+
+    expect(editor.state.document).toEqual(DOCUMENT);
+    expect(editor.isReset).toBe(true);
+  });
+
+  it('is an ordinary command, so undo reverses it', () => {
+    const editor = session();
+    editor.moveElement('name', FRAME);
+    editor.reset();
+
+    editor.undo();
+
+    expect(editor.state.document.elements[0].frame).toEqual(FRAME);
+  });
+
+  it('goes back to resumed work rather than past it to the shipped layout', () => {
+    // A draft that resumed unsaved work opened onto that work. Reaching past
+    // it to the Factory Template would be a second, silent discard.
+    const editor = session();
+    const resumed = { ...DOCUMENT, elements: [{ ...DOCUMENT.elements[0], frame: FRAME }] };
+    editor.adopt({ ...draftAt(2), document: resumed }, VALID);
+    editor.moveElement('name', { ...FRAME, x_mm: 12 });
+
+    editor.reset();
+
+    expect(editor.state.document).toEqual(resumed);
+  });
+});
+
+describe('one command per operation', () => {
+  it('treats a change to several elements as one undo step', () => {
+    const editor = session();
+    const moved = {
+      ...DOCUMENT,
+      elements: DOCUMENT.elements.map((element) => ({ ...element, frame: FRAME })),
+    };
+
+    editor.apply(moved);
+    editor.undo();
+
+    expect(editor.state.document).toEqual(DOCUMENT);
+  });
+
+  it('carries the selection an operation produced, in the same emission', () => {
+    // Duplication selects the copies. Doing that in a second call would leave
+    // one render where the selection and the document disagreed.
+    const editor = session();
+    const seen: string[][] = [];
+    editor.subscribe((state) => seen.push([...state.selectedIds]));
+
+    editor.apply({ ...DOCUMENT, elements: [{ ...DOCUMENT.elements[0], id: 'copy' }] }, null, [
+      'copy',
+    ]);
+
+    expect(seen[seen.length - 1]).toEqual(['copy']);
+  });
+
+  it('ignores a document that is the one it already holds', () => {
+    const editor = session();
+    editor.apply(editor.state.document);
+
+    expect(editor.state.canUndo).toBe(false);
+    expect(editor.state.dirty).toBe(false);
   });
 });
