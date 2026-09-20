@@ -30,6 +30,9 @@ import {
   type LabelTemplateCapability,
   type PreviewChoice,
 } from '../../slices/labels';
+import { openLabelTemplateDraft } from '../../slices/labels/drafts';
+import { DraftSession } from './editor/draft-session';
+import './editor/growspace-label-editor';
 
 /** The localization key carrying each state's one truthful sentence. */
 const STATE_KEYS: Record<Exclude<LabelSizeState, 'classic'>, string> = {
@@ -49,6 +52,18 @@ export class GrowspaceLabelTemplates extends LitElement {
   @state() private _preview: FactoryTemplatePreview | null = null;
   @state() private _loading = false;
   @state() private _failure: string | null = null;
+  /**
+   * The open editing session, or nothing.
+   *
+   * Held here rather than inside the editor element so that closing the
+   * editor and reopening it lands on the same session -- and so the debounced
+   * autosave is not cancelled by a re-render. It is durable on the server
+   * either way; what this avoids is a visible round trip for work that never
+   * left.
+   */
+  @state() private _session: DraftSession | null = null;
+  @state() private _opening = false;
+  @state() private _published: string | null = null;
 
   static styles = [
     variables,
@@ -336,9 +351,106 @@ export class GrowspaceLabelTemplates extends LitElement {
     `;
   }
 
+  // -------------------------------------------------------------------------
+  // Entering the editor
+  // -------------------------------------------------------------------------
+
+  /**
+   * Open a draft for the chosen stock, derived from its Factory Template.
+   *
+   * Derived is a *starting point*: the backend resumes unsaved work if there
+   * is any and says so, because re-deriving over it would destroy exactly
+   * what a reload is supposed to recover. The two cases therefore say
+   * different things below rather than both silently showing a layout.
+   */
+  private async _openEditor(): Promise<void> {
+    const capability = this.capability;
+    const choice = this._choice;
+    if (!capability || !choice || this._opening) return;
+    this._opening = true;
+    this._failure = null;
+    try {
+      const factory = capability.catalogues.factory_templates.find(
+        (template) => template.label_size_id === choice.labelSizeId
+      );
+      const answer = await openLabelTemplateDraft(
+        { labelSizeId: choice.labelSizeId },
+        factory ? { kind: 'factory', id: factory.id } : undefined
+      );
+      if (answer.outcome === 'refused') {
+        this._failure = `${answer.refusal.reason} (${answer.refusal.code})`;
+        return;
+      }
+      const size = labelSizes(capability).find((item) => item.id === choice.labelSizeId)!;
+      const session = new DraftSession(
+        { labelSizeId: choice.labelSizeId },
+        { widthMm: size.width_mm, heightMm: size.height_mm },
+        answer.draft.document,
+        {
+          quantumMm: capability.limits.coordinate_quantum_mm,
+          fixtureFamily: choice.fixtureFamily,
+          density: choice.density,
+          locale: choice.locale,
+        }
+      );
+      session.adopt(answer.draft, null);
+      this._session = session;
+      this._published = null;
+      this.#announceEditing(true);
+      // The first raster, so the canvas opens onto the backend's own picture
+      // rather than onto frames floating over nothing.
+      void session.render();
+    } catch (error) {
+      this._failure = error instanceof Error ? error.message : String(error);
+    } finally {
+      this._opening = false;
+    }
+  }
+
+  private _closeEditor(): void {
+    this._session?.close();
+    this._session = null;
+    this.#announceEditing(false);
+  }
+
+  /**
+   * Tell the frame above that this pane wants the whole screen.
+   *
+   * The dialog owns its own chrome, and the editor is the one surface inside
+   * it that is a task mode rather than a panel. An event rather than a shared
+   * store, because exactly one dialog is ever listening.
+   */
+  #announceEditing(editing: boolean): void {
+    this.dispatchEvent(
+      new CustomEvent('editing', { detail: { editing }, bubbles: true, composed: true })
+    );
+  }
+
+  private _onPublished(event: CustomEvent<{ name: string }>): void {
+    this._published = event.detail.name;
+    this._closeEditor();
+  }
+
+  private _renderEditor(session: DraftSession): TemplateResult {
+    return html`
+      <growspace-label-editor
+        .capability=${this.capability}
+        .session=${session}
+        .language=${this.language}
+        @close-editor=${this._closeEditor}
+        @published=${this._onPublished}
+        @discarded=${this._closeEditor}
+      ></growspace-label-editor>
+    `;
+  }
+
   protected render(): TemplateResult | typeof nothing {
     const capability = this.capability;
     if (!capability) return nothing;
+    // The editor is a task mode, not a panel: it takes the whole surface,
+    // because a canvas sharing a dialog with the catalogue it was reached
+    // from is neither a usable editor nor a usable catalogue.
+    if (this._session !== null) return this._renderEditor(this._session);
     // The claim below is about the raster, so it is made only when there is
     // one. "The preview is exactly what this printer would receive" printed
     // over an empty stage would be the untruth this whole surface avoids.
@@ -347,10 +459,33 @@ export class GrowspaceLabelTemplates extends LitElement {
         ? labelSizeState(capability, this._preview.render.render_context.label_size_id)
         : undefined;
 
+    const editable =
+      this._choice !== undefined &&
+      labelSizeState(capability, this._choice.labelSizeId) !== 'unprofiled';
+
     return html`
       <p class="supporting" data-role="scope">${this._t('read_only')}</p>
       ${this._renderSizes(capability)} ${this._renderFixtures(capability)}
       ${this._renderStage(capability)}
+      <p>
+        <button
+          type="button"
+          data-action="edit"
+          ?disabled=${!editable || this._opening}
+          @click=${() => void this._openEditor()}
+        >
+          ${this._opening ? this._t('editor_opening') : this._t('editor_open')}
+        </button>
+      </p>
+      ${this._published === null
+        ? nothing
+        : html`<p class="supporting" role="status" data-role="published">
+            ${localizeWithParams(
+              'labels.editor_published',
+              { name: this._published },
+              this.language
+            )}
+          </p>`}
       ${shown
         ? html`<p class="supporting" data-role="claim" data-state=${shown}>
             ${this._t(STATE_KEYS[shown])} — ${this._t(`${STATE_KEYS[shown]}_detail`)}

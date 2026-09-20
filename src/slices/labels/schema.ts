@@ -419,7 +419,18 @@ export type RenderResult = z.infer<typeof RenderResultSchema>;
 export const LabelRefusalSchema = z.object({
   code: z.string(),
   reason: z.string(),
-  recovery: z.enum(['refresh_capability', 'choose_another_label_size', 'none']),
+  /**
+   * What the card may *do* about this refusal.
+   *
+   * An open vocabulary rather than an enum, and deliberately so. Recovery
+   * verbs are backend words that may grow inside a major version -- the draft
+   * commands added four of them -- while `CAPABILITY_GENERATION` tracks the
+   * catalogues, not the command set, so nothing would bump to warn a card
+   * that pinned the list. A verb this card does not recognise means "show the
+   * reason, offer nothing automatic", which is always a safe answer; a pinned
+   * enum would instead turn a compatible backend into an unparseable one.
+   */
+  recovery: z.string(),
   /** The contract the backend is on now, so a refusal carries its own fix. */
   current: LabelContractIdentitySchema,
   /**

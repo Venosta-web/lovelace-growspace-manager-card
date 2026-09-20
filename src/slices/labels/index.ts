@@ -47,6 +47,11 @@ import {
 } from './schema';
 
 export * from './schema';
+// The draft *shapes* are re-exported here; the draft *calls* are not, and
+// deliberately: `drafts.ts` imports the negotiated contract from this module,
+// so re-exporting it would close an import cycle for no gain. Import the six
+// commands from `slices/labels/drafts` directly.
+export * from './draft-schema';
 
 export const WS_GET_LABEL_TEMPLATE_CAPABILITY = 'growspace_manager/get_label_template_capability';
 export const WS_PREVIEW_LABEL_FACTORY_TEMPLATE = 'growspace_manager/preview_label_factory_template';
