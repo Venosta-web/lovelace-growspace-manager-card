@@ -19,6 +19,10 @@ import {
   TcManifestSchema,
   PairingsResponseSchema,
 } from '../../src/slices/tc/schema';
+import {
+  FactoryTemplatePreviewSchema,
+  LabelTemplateCapabilitySchema,
+} from '../../src/slices/labels/schema';
 
 interface FixtureContract {
   name: string;
@@ -69,6 +73,31 @@ const CONTRACTS: FixtureContract[] = [
     schema: TriggerVisionCheckupResponseSchema,
     leadingVariable: 'GSM_PRERELEASE_VISION_TRIGGER_FIXTURE',
     releaseVariable: 'GSM_RELEASE_VISION_TRIGGER_FIXTURE',
+    releaseRequired: false,
+  },
+  // The Label Template capability and its one read-only preview. Both land on
+  // `prerelease` first and reach a release tag later, so the release copy is
+  // optional: a card that required it could not merge until the backend
+  // published, which is the ordering ADR 0029 exists to avoid inverting.
+  {
+    name: 'Label Template capability',
+    schema: LabelTemplateCapabilitySchema,
+    leadingVariable: 'GSM_PRERELEASE_LABEL_CAPABILITY_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_LABEL_CAPABILITY_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Factory Template preview',
+    schema: FactoryTemplatePreviewSchema,
+    leadingVariable: 'GSM_PRERELEASE_LABEL_PREVIEW_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_LABEL_PREVIEW_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Factory Template preview refusal',
+    schema: FactoryTemplatePreviewSchema,
+    leadingVariable: 'GSM_PRERELEASE_LABEL_REFUSAL_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_LABEL_REFUSAL_FIXTURE',
     releaseRequired: false,
   },
   // Growspace Manager TC is a separate repository that owns its own WebSocket

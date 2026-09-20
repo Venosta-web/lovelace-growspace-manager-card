@@ -420,6 +420,7 @@ export {
   openNutrientsDialog,
   openSnapshotsDialog,
   openTcDialog,
+  openLabelTemplatesDialog,
 } from './dialogs';
 
 export {

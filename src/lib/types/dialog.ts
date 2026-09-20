@@ -204,6 +204,16 @@ export interface IrrigationDialogState extends PortalScopedDialogState {
 export type { TcTabId };
 
 /**
+ * What opening the Label Templates dialog carries with it.
+ *
+ * Only the portal, because the dialog is about the shipped Factory Templates
+ * and the printer profiles that can render them — neither of which belongs to
+ * a growspace. It stays portal-scoped so one card's menu opens one card's
+ * dialog (ADR-0055).
+ */
+export type LabelTemplatesDialogState = PortalScopedDialogState;
+
+/**
  * What opening the Tissue Culture dialog carries with it.
  *
  * Every field is optional, so the payload has a legal empty form the way

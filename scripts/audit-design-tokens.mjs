@@ -76,6 +76,12 @@ const ACCEPTED_EXCEPTIONS = [
       'Ink and rule on a PRINTED label. The preview mirrors what a label printer puts on white stock, so it does not follow the card theme — a token here would be actively wrong. ADR 0042 §6.',
   },
   {
+    file: 'src/features/labels/label-templates.ts',
+    hexes: ['#fff'],
+    reason:
+      'The stock a rendered label sits on. The raster above it is a monochrome bitmap meant for white paper, so a themed surface behind it would misrepresent what the printer produces — the same reason label-preview.ts keeps its ink. ADR 0042 §6.',
+  },
+  {
     file: 'src/features/shared/ui/camera-capture.ts',
     hexes: ['#000'],
     reason:

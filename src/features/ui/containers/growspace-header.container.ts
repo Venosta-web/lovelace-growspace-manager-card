@@ -18,6 +18,7 @@ import { envSnapshots$ } from '../../../slices/environment';
 import { deviceSnapshots$ } from '../../../slices/device-state';
 import { plants$ } from '../../../slices/plant';
 import { tcPresence$, type TcPresence } from '../../../slices/tc';
+import { labelTemplateSupport$, type LabelTemplateSupport } from '../../../slices/labels';
 import * as uiSlice from '../../../slices/ui';
 import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
@@ -55,6 +56,8 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _comparisonsController!: StoreController<any>;
   /** Page-global TC presence, owned by the TC slice — one probe per page. */
   private _tcPresenceController!: StoreController<TcPresence>;
+  /** Page-global Label Template capability, owned by its slice — one probe per page. */
+  private _labelSupportController!: StoreController<LabelTemplateSupport>;
   private _dragController = new HeaderDragController(this);
   private _comparisonUnsub?: () => void;
   private _startingCompare = false;
@@ -115,6 +118,11 @@ export class GrowspaceHeaderContainer extends LitElement {
     // happened to change state.
     if (!this._tcPresenceController) {
       this._tcPresenceController = new StoreController(this, tcPresence$);
+    }
+    // The Label Template capability probe resolves on the same terms, and the
+    // menu item it decides would otherwise stay missing for the same reason.
+    if (!this._labelSupportController) {
+      this._labelSupportController = new StoreController(this, labelTemplateSupport$);
     }
   }
 
@@ -314,6 +322,9 @@ export class GrowspaceHeaderContainer extends LitElement {
       }
       case 'strains':
         uiSlice.openStrainLibraryDialog();
+        break;
+      case 'label-templates':
+        uiSlice.openLabelTemplatesDialog({ portalId: this.store.instanceId });
         break;
       case 'tc':
         uiSlice.openTcDialog({
@@ -518,6 +529,7 @@ export class GrowspaceHeaderContainer extends LitElement {
         .canArrange=${this._canArrange}
         .canCompare=${this._canCompare}
         .tcAvailable=${this._tcPresenceController?.value.status === 'present'}
+        .labelTemplatesAvailable=${this._labelSupportController?.value.status === 'available'}
         .problemPlants=${this._problemPlants}
         .flowerFlipInfo=${this._flowerFlipInfo}
         .irrigationStrategy=${irrigationStrategy}

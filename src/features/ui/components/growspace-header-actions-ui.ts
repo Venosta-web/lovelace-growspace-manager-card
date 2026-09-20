@@ -29,6 +29,7 @@ import {
   mdiDna,
   mdiCube,
   mdiCamera,
+  mdiLabelOutline,
 } from '@mdi/js';
 
 @customElement('growspace-header-actions-ui')
@@ -55,6 +56,15 @@ export class GrowspaceHeaderActionsUI extends LitElement {
    * most once.
    */
   @property({ type: Boolean }) public tcAvailable = false;
+  /**
+   * Whether the backend published the complete Label Template capability.
+   *
+   * False on an old backend, on a new one holding its capability back, and on
+   * one whose envelope this card cannot use — and in every one of those cases
+   * the item is absent rather than disabled. A disabled control promises a
+   * feature is coming; none of these is.
+   */
+  @property({ type: Boolean }) public labelTemplatesAvailable = false;
 
   @state() private _draggedMetric: string | null = null;
   @state() private _menuOpen = false;
@@ -645,6 +655,9 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         ${this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients')}
         ${this._menuItem(mdiDna, 'Strains', 'strains')}
         ${this.tcAvailable ? this._menuItem(mdiFlaskOutline, 'Tissue Culture', 'tc') : nothing}
+        ${this.labelTemplatesAvailable
+          ? this._menuItem(mdiLabelOutline, 'Label Templates', 'label-templates')
+          : nothing}
 
         <div class="menu-divider" role="separator"></div>
 

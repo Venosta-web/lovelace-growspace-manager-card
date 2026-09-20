@@ -15,6 +15,7 @@ import type {
   QrTarget,
 } from '../lib/types/dialog';
 import { printLabel } from '../slices/plant';
+import { localize } from '../localize/localize';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { getPrinters } from '../features/shared/ui/printer-status-strip';
@@ -607,7 +608,10 @@ export class PrintLabelDialog extends LitElement {
                 .density=${this._density}
               ></label-preview>
             </div>
-            <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
+            <div class="preview-meta">
+              ${sizeLabel} ·
+              ${localize('labels.classic_preview_meta', '', '', this.hass?.language ?? 'en')}
+            </div>
             <printer-status-strip
               .hass=${this.hass}
               .selectedDeviceId=${this._selectedDeviceId}

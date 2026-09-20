@@ -6,6 +6,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { fetchRawCollection } from '../slices/growspace';
 import { hydrate } from '../services/hydrate';
 import { detectTc } from '../slices/tc';
+import { detectLabelTemplateSupport } from '../slices/labels';
 import { setIsLoading } from '../slices/ui';
 import { setHass } from '../services/hass-call';
 import type { EntityRegistry } from '../slices/device-state';
@@ -103,6 +104,11 @@ export class BootstrapController implements ReactiveController {
     // block ordinary card loading, or repeat on an entity update — the slice
     // deduplicates concurrent and later calls, failed ones included.
     void detectTc();
+    // The same policy for the Label Template capability, and for the same
+    // reasons: one envelope per page, shared, never awaited. Its answer only
+    // ever decides whether a menu item and a lazy chunk exist — the Classic
+    // print dialogs do not wait for it and are unaffected by it.
+    void detectLabelTemplateSupport();
 
     if (!this._lastCollection) {
       this._lastHassRef = hass;

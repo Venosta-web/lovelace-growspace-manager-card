@@ -125,9 +125,12 @@ const registry = [
 const dialogHost = (imports) =>
   imports.map((file) => `import './${file}';`).join('\n') + '\nexport { host };\n';
 
-test('the registry declares the tissue culture view on demand only', async () => {
+// The real registry, not the literal below: this is the list whose members a
+// dashboard must not pay for when it cannot use them, so it is asserted
+// against the file rather than against a fixture that can agree with nothing.
+test('the registry declares every on-demand-only chunk it should', async () => {
   const names = declaredOnDemandOnlyChunkNames(await readFile('src/lib/lazy-chunk.ts', 'utf8'));
-  assert.deepEqual(names, ['tc']);
+  assert.deepEqual(names, ['label-templates', 'tc']);
 });
 
 test('an entry without the flag is not declared on demand only', () => {

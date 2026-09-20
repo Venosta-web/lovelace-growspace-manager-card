@@ -60,6 +60,43 @@ describe('GrowspaceHeaderActionsUI – EC Ramp Curves menu item', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Label Templates menu item (workspace #224)
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceHeaderActionsUI – Label Templates menu item', () => {
+  const menu = (labelTemplatesAvailable: boolean) =>
+    fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui
+        .isMobile=${false}
+        .labelTemplatesAvailable=${labelTemplatesAvailable}
+      ></growspace-header-actions-ui>
+    `);
+
+  const actions = (el: GrowspaceHeaderActionsUI): string[] =>
+    Array.from(el.shadowRoot!.querySelectorAll('[data-action]')).map(
+      (item) => item.getAttribute('data-action') ?? ''
+    );
+
+  it('is absent against a backend with no published capability', async () => {
+    const el = await menu(false);
+
+    // Absent, not disabled. An old backend is not withholding a feature from
+    // this user; it has none, and the Classic print dialogs are unaffected.
+    expect(actions(el)).not.toContain('label-templates');
+    const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map((i) =>
+      i.textContent?.trim()
+    );
+    expect(labels).not.toContain('Label Templates');
+  });
+
+  it('appears once the complete capability has been negotiated', async () => {
+    const el = await menu(true);
+
+    expect(actions(el)).toContain('label-templates');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tissue Culture menu item (workspace #152 / ADR 0057)
 // ---------------------------------------------------------------------------
 
