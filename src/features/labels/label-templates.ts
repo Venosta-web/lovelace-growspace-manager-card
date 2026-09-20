@@ -121,7 +121,7 @@ export class GrowspaceLabelTemplates extends LitElement {
       }
 
       .refusal {
-        color: var(--error-color, #db4437);
+        color: var(--error-color, #f44336);
       }
 
       dl.identity {

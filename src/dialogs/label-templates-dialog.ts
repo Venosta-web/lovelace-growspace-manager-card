@@ -65,7 +65,7 @@ export class LabelTemplatesDialog extends LitElement {
     }
 
     .compatibility {
-      color: var(--error-color, #db4437);
+      color: var(--error-color, #f44336);
     }
 
     code {
