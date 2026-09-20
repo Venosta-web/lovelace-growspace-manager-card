@@ -174,3 +174,22 @@ describe('the read-only Factory Template view', () => {
     );
   });
 });
+
+describe('handing the surface to the editor', () => {
+  test('becomes a full-height column, so the editor scrolls its panels and not itself', async () => {
+    // A pane of automatic height gives the editor nothing to fill, and the
+    // canvas, its toolbars and both panels then scroll as one block -- which
+    // takes the canvas off screen the moment anybody reaches the inspector.
+    const element = await mount();
+    element.style.height = '600px';
+
+    expect(getComputedStyle(element).display).toBe('block');
+
+    element.editing = true;
+    await element.updateComplete;
+
+    expect(element.hasAttribute('editing')).toBe(true);
+    expect(getComputedStyle(element).display).toBe('flex');
+    expect(Math.round(element.getBoundingClientRect().height)).toBe(600);
+  });
+});

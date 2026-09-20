@@ -104,7 +104,17 @@ const ACCEPTED_EXCEPTIONS = [
 const isAccepted = (file, hex) =>
   ACCEPTED_EXCEPTIONS.some((e) => e.file === file && e.hexes.includes(hex));
 
-const HEX = /#[0-9A-Fa-f]{3,8}\b/g;
+/**
+ * A bare colour literal.
+ *
+ * The two guards keep JavaScript private names out of it. `#add`, `#added`
+ * and `#decade` are all valid hex digit runs, so a class member whose name
+ * happens to spell one was reported as drift in a file that had none — and
+ * the only fix on offer was to rename the method. A colour is never preceded
+ * by a dot or an identifier character, and never immediately followed by a
+ * call's parenthesis; a private name is one or the other.
+ */
+const HEX = /(?<![.\w])#[0-9A-Fa-f]{3,8}\b(?!\s*\()/g;
 /** three.js takes a resolved number, so every literal in the scene is `0xRRGGBB`. */
 const HEX_NUMERIC = /\b0x[0-9A-Fa-f]{6}\b/g;
 /** `var(--token, #hex)` — the fallback form, which is correct, not drift. */

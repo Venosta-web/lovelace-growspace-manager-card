@@ -80,3 +80,29 @@ describe('the gate in front of the template path', () => {
     expect(element.shadowRoot?.querySelector('gs-dialog')).not.toBeNull();
   });
 });
+
+describe('the frame the editor gets', () => {
+  test('fills the dialog surface rather than the viewport it is inset from', async () => {
+    // Viewport units made the container wider and taller than the surface
+    // holding it, so the editor was clipped at both sides -- the Publish
+    // button among the casualties -- and scrolled as one block.
+    const element = await open({ status: 'available', capability: CAPABILITY });
+    // The pane arrives with the lazy chunk, which is a dynamic import.
+    let editing: Element | null = null;
+    for (let attempt = 0; attempt < 50 && editing === null; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      await element.updateComplete;
+      editing = element.shadowRoot?.querySelector('growspace-label-templates') ?? null;
+    }
+    expect(editing).not.toBeNull();
+    editing?.dispatchEvent(
+      new CustomEvent('editing', { detail: { editing: true }, bubbles: true, composed: true })
+    );
+    await element.updateComplete;
+
+    const style = element.shadowRoot?.querySelector('gs-dialog')?.containerStyle ?? '';
+    expect(style).toContain('max-width: 100%');
+    expect(style).not.toContain('vw');
+    expect(element.shadowRoot?.querySelector('[data-editing]')).not.toBeNull();
+  });
+});

@@ -2,22 +2,37 @@
  * `<growspace-label-editor>` — the full-screen Label Template task mode.
  *
  * The structure is the one settled in the editing-loop decision: **Label
- * elements** on the left, the **canvas** with its toolbar in the middle, the
+ * elements** on the left, the **canvas** with its toolbars in the middle, the
  * **Selection** inspector on the right; and on a narrow screen the canvas
  * stays primary with the two panels behind a bottom workbench tab bar,
  * because a phone editing a label is looking at the label.
  *
  * **It draws frames, never ink.** The picture underneath is the backend's own
  * raster, exactly as the read-only surface shows one; what this element adds
- * on top is an outline and eight handles. That is the whole of #224's promise
- * kept — nothing on screen claims to be the printed result except the raster
- * — and it is also what makes staleness visible rather than asserted: the
- * outline has moved and the picture under it has not, which is a thing a user
- * can see without reading a word.
+ * on top is an outline, eight handles and a guide or two. That is what makes
+ * staleness visible rather than asserted: the outline has moved and the
+ * picture under it has not, which is a thing a user can see without reading a
+ * word.
  *
- * Millimetres come from the stage's measured box, so a drag behaves the same
- * at any browser zoom. Nothing here reads a zoom level; there is nothing to
- * correct for when no scale was ever assumed.
+ * Three rules run through everything below.
+ *
+ * **Millimetres come from the stage's measured box**, so a drag behaves the
+ * same at any browser zoom and at any editor zoom. Nothing here reads a zoom
+ * level to correct for it; there is nothing to correct when no scale was ever
+ * assumed. The zoom control changes how big the stage is, and the map to
+ * millimetres follows for free.
+ *
+ * **Every pointer operation has a keyboard and an inspector equal.** Not as a
+ * courtesy: a pointer cannot place a 0.4 mm rule, and some people cannot drag
+ * at all. Multi-select, duplication, ordering, alignment, distribution,
+ * rotation, nudging and exact geometry are each reachable three ways, and the
+ * list panel's checkboxes are the third — an explicit, touch-sized way to
+ * select several things without a modifier key a phone does not have.
+ *
+ * **Nothing is announced by colour alone.** Selection carries an outline, a
+ * corner mark and `aria-pressed`; staleness carries a sentence, a desaturated
+ * raster and a `data-standing` attribute; a snap carries a drawn guide and a
+ * line in the live region.
  */
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
@@ -25,10 +40,15 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import {
   mdiArrowLeft,
+  mdiContentCopy,
   mdiContentSaveOutline,
+  mdiDelete,
+  mdiMagnifyMinusOutline,
+  mdiMagnifyPlusOutline,
+  mdiMagnifyScan,
   mdiRedo,
   mdiRefresh,
-  mdiTrashCanOutline,
+  mdiRestore,
   mdiUndo,
 } from '@mdi/js';
 
@@ -45,40 +65,66 @@ import {
   frameAsPercentages,
   pixelsToMm,
   resizeFrame,
-  setFrameField,
   translateFrame,
   type ResizeHandle,
   type StockMm,
 } from './geometry';
+import {
+  ELEMENT_KINDS,
+  governingProfile,
+  isRequiredElement,
+  newElement,
+  wouldDropRequired,
+  type ElementKind,
+} from './constraints';
+import {
+  addElement,
+  align,
+  distribute,
+  duplicate,
+  removeElements,
+  reorder,
+  snapFrame,
+  snapLines,
+  withElement,
+  withFrames,
+  type Alignment,
+  type Distribution,
+  type Ordering,
+  type SnapLine,
+} from './arrange';
+import './growspace-label-inspector';
 
 /** The eight handles, in the order a reader goes round a rectangle. */
 const HANDLES: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
-/** The four exact controls, and the order the inspector lists them in. */
-const FIELDS: { key: keyof LabelFrame; label: string }[] = [
-  { key: 'x_mm', label: 'editor_field_x' },
-  { key: 'y_mm', label: 'editor_field_y' },
-  { key: 'width_mm', label: 'editor_field_width' },
-  { key: 'height_mm', label: 'editor_field_height' },
-];
+/** The six alignments and the two distributions, as the toolbar orders them. */
+const ALIGNMENTS: Alignment[] = ['left', 'center', 'right', 'top', 'middle', 'bottom'];
+const DISTRIBUTIONS: Distribution[] = ['horizontal', 'vertical'];
+const ORDERINGS: Ordering[] = ['front', 'forward', 'backward', 'back'];
 
 /** Which panel a narrow screen is showing beside the canvas. */
 type Workbench = 'canvas' | 'elements' | 'selection';
 
-/** One in-flight pointer gesture, in the frame it started from. */
+/** The zoom steps, as multiples of "the stage fills its column". */
+const ZOOM_STEPS = [1, 1.5, 2, 3, 4] as const;
+
+/** One in-flight pointer gesture, in the frames it started from. */
 interface Gesture {
   pointerId: number;
-  elementId: string;
   handle: ResizeHandle | null;
   originX: number;
   originY: number;
-  startFrame: LabelFrame;
+  /** Every moving element's frame as it was when the gesture began. */
+  startFrames: Map<string, LabelFrame>;
+  /** The element the pointer is actually on, which is what snapping follows. */
+  anchorId: string;
   key: string;
 }
 
 @customElement('growspace-label-editor')
 export class GrowspaceLabelEditor extends LitElement {
-  /** The negotiated capability. The quantum and the stock come off it. */
+  /** The negotiated capability. The quantum, the stock and every limit come off it. */
   @property({ attribute: false }) capability?: LabelTemplateCapability;
   /** The live session. Owned by the caller, because it outlives this element. */
   @property({ attribute: false }) session?: DraftSession;
@@ -86,6 +132,21 @@ export class GrowspaceLabelEditor extends LitElement {
 
   @state() private _model?: SessionState;
   @state() private _workbench: Workbench = 'canvas';
+  @state() private _zoom = 1;
+  @state() private _snapping = true;
+  /**
+   * Whether a plain tap on the canvas adds to the selection.
+   *
+   * The touch equal of holding Shift, and the accepted design's own answer:
+   * a phone has no modifier key, and a finger that had to find a checkbox in
+   * a panel behind the canvas could not build a selection while looking at
+   * the label it is building one on.
+   */
+  @state() private _multiSelect = false;
+  /** The lines the current gesture is actually lying on, drawn over the stage. */
+  @state() private _guides: SnapLine[] = [];
+  /** The last thing that happened, for a screen reader that saw none of it. */
+  @state() private _announcement = '';
 
   #unsubscribe?: () => void;
   #gesture: Gesture | null = null;
@@ -98,6 +159,18 @@ export class GrowspaceLabelEditor extends LitElement {
         flex-direction: column;
         min-height: 0;
         height: 100%;
+        /* The editor owns its foreground rather than inheriting one. A shadow
+           root inherits the colour property from wherever it was placed, so a
+           host that set only the token and not the property left every
+           heading and label at the document default -- black prose on a dark
+           dialog. */
+        color: var(--primary-text-color);
+        /* The narrow-screen rules below ask about *this element's* width, not
+           the window's. The editor lives inside a dialog, so a phone and a
+           1200 px desktop showing a 400 px dialog are the same problem, and a
+           viewport media query answers the wrong question in the second
+           case. */
+        container-type: inline-size;
       }
 
       header.bar {
@@ -123,14 +196,17 @@ export class GrowspaceLabelEditor extends LitElement {
         border-radius: var(--border-radius-sm, 4px);
         padding: 6px 8px;
         width: 100%;
-        min-height: 36px;
+        min-height: 44px;
         box-sizing: border-box;
       }
 
+      /* Every control in this editor is at least 44 x 44 CSS pixels. A label
+         is edited at arm's length on a phone beside a printer as often as at
+         a desk, and a 32 px icon button is a miss at that distance. */
       button {
         font: inherit;
-        min-height: 40px;
-        min-width: 40px;
+        min-height: 44px;
+        min-width: 44px;
         padding: 6px 10px;
         border-radius: var(--border-radius-md, 8px);
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
@@ -142,6 +218,13 @@ export class GrowspaceLabelEditor extends LitElement {
       button[disabled] {
         cursor: not-allowed;
         opacity: 0.5;
+      }
+
+      button[aria-pressed='true'] {
+        border-color: var(--primary-color, #4caf50);
+        color: var(--primary-color, #4caf50);
+        text-decoration: underline;
+        text-underline-offset: 3px;
       }
 
       button.primary:not([disabled]) {
@@ -157,14 +240,26 @@ export class GrowspaceLabelEditor extends LitElement {
         margin: 0 auto;
       }
 
+      /* A visible focus ring that does not depend on the theme's own, since a
+         Home Assistant theme may remove it. */
+      :is(button, input, select, a):focus-visible {
+        outline: 3px solid var(--primary-color, #4caf50);
+        outline-offset: 2px;
+      }
+
       .layout {
         display: grid;
-        grid-template-columns: 200px minmax(0, 1fr) 260px;
+        grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(240px, 280px);
         gap: var(--spacing-md, 16px);
         padding: var(--spacing-md, 16px);
         flex: 1;
         min-height: 0;
         overflow: auto;
+      }
+
+      .layout:focus-visible {
+        outline: 3px solid var(--primary-color, #4caf50);
+        outline-offset: -3px;
       }
 
       aside {
@@ -176,7 +271,7 @@ export class GrowspaceLabelEditor extends LitElement {
         font-size: var(--font-size-sm, 13px);
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        opacity: 0.7;
+        opacity: 0.85;
         margin: 0 0 var(--spacing-sm, 8px);
       }
 
@@ -194,9 +289,26 @@ export class GrowspaceLabelEditor extends LitElement {
         align-items: center;
       }
 
+      .toolbar .spacer {
+        flex: 1 1 8px;
+      }
+
+      .zoom-level {
+        font-variant-numeric: tabular-nums;
+        min-width: 4ch;
+        text-align: center;
+      }
+
+      /* The stage scrolls inside its column when zoomed, so a magnified label
+         never widens the page — the one thing that would break a 390 px
+         viewport outright. */
+      .stage-scroll {
+        overflow: auto;
+        max-width: 100%;
+      }
+
       .stage-wrap {
-        display: flex;
-        justify-content: center;
+        margin: 0 auto;
       }
 
       /* The paper. Its aspect ratio is the stock's, so the millimetre map is
@@ -204,7 +316,10 @@ export class GrowspaceLabelEditor extends LitElement {
       .stage {
         position: relative;
         width: 100%;
-        max-width: 560px;
+        /* Its 1 px border is inside its width. Without this the stage was two
+           pixels wider than the column holding it, which is a scrollbar under
+           a label that already fits. */
+        box-sizing: border-box;
         background: #fff;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
         border-radius: var(--border-radius-sm, 4px);
@@ -229,7 +344,7 @@ export class GrowspaceLabelEditor extends LitElement {
 
       .element {
         position: absolute;
-        border: 1px dashed rgba(0, 0, 0, 0.45);
+        border: 1px dashed rgba(0, 0, 0, 0.55);
         background: transparent;
         cursor: move;
         padding: 0;
@@ -238,18 +353,36 @@ export class GrowspaceLabelEditor extends LitElement {
         border-radius: 0;
       }
 
+      /* Selection is an outline *and* a corner mark, because an outline alone
+         is a colour difference and this is white paper under a raster. */
       .element[aria-pressed='true'] {
-        border: 1px solid var(--primary-color, #4caf50);
-        box-shadow: 0 0 0 1px var(--primary-color, #4caf50);
+        border: 2px solid rgba(0, 0, 0, 0.9);
+        outline: 1px solid #fff;
+      }
+
+      .element[aria-pressed='true']::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        width: 8px;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.9);
+      }
+
+      .element[data-required='true'] {
+        border-style: solid;
       }
 
       .handle {
         position: absolute;
+        /* Drawn small, hit at 44 px: a grip that looked 44 px across would
+           cover the element it grips on a 50 mm label. */
         width: 14px;
         height: 14px;
         margin: -7px 0 0 -7px;
         border-radius: 50%;
-        border: 1px solid var(--primary-color, #4caf50);
+        border: 1px solid rgba(0, 0, 0, 0.9);
         background: #fff;
         padding: 0;
         min-height: 0;
@@ -257,32 +390,43 @@ export class GrowspaceLabelEditor extends LitElement {
         touch-action: none;
       }
 
-      .nudge {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: var(--spacing-xs, 4px);
-        max-width: 160px;
+      .handle::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 44px;
+        height: 44px;
+        transform: translate(-50%, -50%);
       }
 
-      .nudge button:nth-child(1) {
-        grid-column: 2;
+      .guide {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.85);
+        pointer-events: none;
       }
 
-      .fields {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--spacing-sm, 8px);
+      .guide[data-axis='x'] {
+        top: 0;
+        bottom: 0;
+        width: 1px;
+      }
+
+      .guide[data-axis='y'] {
+        left: 0;
+        right: 0;
+        height: 1px;
       }
 
       label {
         display: block;
         font-size: var(--font-size-xs, 11px);
-        opacity: 0.75;
+        opacity: 0.85;
         margin-bottom: 2px;
       }
 
       .supporting {
-        opacity: 0.75;
+        opacity: 0.85;
         font-size: var(--font-size-sm, 13px);
         line-height: 1.45;
         margin: var(--spacing-sm, 8px) 0 0;
@@ -307,9 +451,44 @@ export class GrowspaceLabelEditor extends LitElement {
         padding: 0;
       }
 
-      ul.elements button {
-        width: 100%;
+      ul.elements li {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs, 4px);
+        margin-bottom: var(--spacing-xs, 4px);
+      }
+
+      /* The target is the label, not the box: a 44 px checkbox is a
+         ridiculous thing to look at, and a 24 px one is a miss. */
+      ul.elements label.pick {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        margin: 0;
+        flex: none;
+        cursor: pointer;
+      }
+
+      ul.elements input[type='checkbox'] {
+        width: 24px;
+        height: 24px;
+        margin: 0;
+      }
+
+      ul.elements .row {
+        flex: 1;
         text-align: left;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      ul.elements .required {
+        font-size: var(--font-size-xs, 11px);
+        opacity: 0.85;
       }
 
       ul.diagnostics {
@@ -318,17 +497,32 @@ export class GrowspaceLabelEditor extends LitElement {
         opacity: 0.9;
       }
 
+      /* Visible to a screen reader, invisible to everyone else. Never
+         display:none, which removes it from the accessibility tree too. */
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+
       .tabs {
         display: none;
       }
 
-      @media (max-width: 800px) {
+      @container (max-width: 800px) {
         /* Canvas-primary: the panels are one tap away and never crowd it. */
         .layout {
           grid-template-columns: minmax(0, 1fr);
         }
 
-        aside[hidden-on-narrow] {
+        aside[hidden-on-narrow],
+        section[hidden-on-narrow] {
           display: none;
         }
 
@@ -341,6 +535,33 @@ export class GrowspaceLabelEditor extends LitElement {
 
         .tabs button {
           flex: 1;
+        }
+      }
+
+      /* A theme is gone in forced colours, so the states carried by border
+         colour above are restated in terms the mode keeps. */
+      @media (forced-colors: active) {
+        button[aria-pressed='true'],
+        button.primary {
+          border: 2px solid ButtonText;
+        }
+
+        .element[aria-pressed='true'] {
+          border: 2px solid Highlight;
+        }
+
+        .stage img[data-standing='stale'] {
+          opacity: 1;
+        }
+      }
+
+      /* Nothing here animates by default; this keeps it that way if a theme
+         or a future control introduces one. */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+          scroll-behavior: auto !important;
         }
       }
     `,
@@ -369,7 +590,7 @@ export class GrowspaceLabelEditor extends LitElement {
     this.#unsubscribe = session.subscribe((state) => {
       this._model = state;
     });
-    if (session.state.selectedId === null) {
+    if (session.state.selectedIds.length === 0) {
       session.select(defaultSelection(session.state.document));
     }
   }
@@ -386,6 +607,30 @@ export class GrowspaceLabelEditor extends LitElement {
     return { widthMm: size?.width_mm ?? 1, heightMm: size?.height_mm ?? 1 };
   }
 
+  /** The printer profile whose limits every control is held to. */
+  get #profile() {
+    return governingProfile(this.capability, this.session?.address.labelSizeId ?? '');
+  }
+
+  /** Say what just happened, for somebody who cannot see it happen. */
+  #announce(message: string): void {
+    this._announcement = message;
+  }
+
+  /** A fresh element identity. Opaque to the backend, unique in the document. */
+  #mintId(): string {
+    const random = globalThis.crypto;
+    return typeof random?.randomUUID === 'function'
+      ? random.randomUUID()
+      : `element-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  /** Re-render the raster after an edit that has settled. */
+  #settled(): void {
+    this.session?.endGesture();
+    void this.session?.render();
+  }
+
   // -------------------------------------------------------------------------
   // Pointer and touch
   // -------------------------------------------------------------------------
@@ -396,6 +641,11 @@ export class GrowspaceLabelEditor extends LitElement {
    * Pointer Events rather than three code paths: the capture below is what
    * keeps a drag alive when the finger or cursor leaves the element, which is
    * most of a drag that reaches the paper's edge.
+   *
+   * A modifier extends the selection rather than replacing it — the desktop
+   * idiom — and dragging any member of a multiple selection drags all of it,
+   * because a selection that came apart the moment it was touched would not
+   * be a selection.
    */
   #onPointerDown(event: PointerEvent, elementId: string, handle: ResizeHandle | null): void {
     const session = this.session;
@@ -403,19 +653,41 @@ export class GrowspaceLabelEditor extends LitElement {
     // gesture must start from the geometry the user is pointing at, not from
     // a session state that has moved on since the last render.
     const document = this._model?.document;
-    const frame = document && elementById(document, elementId)?.frame;
-    if (!session || !frame) return;
+    if (!session || !document) return;
     event.preventDefault();
     event.stopPropagation();
-    (event.target as HTMLElement).setPointerCapture(event.pointerId);
-    session.select(elementId);
+
+    const extend = event.shiftKey || event.metaKey || event.ctrlKey || this._multiSelect;
+    if (extend) {
+      session.toggleSelected(elementId);
+      this.#announceSelection();
+      return;
+    }
+    if (!session.state.selectedIds.includes(elementId)) session.select(elementId);
+
+    const moving = handle === null ? session.state.selectedIds : [elementId];
+    const startFrames = new Map<string, LabelFrame>();
+    for (const id of moving) {
+      const frame = elementById(document, id)?.frame;
+      if (frame !== undefined) startFrames.set(id, frame);
+    }
+    if (startFrames.size === 0) return;
+
+    try {
+      (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    } catch {
+      // A pointer that is no longer active refuses capture, and so does a
+      // synthetic one. Neither is a reason to abandon the gesture: without
+      // capture the drag simply ends when the pointer leaves the element,
+      // which is the behaviour capture exists to improve on, not to enable.
+    }
     this.#gesture = {
       pointerId: event.pointerId,
-      elementId,
       handle,
       originX: event.clientX,
       originY: event.clientY,
-      startFrame: frame,
+      startFrames,
+      anchorId: elementId,
       key: `${handle ?? 'move'}:${event.pointerId}:${Date.now()}`,
     };
   }
@@ -423,58 +695,310 @@ export class GrowspaceLabelEditor extends LitElement {
   #onPointerMove(event: PointerEvent): void {
     const gesture = this.#gesture;
     const session = this.session;
-    if (!gesture || !session || gesture.pointerId !== event.pointerId) return;
+    const model = this._model;
+    if (!gesture || !session || !model || gesture.pointerId !== event.pointerId) return;
 
     const stage = this.renderRoot.querySelector('.stage');
     if (!stage) return;
     // The measured box, every move: a zoom or a resize mid-drag changes it,
     // and reading it once at pointerdown would silently scale the rest.
     const rect = stage.getBoundingClientRect();
+    const stock = this.#stock;
+    const quantum = session.quantumMm;
     const { deltaXMm, deltaYMm } = pixelsToMm(
       event.clientX - gesture.originX,
       event.clientY - gesture.originY,
       rect,
-      this.#stock
+      stock
     );
 
-    const next =
-      gesture.handle === null
-        ? translateFrame(gesture.startFrame, deltaXMm, deltaYMm, this.#stock, session.quantumMm)
-        : resizeFrame(
-            gesture.startFrame,
-            gesture.handle,
-            deltaXMm,
-            deltaYMm,
-            this.#stock,
-            session.quantumMm
-          );
-    session.moveElement(gesture.elementId, next, gesture.key);
+    if (gesture.handle !== null) {
+      const start = gesture.startFrames.get(gesture.anchorId)!;
+      const resized = resizeFrame(start, gesture.handle, deltaXMm, deltaYMm, stock, quantum);
+      session.moveElement(gesture.anchorId, resized, gesture.key);
+      return;
+    }
+
+    // Snap the element under the pointer, then move everything by the delta
+    // the snap actually produced — so a multiple selection keeps its internal
+    // spacing exactly while still landing on the guide.
+    const anchorStart = gesture.startFrames.get(gesture.anchorId)!;
+    const anchorMoved = translateFrame(anchorStart, deltaXMm, deltaYMm, stock, quantum);
+    let appliedX = anchorMoved.x_mm - anchorStart.x_mm;
+    let appliedY = anchorMoved.y_mm - anchorStart.y_mm;
+    let guides: SnapLine[] = [];
+
+    if (this._snapping) {
+      const lines = snapLines(model.document, stock, [...gesture.startFrames.keys()]);
+      const snapped = snapFrame(anchorMoved, lines, undefined, quantum);
+      appliedX = snapped.frame.x_mm - anchorStart.x_mm;
+      appliedY = snapped.frame.y_mm - anchorStart.y_mm;
+      guides = snapped.guides;
+    }
+
+    const frames = new Map<string, LabelFrame>();
+    for (const [id, start] of gesture.startFrames) {
+      frames.set(id, translateFrame(start, appliedX, appliedY, stock, quantum));
+    }
+    this._guides = guides;
+    session.apply(withFrames(model.document, frames), gesture.key);
   }
 
   #onPointerUp(event: PointerEvent): void {
     if (this.#gesture?.pointerId !== event.pointerId) return;
     this.#gesture = null;
-    this.session?.endGesture();
-    void this.session?.render();
+    this._guides = [];
+    this.#settled();
   }
 
+  // -------------------------------------------------------------------------
+  // Selection
+  // -------------------------------------------------------------------------
+
+  #announceSelection(): void {
+    const ids = this.session?.state.selectedIds ?? [];
+    this.#announce(
+      localizeWithParams(
+        'labels.editor_announce_selection',
+        { count: String(ids.length) },
+        this.language
+      )
+    );
+  }
+
+  #selectAll(): void {
+    const session = this.session;
+    if (!session) return;
+    session.selectMany(session.state.document.elements.map((element) => element.id));
+    this.#announceSelection();
+  }
+
+  // -------------------------------------------------------------------------
+  // Editing commands
+  // -------------------------------------------------------------------------
+
+  #nudgeSelection(deltaXMm: number, deltaYMm: number): void {
+    const session = this.session;
+    const model = this._model;
+    if (!session || !model || model.selectedIds.length === 0) return;
+    const stock = this.#stock;
+    const frames = new Map<string, LabelFrame>();
+    for (const id of model.selectedIds) {
+      const frame = elementById(model.document, id)?.frame;
+      if (frame === undefined) continue;
+      frames.set(id, translateFrame(frame, deltaXMm, deltaYMm, stock, session.quantumMm));
+    }
+    session.apply(withFrames(model.document, frames));
+    this.#settled();
+    this.#announce(
+      localizeWithParams(
+        'labels.editor_announce_moved',
+        { x: String(deltaXMm), y: String(deltaYMm) },
+        this.language
+      )
+    );
+  }
+
+  #align(alignment: Alignment): void {
+    const session = this.session;
+    const model = this._model;
+    if (!session || !model) return;
+    session.apply(
+      align(model.document, model.selectedIds, alignment, this.#stock, session.quantumMm)
+    );
+    this.#settled();
+    this.#announce(this._t(`editor_align_${alignment}`));
+  }
+
+  #distribute(axis: Distribution): void {
+    const session = this.session;
+    const model = this._model;
+    if (!session || !model) return;
+    session.apply(
+      distribute(model.document, model.selectedIds, axis, this.#stock, session.quantumMm)
+    );
+    this.#settled();
+    this.#announce(this._t(`editor_distribute_${axis}`));
+  }
+
+  #reorder(ordering: Ordering): void {
+    const session = this.session;
+    const model = this._model;
+    if (!session || !model) return;
+    session.apply(reorder(model.document, model.selectedIds, ordering));
+    this.#settled();
+    this.#announce(this._t(`editor_order_${ordering}`));
+  }
+
+  #duplicate(): void {
+    const session = this.session;
+    const model = this._model;
+    if (!session || !model || model.selectedIds.length === 0) return;
+    const copied = duplicate(
+      model.document,
+      model.selectedIds,
+      () => this.#mintId(),
+      this.#stock,
+      session.quantumMm
+    );
+    session.apply(copied.document, null, copied.ids);
+    this.#settled();
+    this.#announce(
+      localizeWithParams(
+        'labels.editor_announce_duplicated',
+        { count: String(copied.ids.length) },
+        this.language
+      )
+    );
+  }
+
+  #delete(): void {
+    const session = this.session;
+    const model = this._model;
+    if (!session || !model || model.selectedIds.length === 0) return;
+    // Deleting the required element is allowed, and the backend's own
+    // publication check is what says the layout is no longer publishable --
+    // one place, not two. What this adds is the warning *before* rather than
+    // the refusal after, since undo is the only way back and a user who did
+    // not mean it should not have to discover it at publish time.
+    const dropping = wouldDropRequired(model.document, model.selectedIds);
+    session.apply(removeElements(model.document, model.selectedIds), null, []);
+    this.#settled();
+    this.#announce(
+      dropping
+        ? this._t('editor_announce_deleted_required')
+        : localizeWithParams(
+            'labels.editor_announce_deleted',
+            { count: String(model.selectedIds.length) },
+            this.language
+          )
+    );
+  }
+
+  #addElement(kind: ElementKind): void {
+    const session = this.session;
+    const model = this._model;
+    if (!session || !model) return;
+    const element = newElement({
+      capability: this.capability,
+      profile: this.#profile,
+      kind,
+      stock: this.#stock,
+      id: this.#mintId(),
+      placeholder: this._t('editor_content_placeholder'),
+    });
+    if (element === null) {
+      this.#announce(
+        localizeWithParams(
+          'labels.editor_announce_no_binding',
+          { kind: this._t(`editor_kind_${kind}`) },
+          this.language
+        )
+      );
+      return;
+    }
+    session.apply(addElement(model.document, element), null, [element.id]);
+    this.#settled();
+    this.#announce(
+      localizeWithParams(
+        'labels.editor_announce_added',
+        { kind: this._t(`editor_kind_${kind}`) },
+        this.language
+      )
+    );
+  }
+
+  #reset(): void {
+    this.session?.reset();
+    this.#settled();
+    this.#announce(this._t('editor_announce_reset'));
+  }
+
+  /** One element replaced wholesale, as the inspector hands it back. */
+  #onElementChange(event: CustomEvent<{ element: LabelElement; gesture: string | null }>): void {
+    const session = this.session;
+    const model = this._model;
+    if (!session || !model) return;
+    session.apply(withElement(model.document, event.detail.element), event.detail.gesture);
+    this.#settled();
+  }
+
+  #zoomBy(step: number): void {
+    const index = ZOOM_STEPS.indexOf(this._zoom as (typeof ZOOM_STEPS)[number]);
+    const next =
+      ZOOM_STEPS[Math.min(Math.max((index < 0 ? 0 : index) + step, 0), ZOOM_STEPS.length - 1)];
+    this._zoom = next;
+    this.#announce(
+      localizeWithParams(
+        'labels.editor_announce_zoom',
+        { percent: String(Math.round(next * 100)) },
+        this.language
+      )
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Keyboard
+  // -------------------------------------------------------------------------
+
   /**
-   * Arrow keys nudge, Shift nudges further, Ctrl/Cmd undoes.
+   * The keyboard's half of the editor.
    *
-   * A whole millimetre grid is reachable from the keyboard because pointing
-   * at 0.5 mm is not something every user can do, and the exact controls
-   * beside it cover the rest.
+   * Every shortcut here duplicates a control that is also on screen — this is
+   * an accelerator layer, never the only way to reach something, because a
+   * shortcut nobody can discover is not an alternative to dragging.
    */
   #onKeyDown(event: KeyboardEvent): void {
     const session = this.session;
     const model = this._model;
     if (!session || !model) return;
+    const accel = event.ctrlKey || event.metaKey;
 
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    if (accel) {
+      const key = event.key.toLowerCase();
+      if (key === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) session.redo();
+        else session.undo();
+        void session.render();
+        this.#announce(this._t(event.shiftKey ? 'editor_redo' : 'editor_undo'));
+        return;
+      }
+      if (key === 'y') {
+        event.preventDefault();
+        session.redo();
+        void session.render();
+        return;
+      }
+      if (key === 'd') {
+        event.preventDefault();
+        this.#duplicate();
+        return;
+      }
+      if (key === 'a') {
+        event.preventDefault();
+        this.#selectAll();
+        return;
+      }
+    }
+
+    if (event.key === 'Escape') {
       event.preventDefault();
-      if (event.shiftKey) session.redo();
-      else session.undo();
-      void session.render();
+      session.select(null);
+      this.#announceSelection();
+      return;
+    }
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      // Not while a field has focus: Backspace in a number input deletes a
+      // digit, and stealing it would make the exact controls unusable.
+      if (isTextEntry(event.composedPath()[0])) return;
+      event.preventDefault();
+      this.#delete();
+      return;
+    }
+    if (event.key === '[' || event.key === ']') {
+      event.preventDefault();
+      this.#reorder(event.key === ']' ? 'forward' : 'backward');
       return;
     }
 
@@ -486,82 +1010,72 @@ export class GrowspaceLabelEditor extends LitElement {
       ArrowRight: [step, 0],
     };
     const delta = deltas[event.key];
-    const element = elementById(model.document, model.selectedId);
-    if (!delta || !element) return;
+    if (!delta || model.selectedIds.length === 0) return;
+    if (isTextEntry(event.composedPath()[0])) return;
     event.preventDefault();
-    this.#nudge(element, delta[0], delta[1]);
-  }
-
-  #nudge(element: LabelElement, deltaXMm: number, deltaYMm: number): void {
-    const session = this.session;
-    if (!session) return;
-    session.moveElement(
-      element.id,
-      translateFrame(element.frame, deltaXMm, deltaYMm, this.#stock, session.quantumMm)
-    );
-    session.endGesture();
-    void session.render();
-  }
-
-  #setField(element: LabelElement, field: keyof LabelFrame, raw: string): void {
-    const session = this.session;
-    const value = Number.parseFloat(raw);
-    if (!session || Number.isNaN(value)) return;
-    session.moveElement(
-      element.id,
-      setFrameField(element.frame, field, value, this.#stock, session.quantumMm)
-    );
-    session.endGesture();
-    void session.render();
+    this.#nudgeSelection(delta[0], delta[1]);
   }
 
   // -------------------------------------------------------------------------
-  // Rendering
+  // Rendering: the canvas
   // -------------------------------------------------------------------------
 
   #renderStage(model: SessionState): TemplateResult {
     const stock = this.#stock;
     const raster = model.render?.raster ?? null;
     return html`
-      <div class="stage-wrap">
-        <div
-          class="stage"
-          role="group"
-          aria-label=${this._t('editor_canvas')}
-          style=${styleMap({ aspectRatio: `${stock.widthMm} / ${stock.heightMm}` })}
-          @pointermove=${this.#onPointerMove}
-          @pointerup=${this.#onPointerUp}
-          @pointercancel=${this.#onPointerUp}
-        >
-          ${raster
-            ? html`<img
-                src=${raster.image}
-                alt=${this._t('editor_raster_alt')}
-                data-standing=${model.rasterStanding}
-              />`
-            : nothing}
-          ${model.document.elements.map((element) => this.#renderElement(element, model))}
+      <div class="stage-scroll">
+        <div class="stage-wrap" style=${styleMap({ width: `${this._zoom * 100}%` })}>
+          <div
+            class="stage"
+            role="group"
+            aria-label=${this._t('editor_canvas')}
+            style=${styleMap({ aspectRatio: `${stock.widthMm} / ${stock.heightMm}` })}
+            @pointermove=${this.#onPointerMove}
+            @pointerup=${this.#onPointerUp}
+            @pointercancel=${this.#onPointerUp}
+          >
+            ${raster
+              ? html`<img
+                  src=${raster.image}
+                  alt=${this._t('editor_raster_alt')}
+                  data-standing=${model.rasterStanding}
+                />`
+              : nothing}
+            ${model.document.elements.map((element) => this.#renderElement(element, model))}
+            ${this._guides.map((guide) => this.#renderGuide(guide, stock))}
+          </div>
         </div>
       </div>
     `;
   }
 
+  #renderGuide(guide: SnapLine, stock: StockMm): TemplateResult {
+    const total = guide.axis === 'x' ? stock.widthMm : stock.heightMm;
+    const offset = `${total > 0 ? (guide.valueMm / total) * 100 : 0}%`;
+    return html`<div
+      class="guide"
+      data-axis=${guide.axis}
+      data-source=${guide.source}
+      style=${styleMap(guide.axis === 'x' ? { left: offset } : { top: offset })}
+    ></div>`;
+  }
+
   #renderElement(element: LabelElement, model: SessionState): TemplateResult {
-    const selected = model.selectedId === element.id;
+    const selected = model.selectedIds.includes(element.id);
+    const only = selected && model.selectedIds.length === 1;
     return html`
       <button
         class="element"
         data-element=${element.id}
+        data-kind=${element.kind}
+        data-required=${isRequiredElement(element)}
         aria-pressed=${selected}
-        aria-label=${localizeWithParams(
-          'labels.editor_element_alt',
-          { kind: element.kind },
-          this.language
-        )}
+        aria-label=${this.#elementName(element)}
         style=${styleMap(frameAsPercentages(element.frame, this.#stock))}
         @pointerdown=${(event: PointerEvent) => this.#onPointerDown(event, element.id, null)}
       >
-        ${selected ? HANDLES.map((handle) => this.#renderHandle(element, handle)) : nothing}
+        ${only ? HANDLES.map((handle) => this.#renderHandle(element, handle)) : nothing}
       </button>
     `;
   }
@@ -584,101 +1098,122 @@ export class GrowspaceLabelEditor extends LitElement {
     `;
   }
 
+  /**
+   * What an element is called, in one line.
+   *
+   * Its kind plus what fills it, because "Text" six times over is a list
+   * nobody can navigate — and this string is the element's accessible name on
+   * the canvas as well as its label in the panel.
+   */
+  #elementName(element: LabelElement): string {
+    const kind = this._t(`editor_kind_${element.kind}`);
+    if (element.kind === 'divider') return kind;
+    const content = element.content;
+    if ('literal' in content) return `${kind}: “${content.literal}”`;
+    if ('asset_id' in content) return `${kind}: ${content.asset_id}`;
+    const binding = localize(
+      `labels.binding_${content.binding.replace(/\./g, '_')}`,
+      '',
+      '',
+      this.language
+    );
+    return `${kind}: ${binding.startsWith('labels.') ? content.binding : binding}`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Rendering: the panels
+  // -------------------------------------------------------------------------
+
   #renderElements(model: SessionState): TemplateResult {
     return html`
-      <aside ?hidden-on-narrow=${this._workbench !== 'elements'}>
+      <aside
+        ?hidden-on-narrow=${this._workbench !== 'elements'}
+        aria-label=${this._t('editor_elements')}
+      >
         <h2>${this._t('editor_elements')}</h2>
-        <ul class="elements">
-          ${model.document.elements.map(
-            (element) => html`
-              <li>
-                <button
-                  data-list-element=${element.id}
-                  aria-pressed=${model.selectedId === element.id}
-                  @click=${() => this.session?.select(element.id)}
-                >
-                  ${this._t(`editor_kind_${element.kind}`)}
-                </button>
-              </li>
+        <button
+          type="button"
+          data-action="multi-select"
+          aria-pressed=${this._multiSelect}
+          @click=${() => {
+            this._multiSelect = !this._multiSelect;
+            this.#announce(
+              this._t(this._multiSelect ? 'editor_multi_select_on' : 'editor_multi_select_off')
+            );
+          }}
+        >
+          ${this._t('editor_multi_select')}
+        </button>
+        <div class="toolbar" role="group" aria-label=${this._t('editor_add')}>
+          ${ELEMENT_KINDS.map(
+            (kind) => html`
+              <button type="button" data-add=${kind} @click=${() => this.#addElement(kind)}>
+                + ${this._t(`editor_kind_${kind}`)}
+              </button>
             `
           )}
+        </div>
+        <ul class="elements">
+          ${model.document.elements.map((element) => {
+            const selected = model.selectedIds.includes(element.id);
+            return html`
+              <li>
+                <label class="pick">
+                  <input
+                    type="checkbox"
+                    id=${`pick-${element.id}`}
+                    data-pick=${element.id}
+                    .checked=${selected}
+                    aria-label=${localizeWithParams(
+                      'labels.editor_also_select',
+                      { name: this.#elementName(element) },
+                      this.language
+                    )}
+                    @change=${() => {
+                      this.session?.toggleSelected(element.id);
+                      this.#announceSelection();
+                    }}
+                  />
+                </label>
+                <button
+                  class="row"
+                  data-list-element=${element.id}
+                  aria-pressed=${selected}
+                  @click=${() => this.session?.select(element.id)}
+                >
+                  ${this.#elementName(element)}
+                  ${isRequiredElement(element)
+                    ? html`<span class="required" data-role="required">
+                        · ${this._t('editor_required')}
+                      </span>`
+                    : nothing}
+                </button>
+              </li>
+            `;
+          })}
         </ul>
       </aside>
     `;
   }
 
-  /**
-   * The Selection inspector: exact millimetres, and a nudge pad beside them.
-   *
-   * Constrained on purpose. This ticket's subject is the required strain-name
-   * element's geometry, so what the inspector offers is position and size —
-   * the styling controls the accepted design also calls for arrive with the
-   * tickets that add the other element kinds.
-   */
   #renderInspector(model: SessionState): TemplateResult {
     const element = elementById(model.document, model.selectedId);
     return html`
-      <aside ?hidden-on-narrow=${this._workbench !== 'selection'}>
+      <aside
+        ?hidden-on-narrow=${this._workbench !== 'selection'}
+        aria-label=${this._t('editor_selection')}
+      >
         <h2>${this._t('editor_selection')}</h2>
-        ${element === undefined
-          ? html`<p class="supporting">${this._t('editor_nothing_selected')}</p>`
-          : html`
-              <h3>${this._t('editor_position')}</h3>
-              <div class="fields">
-                ${FIELDS.map(
-                  (field) => html`
-                    <div>
-                      <label for=${field.key}>${this._t(field.label)}</label>
-                      <input
-                        id=${field.key}
-                        type="number"
-                        step="0.01"
-                        data-field=${field.key}
-                        .value=${String(element.frame[field.key])}
-                        @change=${(event: Event) =>
-                          this.#setField(
-                            element,
-                            field.key,
-                            (event.target as HTMLInputElement).value
-                          )}
-                      />
-                    </div>
-                  `
-                )}
-              </div>
-              <h3>${this._t('editor_nudge')}</h3>
-              <div class="nudge">
-                <button
-                  data-nudge="up"
-                  aria-label=${this._t('editor_nudge_up')}
-                  @click=${() => this.#nudge(element, 0, -NUDGE_MM)}
-                >
-                  ↑
-                </button>
-                <button
-                  data-nudge="left"
-                  aria-label=${this._t('editor_nudge_left')}
-                  @click=${() => this.#nudge(element, -NUDGE_MM, 0)}
-                >
-                  ←
-                </button>
-                <button
-                  data-nudge="down"
-                  aria-label=${this._t('editor_nudge_down')}
-                  @click=${() => this.#nudge(element, 0, NUDGE_MM)}
-                >
-                  ↓
-                </button>
-                <button
-                  data-nudge="right"
-                  aria-label=${this._t('editor_nudge_right')}
-                  @click=${() => this.#nudge(element, NUDGE_MM, 0)}
-                >
-                  →
-                </button>
-              </div>
-              <p class="supporting">${this._t('editor_nudge_hint')}</p>
-            `}
+        <growspace-label-inspector
+          .capability=${this.capability}
+          .profile=${this.#profile}
+          .element=${element}
+          .stock=${this.#stock}
+          .quantumMm=${this.session?.quantumMm ?? 0.01}
+          .selectionSize=${model.selectedIds.length}
+          .language=${this.language}
+          @element-change=${this.#onElementChange}
+        ></growspace-label-inspector>
         ${this.#renderDiagnostics(model)}
       </aside>
     `;
@@ -772,7 +1307,7 @@ export class GrowspaceLabelEditor extends LitElement {
           aria-label=${this._t('editor_back')}
           @click=${() => this.dispatchEvent(new CustomEvent('close-editor'))}
         >
-          <svg viewBox="0 0 24 24"><path d=${mdiArrowLeft}></path></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${mdiArrowLeft}></path></svg>
         </button>
         ${untitled
           ? html`<div class="name">
@@ -819,52 +1354,181 @@ export class GrowspaceLabelEditor extends LitElement {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Rendering: the toolbars
+  // -------------------------------------------------------------------------
+
+  #icon(
+    action: string,
+    labelKey: string,
+    path: string,
+    onClick: () => void,
+    disabled = false
+  ): TemplateResult {
+    return html`
+      <button
+        type="button"
+        data-action=${action}
+        aria-label=${this._t(labelKey)}
+        title=${this._t(labelKey)}
+        ?disabled=${disabled}
+        @click=${onClick}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${path}></path></svg>
+      </button>
+    `;
+  }
+
   #renderToolbar(model: SessionState): TemplateResult {
+    const selection = model.selectedIds.length;
     return html`
       <div class="toolbar" role="toolbar" aria-label=${this._t('editor_toolbar')}>
-        <button
-          data-action="undo"
-          aria-label=${this._t('editor_undo')}
-          ?disabled=${!model.canUndo}
-          @click=${() => {
+        ${this.#icon(
+          'undo',
+          'editor_undo',
+          mdiUndo,
+          () => {
             this.session?.undo();
             void this.session?.render();
-          }}
-        >
-          <svg viewBox="0 0 24 24"><path d=${mdiUndo}></path></svg>
-        </button>
-        <button
-          data-action="redo"
-          aria-label=${this._t('editor_redo')}
-          ?disabled=${!model.canRedo}
-          @click=${() => {
+          },
+          !model.canUndo
+        )}
+        ${this.#icon(
+          'redo',
+          'editor_redo',
+          mdiRedo,
+          () => {
             this.session?.redo();
             void this.session?.render();
-          }}
-        >
-          <svg viewBox="0 0 24 24"><path d=${mdiRedo}></path></svg>
-        </button>
+          },
+          !model.canRedo
+        )}
+        ${this.#icon(
+          'duplicate',
+          'editor_duplicate',
+          mdiContentCopy,
+          () => this.#duplicate(),
+          selection === 0
+        )}
+        ${this.#icon('delete', 'editor_delete', mdiDelete, () => this.#delete(), selection === 0)}
+        ${this.#icon(
+          'reset',
+          'editor_reset',
+          mdiRestore,
+          () => this.#reset(),
+          this.session?.isReset ?? true
+        )}
+        <span class="spacer"></span>
+        ${this.#icon(
+          'save',
+          'editor_save_now',
+          mdiContentSaveOutline,
+          () => void this.session?.save()
+        )}
+        ${this.#icon(
+          'rerender',
+          'editor_rerender',
+          mdiRefresh,
+          () => void this.session?.render(),
+          model.rendering
+        )}
+        <!-- Spelled out rather than drawn. Discarding throws the whole draft
+             away and deleting removes the selected elements, and the two
+             trash cans this toolbar would otherwise carry are the same
+             picture for two very different losses. -->
         <button
-          data-action="save"
-          aria-label=${this._t('editor_save_now')}
-          @click=${() => void this.session?.save()}
-        >
-          <svg viewBox="0 0 24 24"><path d=${mdiContentSaveOutline}></path></svg>
-        </button>
-        <button
-          data-action="rerender"
-          aria-label=${this._t('editor_rerender')}
-          ?disabled=${model.rendering}
-          @click=${() => void this.session?.render()}
-        >
-          <svg viewBox="0 0 24 24"><path d=${mdiRefresh}></path></svg>
-        </button>
-        <button
+          type="button"
           data-action="discard"
           aria-label=${this._t('editor_discard')}
+          title=${this._t('editor_discard')}
           @click=${() => void this.#discard()}
         >
-          <svg viewBox="0 0 24 24"><path d=${mdiTrashCanOutline}></path></svg>
+          ${this._t('editor_discard_short')}
+        </button>
+      </div>
+      <div class="toolbar" role="toolbar" aria-label=${this._t('editor_arrange')}>
+        <div role="group" aria-label=${this._t('editor_align')} class="toolbar">
+          ${ALIGNMENTS.map(
+            (alignment) => html`
+              <button
+                type="button"
+                data-align=${alignment}
+                aria-label=${this._t(`editor_align_${alignment}`)}
+                title=${this._t(`editor_align_${alignment}`)}
+                ?disabled=${selection === 0}
+                @click=${() => this.#align(alignment)}
+              >
+                ${this._t(`editor_align_${alignment}_short`)}
+              </button>
+            `
+          )}
+        </div>
+        <div role="group" aria-label=${this._t('editor_distribute')} class="toolbar">
+          ${DISTRIBUTIONS.map(
+            (axis) => html`
+              <button
+                type="button"
+                data-distribute=${axis}
+                aria-label=${this._t(`editor_distribute_${axis}`)}
+                title=${this._t(`editor_distribute_${axis}`)}
+                ?disabled=${selection < 3}
+                @click=${() => this.#distribute(axis)}
+              >
+                ${this._t(`editor_distribute_${axis}_short`)}
+              </button>
+            `
+          )}
+        </div>
+        <div role="group" aria-label=${this._t('editor_order')} class="toolbar">
+          ${ORDERINGS.map(
+            (ordering) => html`
+              <button
+                type="button"
+                data-order=${ordering}
+                aria-label=${this._t(`editor_order_${ordering}`)}
+                title=${this._t(`editor_order_${ordering}`)}
+                ?disabled=${selection === 0}
+                @click=${() => this.#reorder(ordering)}
+              >
+                ${this._t(`editor_order_${ordering}_short`)}
+              </button>
+            `
+          )}
+        </div>
+      </div>
+      <div class="toolbar" role="toolbar" aria-label=${this._t('editor_view')}>
+        ${this.#icon(
+          'zoom-out',
+          'editor_zoom_out',
+          mdiMagnifyMinusOutline,
+          () => this.#zoomBy(-1),
+          this._zoom === ZOOM_STEPS[0]
+        )}
+        <span class="zoom-level" data-role="zoom">${Math.round(this._zoom * 100)}%</span>
+        ${this.#icon(
+          'zoom-in',
+          'editor_zoom_in',
+          mdiMagnifyPlusOutline,
+          () => this.#zoomBy(1),
+          this._zoom === ZOOM_STEPS[ZOOM_STEPS.length - 1]
+        )}
+        ${this.#icon('zoom-fit', 'editor_zoom_fit', mdiMagnifyScan, () => {
+          this._zoom = ZOOM_STEPS[0];
+          this.#announce(this._t('editor_zoom_fit'));
+        })}
+        <button
+          type="button"
+          data-action="snap"
+          aria-pressed=${this._snapping}
+          @click=${() => {
+            this._snapping = !this._snapping;
+            this.#announce(this._t(this._snapping ? 'editor_snap_on' : 'editor_snap_off'));
+          }}
+        >
+          ${this._t('editor_snap')}
+        </button>
+        <button type="button" data-action="select-all" @click=${() => this.#selectAll()}>
+          ${this._t('editor_select_all')}
         </button>
       </div>
     `;
@@ -889,9 +1553,13 @@ export class GrowspaceLabelEditor extends LitElement {
           aria-label=${this._t('editor_workspace')}
         >
           ${this.#renderToolbar(model)} ${this.#renderStage(model)} ${this.#renderStanding(model)}
+          <p class="supporting" data-role="keyboard-hint">${this._t('editor_keyboard_hint')}</p>
         </section>
         ${this.#renderInspector(model)}
       </div>
+      <p class="visually-hidden" role="status" aria-live="polite" data-role="announcement">
+        ${this._announcement}
+      </p>
       <nav class="tabs" aria-label=${this._t('editor_workbench')}>
         ${(['canvas', 'elements', 'selection'] as Workbench[]).map(
           (tab) => html`
@@ -909,6 +1577,16 @@ export class GrowspaceLabelEditor extends LitElement {
       </nav>
     `;
   }
+}
+
+/** Whether a key event landed in something that eats printable keys itself. */
+function isTextEntry(target: EventTarget | undefined): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target.isContentEditable
+  );
 }
 
 declare global {
