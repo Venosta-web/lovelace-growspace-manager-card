@@ -20,6 +20,12 @@ const LABEL_FIXTURES = [
   'label_template_capability_v1',
   'label_factory_template_preview_v1',
   'label_factory_template_preview_refused_v1',
+  'label_template_library_v1',
+  'label_draft_opened_v1',
+  'label_draft_saved_v1',
+  'label_draft_conflict_v1',
+  'label_draft_preview_v1',
+  'label_draft_published_v1',
 ];
 // Every payload the card's TC chunk parses, and the local file each is written
 // to. One entry per contract, so adding a TC command is one line here rather

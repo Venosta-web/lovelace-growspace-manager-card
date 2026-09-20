@@ -36,6 +36,16 @@ type ChunkState = 'loading' | 'ready' | 'missing';
 /** The bounded desktop modal the other template-sized dialogs use. */
 const CONTAINER_STYLE = 'max-width: 920px; width: 100%; height: 720px; max-height: 85vh';
 
+/**
+ * The editor's own frame: a focused full-screen task mode.
+ *
+ * The editing-loop decision calls for one, and the reason is not aesthetic.
+ * A canvas that has to share a bounded modal with the catalogue it was
+ * reached from is too small to place a 0.5 mm nudge in and leaves the
+ * catalogue too cramped to read, so the surface commits to one job at a time.
+ */
+const EDITOR_CONTAINER_STYLE = 'width: 100vw; max-width: 100vw; height: 100vh; max-height: 100vh';
+
 @customElement('label-templates-dialog')
 export class LabelTemplatesDialog extends LitElement {
   @property({ type: Boolean }) open = false;
@@ -44,6 +54,8 @@ export class LabelTemplatesDialog extends LitElement {
   @property({ type: String }) language = 'en';
 
   @state() private _chunk: ChunkState = 'loading';
+  /** Whether the pane below has entered the editor and wants the whole screen. */
+  @state() private _editing = false;
 
   static styles = css`
     :host {
@@ -57,6 +69,13 @@ export class LabelTemplatesDialog extends LitElement {
       min-height: 0;
       overflow-y: auto;
       padding: 16px 24px;
+    }
+
+    /* The editor draws its own chrome, so the dialog's padding would only
+       shrink the paper. */
+    .content-wrapper[data-editing] {
+      padding: 0;
+      overflow: hidden;
     }
 
     .supporting {
@@ -125,6 +144,9 @@ export class LabelTemplatesDialog extends LitElement {
     return html`<growspace-label-templates
       .capability=${support.capability}
       .language=${this.language}
+      @editing=${(event: CustomEvent<{ editing: boolean }>) => {
+        this._editing = event.detail.editing;
+      }}
     ></growspace-label-templates>`;
   }
 
@@ -136,10 +158,10 @@ export class LabelTemplatesDialog extends LitElement {
         .open=${true}
         .heading=${this._t('view_title')}
         .iconPath=${mdiLabelOutline}
-        .containerStyle=${CONTAINER_STYLE}
+        .containerStyle=${this._editing ? EDITOR_CONTAINER_STYLE : CONTAINER_STYLE}
         @close=${this._close}
       >
-        <div class="content-wrapper">${this._renderPane()}</div>
+        <div class="content-wrapper" ?data-editing=${this._editing}>${this._renderPane()}</div>
       </gs-dialog>
     `;
   }

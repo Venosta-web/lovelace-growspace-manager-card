@@ -82,6 +82,12 @@ const ACCEPTED_EXCEPTIONS = [
       'The stock a rendered label sits on. The raster above it is a monochrome bitmap meant for white paper, so a themed surface behind it would misrepresent what the printer produces — the same reason label-preview.ts keeps its ink. ADR 0042 §6.',
   },
   {
+    file: 'src/features/labels/editor/growspace-label-editor.ts',
+    hexes: ['#fff'],
+    reason:
+      'The stock a draft is edited on, and the grips placed on it. The editor draws frames over the backend raster and never draws ink, so the surface beneath is the same white paper `label-templates.ts` keeps — a themed one would misrepresent what the printer produces, and a themed handle would vanish against it. ADR 0042 §6.',
+  },
+  {
     file: 'src/features/shared/ui/camera-capture.ts',
     hexes: ['#000'],
     reason:
