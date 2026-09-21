@@ -11,7 +11,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LabelDocument, TemplateDraft } from '../../../slices/labels/draft-schema';
 import type { ManagementLibrary } from '../../../slices/labels/management';
-import { DraftSession, publishBlockedBy } from './draft-session';
+import {
+  AUTOSAVE_DEBOUNCE_MS,
+  DraftSession,
+  PREVIEW_TIMEOUT,
+  RENDER_SLOW_MS,
+  RENDER_TIMEOUT_MS,
+  publishBlockedBy,
+  testPrintApproval,
+} from './draft-session';
 
 const { autosave, preview, publish, discard, open } = vi.hoisted(() => ({
   autosave: vi.fn(),
@@ -96,8 +104,21 @@ function session(): DraftSession {
 
 const FRAME = { x_mm: 6, y_mm: 2, width_mm: 20, height_mm: 8 };
 
+/** What a preview answers when a test does not care: the mechanism declining. */
+const MISMATCH = {
+  outcome: 'refused',
+  refusal: {
+    code: 'label_template.draft_version_mismatch',
+    reason: 'moved on',
+    recovery: 'reload_draft',
+    current: { family: 'f', major: 1, minor: 0, generation: 3 },
+  },
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
+  preview.mockReset();
+  preview.mockResolvedValue(MISMATCH);
 });
 
 describe('undo and redo cover editor commands', () => {
@@ -177,11 +198,13 @@ describe('durable autosave', () => {
     // be the one lie that loses work silently.
     const editor = session();
     let release: (value: unknown) => void = () => {};
-    autosave.mockReturnValue(
+    autosave.mockReturnValueOnce(
       new Promise((resolve) => {
         release = resolve;
       })
     );
+    // The follow-up save the landed one triggers stays in flight.
+    autosave.mockReturnValue(new Promise(() => {}));
     editor.moveElement('name', FRAME);
     const saving = editor.save();
     editor.moveElement('name', { ...FRAME, x_mm: 9 });
@@ -189,6 +212,7 @@ describe('durable autosave', () => {
     await saving;
 
     expect(editor.state.dirty).toBe(true);
+    expect(autosave).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the refusal, and the local work, when another client wrote first', async () => {
@@ -625,5 +649,259 @@ describe('one command per operation', () => {
 
     expect(editor.state.canUndo).toBe(false);
     expect(editor.state.dirty).toBe(false);
+  });
+});
+
+/** A clock the test turns by hand: every timer the session asks for, kept. */
+function clock() {
+  const timers: { run: () => void; ms: number; done: boolean }[] = [];
+  return {
+    timers,
+    schedule: ((run: () => void, ms: number) => {
+      const timer = { run, ms, done: false };
+      timers.push(timer);
+      return timer;
+    }) as never,
+    /** Fire every pending timer of exactly this delay. */
+    fire(ms: number): void {
+      for (const timer of timers.filter((item) => item.ms === ms && !item.done)) {
+        timer.done = true;
+        timer.run();
+      }
+    },
+  };
+}
+
+function clocked(time = clock()): { editor: DraftSession; time: ReturnType<typeof clock> } {
+  const editor = new DraftSession(ADDRESS, STOCK, DOCUMENT, { schedule: time.schedule });
+  editor.adopt(draftAt(1), VALID);
+  return { editor, time };
+}
+
+const SETTLED_FOR = (profileId: string) => ({
+  outcome: 'ok',
+  draft_version: 1,
+  approval_id: 'held-1',
+  render: {
+    raster: { image: 'data:,' },
+    raster_identity: 'sha256:one',
+    render_context: { profile_id: profileId },
+    eligibility: {},
+  },
+});
+const SETTLED = SETTLED_FOR('profile-a');
+
+describe('settled-preview timing', () => {
+  it('marks the raster stale on the edit itself, before anything is saved', async () => {
+    const editor = session();
+    preview.mockResolvedValue(SETTLED);
+    await editor.render();
+
+    editor.moveElement('name', FRAME);
+
+    // Synchronously: the frames and the picture disagree the moment they do.
+    expect(editor.state.rasterStanding).toBe('stale');
+    expect(autosave).not.toHaveBeenCalled();
+  });
+
+  it('debounces the save well inside the render-start target', () => {
+    const { editor, time } = clocked();
+    editor.moveElement('name', FRAME);
+
+    expect(AUTOSAVE_DEBOUNCE_MS).toBeLessThanOrEqual(150);
+    expect(time.timers.map((timer) => timer.ms)).toContain(AUTOSAVE_DEBOUNCE_MS);
+  });
+
+  it('asks for the raster as soon as the exact version is stored', async () => {
+    const editor = session();
+    autosave.mockResolvedValue({
+      outcome: 'ok',
+      draft: draftAt(2),
+      validation: VALID,
+      stale: false,
+    });
+    editor.moveElement('name', FRAME);
+
+    await editor.save();
+
+    expect(preview).toHaveBeenCalledWith(ADDRESS, 2, expect.anything());
+  });
+
+  it('does not ask for a picture of a layout that cannot compile', async () => {
+    const editor = session();
+    autosave.mockResolvedValue({
+      outcome: 'ok',
+      draft: draftAt(2),
+      validation: { operation: 'publish', allowed: false, diagnostics: [] },
+      stale: false,
+    });
+    editor.moveElement('name', FRAME);
+
+    await editor.save();
+
+    expect(preview).not.toHaveBeenCalled();
+  });
+
+  it('says a render is slow after the one-second target, without failing it', async () => {
+    const { editor, time } = clocked();
+    let answer: (value: unknown) => void = () => {};
+    preview.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+
+    const rendering = editor.render();
+    time.fire(RENDER_SLOW_MS);
+    expect(editor.state.renderSlow).toBe(true);
+    expect(editor.state.rendering).toBe(true);
+
+    answer(SETTLED);
+    await rendering;
+    expect(editor.state.renderSlow).toBe(false);
+    expect(editor.state.rasterStanding).toBe('settled');
+  });
+
+  it('turns a render that never answers into a retryable timeout, keeping the draft', async () => {
+    const { editor, time } = clocked();
+    preview.mockReturnValue(new Promise(() => {}));
+    editor.moveElement('name', FRAME);
+
+    const rendering = editor.render();
+    time.fire(RENDER_TIMEOUT_MS);
+    await rendering;
+
+    expect(editor.state.refusal?.code).toBe(PREVIEW_TIMEOUT);
+    expect(editor.state.refusal?.recovery).toBe('retry_preview');
+    expect(editor.state.rendering).toBe(false);
+    expect(editor.state.document.elements[0].frame).toEqual(FRAME);
+    expect(editor.state.draft?.version).toBe(1);
+  });
+
+  it('clears a render refusal once a render succeeds', async () => {
+    const editor = session();
+    preview.mockRejectedValueOnce(new Error('socket closed'));
+    await editor.render();
+    expect(editor.state.refusal?.recovery).toBe('retry_preview');
+
+    preview.mockResolvedValue(SETTLED);
+    await editor.render();
+
+    expect(editor.state.refusal).toBeNull();
+  });
+
+  it('asks again, once, for a render requested while one was in flight', async () => {
+    const editor = session();
+    let first: (value: unknown) => void = () => {};
+    preview.mockReturnValueOnce(new Promise((resolve) => (first = resolve)));
+    preview.mockResolvedValue(SETTLED);
+
+    const rendering = editor.render();
+    void editor.render();
+    void editor.render();
+    first(SETTLED);
+    await rendering;
+    await vi.waitFor(() => expect(preview).toHaveBeenCalledTimes(2));
+  });
+
+  it('does not loop on a save that failed', async () => {
+    const editor = session();
+    autosave.mockRejectedValue(new Error('socket closed'));
+    editor.moveElement('name', FRAME);
+
+    await editor.save();
+    await Promise.resolve();
+
+    expect(autosave).toHaveBeenCalledTimes(1);
+    expect(editor.state.refusal?.recovery).toBe('retry_save');
+  });
+
+  it('saves again after a landed save when an edit arrived in flight', async () => {
+    const editor = session();
+    let release: (value: unknown) => void = () => {};
+    autosave.mockReturnValueOnce(new Promise((resolve) => (release = resolve)));
+    autosave.mockResolvedValue({
+      outcome: 'ok',
+      draft: draftAt(3),
+      validation: VALID,
+      stale: false,
+    });
+    editor.moveElement('name', FRAME);
+    const saving = editor.save();
+    editor.moveElement('name', { ...FRAME, x_mm: 9 });
+    void editor.save();
+    release({ outcome: 'ok', draft: draftAt(2), validation: VALID, stale: false });
+    await saving;
+
+    await vi.waitFor(() => expect(autosave).toHaveBeenCalledTimes(2));
+    expect(autosave.mock.calls[1][2]).toMatchObject({ expectedVersion: 2 });
+  });
+});
+
+describe('the print target and the held approval', () => {
+  it('renders for another profile, and stales the raster compiled for the old one', async () => {
+    const editor = session();
+    preview.mockResolvedValue(SETTLED_FOR('profile-a'));
+    await editor.render();
+    preview.mockReturnValue(new Promise(() => {}));
+
+    editor.setTarget({ profileId: 'profile-b', deviceId: 'image.printer_last_label_made' });
+
+    expect(editor.state.rasterStanding).toBe('stale');
+    expect(testPrintApproval(editor.state)).toBeNull();
+    expect(preview).toHaveBeenLastCalledWith(
+      ADDRESS,
+      1,
+      expect.objectContaining({
+        profileId: 'profile-b',
+        deviceId: 'image.printer_last_label_made',
+      })
+    );
+  });
+
+  it('keeps a raster already compiled for the chosen profile, whichever printer', async () => {
+    // Naming the default explicitly, or switching printers, does not change
+    // one pixel, so neither is a reason to render again.
+    const editor = session();
+    preview.mockResolvedValue(SETTLED_FOR('profile-a'));
+    await editor.render();
+    preview.mockClear();
+
+    editor.setTarget({ profileId: 'profile-a', deviceId: 'printer-1' });
+    editor.setTarget({ profileId: 'profile-a', deviceId: 'printer-2' });
+
+    expect(editor.state.rasterStanding).toBe('settled');
+    expect(preview).not.toHaveBeenCalled();
+    expect(editor.state.target).toEqual({ profileId: 'profile-a', deviceId: 'printer-2' });
+  });
+
+  it('does nothing for a target it already has', () => {
+    const editor = session();
+    editor.setTarget({ profileId: 'p', deviceId: 'd' });
+    preview.mockClear();
+
+    editor.setTarget({ profileId: 'p', deviceId: 'd' });
+
+    expect(preview).not.toHaveBeenCalled();
+  });
+
+  it('holds the approval of a settled raster, and only while it is on screen', async () => {
+    const editor = session();
+    preview.mockResolvedValue(SETTLED);
+    await editor.render();
+
+    expect(testPrintApproval(editor.state)).toEqual({
+      approvalId: 'held-1',
+      draftVersion: 1,
+      rasterIdentity: 'sha256:one',
+    });
+
+    editor.moveElement('name', FRAME);
+    expect(testPrintApproval(editor.state)).toBeNull();
+  });
+
+  it('has no approval from a backend that holds none', async () => {
+    const editor = session();
+    preview.mockResolvedValue({ ...SETTLED, approval_id: undefined });
+    await editor.render();
+
+    expect(editor.state.rasterStanding).toBe('settled');
+    expect(testPrintApproval(editor.state)).toBeNull();
   });
 });

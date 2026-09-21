@@ -442,6 +442,11 @@ export const LabelRefusalSchema = z.object({
   received: z.unknown().optional(),
   label_size_id: z.string().optional(),
   locale: z.string().optional(),
+  /** A refused print: which operation, and every reason, in correction order. */
+  operation: z.string().optional(),
+  blocked_by: z.array(z.string()).optional(),
+  /** A refused measurement: the one entered value it is about. */
+  field: z.string().nullable().optional(),
 });
 export type LabelRefusal = z.infer<typeof LabelRefusalSchema>;
 

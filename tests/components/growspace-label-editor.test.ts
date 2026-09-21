@@ -331,6 +331,109 @@ describe('a refusal the user has to answer', () => {
   });
 });
 
+describe('diagnostics lead to their correction', () => {
+  const diagnostic = (overrides: Record<string, unknown>) => ({
+    code: 'profile.text_below_readable_floor',
+    severity: 'error',
+    layer: 'profile_compilation',
+    message: 'Element 01ABC is 1.2 mm, below the 1.6 mm floor',
+    path: '',
+    element_id: DOCUMENT.elements[0].id,
+    parameters: {},
+    recovery: 'edit_element',
+    ...overrides,
+  });
+
+  async function withDiagnostics(items: Record<string, unknown>[]) {
+    // No render: the recorded raster carries warnings of its own, merged into
+    // the same list, and these tests are about the rows they add.
+    const mounted = await mount({ render: false });
+    mounted.session.adopt(DRAFT, {
+      operation: 'publish',
+      allowed: false,
+      diagnostics: items as never,
+    });
+    await mounted.element.updateComplete;
+    return mounted;
+  }
+
+  test('orders them worst first, in words and marks rather than colour or backend prose', async () => {
+    const { element } = await withDiagnostics([
+      diagnostic({ severity: 'warning', code: 'profile.text_below_comfort_threshold' }),
+      diagnostic({}),
+    ]);
+
+    const rows = [
+      ...element.renderRoot.querySelectorAll<HTMLElement>('[data-role="diagnostics"] li'),
+    ];
+    expect(rows.map((row) => row.dataset.severity)).toEqual(['error', 'warning']);
+    expect(rows[0].querySelector('.severity')?.textContent?.trim()).toBe('Blocks');
+    expect(rows[0].textContent).not.toContain('01ABC');
+    expect(rows[0].textContent).toMatch(/too small for this printer/);
+    expect(query(element, '[data-role="diagnostic-counts"]')?.textContent).toMatch(
+      /1 blocking · 1 warnings/
+    );
+  });
+
+  test('selects the element and focuses the exact control that fixes it', async () => {
+    const { element, session } = await withDiagnostics([diagnostic({})]);
+
+    query(element, '[data-role="diagnostics"] [data-action="go-to"]')!.click();
+
+    await vi.waitFor(() => {
+      const inspector = element.renderRoot.querySelector('growspace-label-inspector')!;
+      expect(inspector.shadowRoot?.activeElement?.getAttribute('data-field')).toBe('font_size_mm');
+    });
+    expect(session.state.selectedIds).toEqual([DOCUMENT.elements[0].id]);
+  });
+
+  test('sends a device problem to profile selection, not into the element', async () => {
+    const { element } = await withDiagnostics([
+      diagnostic({ code: 'profile.stock_mismatch', recovery: 'select_profile', element_id: null }),
+    ]);
+
+    const go = query(element, '[data-action="go-to"]')!;
+    expect(go.dataset.destination).toBe('profile');
+    go.click();
+
+    await vi.waitFor(() => {
+      const panel = element.renderRoot.querySelector('growspace-label-print-panel')!;
+      expect(panel.shadowRoot?.activeElement?.getAttribute('data-control')).toMatch(
+        /profile|printer/
+      );
+    });
+  });
+
+  test('announces when the problems change, and when they clear', async () => {
+    const { element, session } = await withDiagnostics([diagnostic({})]);
+    const announced = () => query(element, '[data-role="announcement"]')?.textContent?.trim();
+
+    session.adopt(DRAFT, { operation: 'publish', allowed: true, diagnostics: [] });
+    await element.updateComplete;
+
+    expect(announced()).toBe('No problems remain on this label.');
+  });
+});
+
+describe('a render that does not come back', () => {
+  test('says so in reviewed words, keeps the draft, and retries the render', async () => {
+    const { element, session } = await mount();
+    preview.mockRejectedValue(new Error('label_template.preview_timeout'));
+    await session.render();
+    await element.updateComplete;
+
+    const refusal = query(element, '.refusal')!;
+    expect(refusal.dataset.code).toBe('label_template.preview_timeout');
+    expect(refusal.textContent).toMatch(/did not arrive in time/);
+    expect(session.state.draft).not.toBeNull();
+
+    preview.mockResolvedValue({ ...PREVIEW, draft_version: DRAFT.version });
+    query(element, '[data-action="retry"]')!.click();
+    await vi.waitFor(() => expect(query(element, '.refusal')).toBeNull());
+    expect(query(element, '[data-role="standing"]')?.dataset.standing).toBe('settled');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Direct manipulation
 // ---------------------------------------------------------------------------

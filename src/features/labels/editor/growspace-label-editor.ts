@@ -36,7 +36,7 @@
  */
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import {
   mdiArrowLeft,
@@ -94,6 +94,10 @@ import {
   type SnapLine,
 } from './arrange';
 import './growspace-label-inspector';
+import './growspace-label-print-panel';
+import type { GrowspaceLabelInspector } from './growspace-label-inspector';
+import type { GrowspaceLabelPrintPanel } from './growspace-label-print-panel';
+import { collectDiagnostics, copyKeys, countBySeverity, type DiagnosticEntry } from './diagnostics';
 
 /** The eight handles, in the order a reader goes round a rectangle. */
 const HANDLES: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
@@ -147,6 +151,14 @@ export class GrowspaceLabelEditor extends LitElement {
   @state() private _guides: SnapLine[] = [];
   /** The last thing that happened, for a screen reader that saw none of it. */
   @state() private _announcement = '';
+
+  @query('growspace-label-inspector') private _inspector?: GrowspaceLabelInspector;
+  @query('growspace-label-print-panel') private _printPanel?: GrowspaceLabelPrintPanel;
+
+  /** What was last said about the diagnostics, so only a change is announced. */
+  #diagnosticSummary = '';
+  /** Whether the last render was slow, so the sentence is said once. */
+  #slowAnnounced = false;
 
   #unsubscribe?: () => void;
   #gesture: Gesture | null = null;
@@ -445,7 +457,7 @@ export class GrowspaceLabelEditor extends LitElement {
       }
 
       ul.elements,
-      ul.diagnostics {
+      ol.diagnostics {
         list-style: none;
         margin: 0;
         padding: 0;
@@ -491,10 +503,46 @@ export class GrowspaceLabelEditor extends LitElement {
         opacity: 0.85;
       }
 
-      ul.diagnostics {
-        font-size: var(--font-size-xs, 11px);
-        line-height: 1.5;
-        opacity: 0.9;
+      .diagnostics-panel h3 {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm, 8px);
+        align-items: baseline;
+      }
+
+      ol.diagnostics li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+        padding-block: var(--spacing-xs, 4px);
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      ol.diagnostics .copy {
+        flex: 1 1 16em;
+      }
+
+      ol.diagnostics button {
+        min-height: 44px;
+      }
+
+      /* Severity is a word and a mark, then a colour: never the colour alone. */
+      .severity {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .severity[data-severity='error']::before {
+        content: '✕ ';
+      }
+      .severity[data-severity='warning']::before {
+        content: '▲ ';
+      }
+      .severity[data-severity='info']::before {
+        content: 'ℹ ';
+      }
+      .severity[data-severity='error'] {
+        color: var(--error-color);
       }
 
       /* Visible to a screen reader, invisible to everyone else. Never
@@ -589,6 +637,7 @@ export class GrowspaceLabelEditor extends LitElement {
     this._model = session.state;
     this.#unsubscribe = session.subscribe((state) => {
       this._model = state;
+      this.#announceChanges(state);
     });
     if (session.state.selectedIds.length === 0) {
       session.select(defaultSelection(session.state.document));
@@ -617,6 +666,39 @@ export class GrowspaceLabelEditor extends LitElement {
     this._announcement = message;
   }
 
+  /**
+   * Announce what changed about the label's problems and its picture.
+   *
+   * Only a change: a live region that repeats "2 errors" on every autosave is
+   * a live region users learn to ignore, which is the same as not having one.
+   */
+  #announceChanges(state: SessionState): void {
+    const counts = countBySeverity(collectDiagnostics(state.validation, state.render));
+    const summary = `${counts.error}|${counts.warning}`;
+    if (summary !== this.#diagnosticSummary) {
+      const first = this.#diagnosticSummary === '';
+      this.#diagnosticSummary = summary;
+      if (!first) {
+        this.#announce(
+          counts.error + counts.warning === 0
+            ? this._t('editor_diagnostics_clear')
+            : localizeWithParams(
+                'labels.editor_diagnostics_changed',
+                { errors: counts.error, warnings: counts.warning },
+                this.language
+              )
+        );
+        return;
+      }
+    }
+    if (state.renderSlow && !this.#slowAnnounced) {
+      this.#slowAnnounced = true;
+      this.#announce(this._t('editor_raster_slow'));
+    } else if (!state.rendering) {
+      this.#slowAnnounced = false;
+    }
+  }
+
   /** A fresh element identity. Opaque to the backend, unique in the document. */
   #mintId(): string {
     const random = globalThis.crypto;
@@ -628,7 +710,6 @@ export class GrowspaceLabelEditor extends LitElement {
   /** Re-render the raster after an edit that has settled. */
   #settled(): void {
     this.session?.endGesture();
-    void this.session?.render();
   }
 
   // -------------------------------------------------------------------------
@@ -960,7 +1041,6 @@ export class GrowspaceLabelEditor extends LitElement {
         event.preventDefault();
         if (event.shiftKey) session.redo();
         else session.undo();
-        void session.render();
         this.#announce(this._t(event.shiftKey ? 'editor_redo' : 'editor_undo'));
         return;
       }
@@ -1214,33 +1294,143 @@ export class GrowspaceLabelEditor extends LitElement {
           .language=${this.language}
           @element-change=${this.#onElementChange}
         ></growspace-label-inspector>
-        ${this.#renderDiagnostics(model)}
       </aside>
     `;
   }
 
-  /** Why the layout cannot be published, each one naming its own element. */
+  /**
+   * Every problem with the label, worst first, each one a way to fix it.
+   *
+   * Severity is a word and a mark as well as a colour, and each row is a
+   * button that goes to where the correction lives — the element and its
+   * exact control, the printer profile, the calibration flow, or a retry.
+   */
   #renderDiagnostics(model: SessionState): TemplateResult | typeof nothing {
-    const diagnostics = model.validation?.diagnostics ?? [];
-    if (diagnostics.length === 0) return nothing;
+    const entries = collectDiagnostics(model.validation, model.render);
+    if (entries.length === 0) return nothing;
+    const counts = countBySeverity(entries);
     return html`
-      <h3>${this._t('editor_diagnostics')}</h3>
-      <ul class="diagnostics" data-role="diagnostics">
-        ${diagnostics.map(
-          (item) => html`
-            <li>
-              <button data-diagnostic=${item.code} @click=${() => this.#selectFor(item.element_id)}>
-                ${item.message}
-              </button>
-            </li>
-          `
-        )}
-      </ul>
+      <section class="diagnostics-panel" aria-labelledby="editor-diagnostics">
+        <h3 id="editor-diagnostics" tabindex="-1">
+          ${this._t('editor_diagnostics')}
+          <span class="supporting" data-role="diagnostic-counts">
+            ${localizeWithParams(
+              'labels.editor_diagnostics_counts',
+              { errors: counts.error, warnings: counts.warning },
+              this.language
+            )}
+          </span>
+        </h3>
+        <ol class="diagnostics" data-role="diagnostics">
+          ${entries.map((entry) => this.#renderDiagnostic(entry, model))}
+        </ol>
+      </section>
     `;
   }
 
-  #selectFor(elementId: string | null): void {
-    if (elementId !== null) this.session?.select(elementId);
+  #renderDiagnostic(entry: DiagnosticEntry, model: SessionState): TemplateResult {
+    const element = entry.elementId
+      ? model.document.elements.find((item) => item.id === entry.elementId)
+      : undefined;
+    const where = element
+      ? localizeWithParams(
+          'labels.editor_diagnostic_on',
+          { element: this._t(`editor_kind_${element.kind}`) },
+          this.language
+        )
+      : '';
+    const action = this.#diagnosticAction(entry);
+    return html`
+      <li data-severity=${entry.severity} data-diagnostic=${entry.code}>
+        <span class="severity" data-severity=${entry.severity}>
+          ${this._t(`editor_severity_${entry.severity}`)}
+        </span>
+        <span class="copy">${this.#diagnosticCopy(entry)} ${where}</span>
+        ${action
+          ? html`<button
+              data-action="go-to"
+              data-destination=${entry.destination}
+              @click=${() => void this.#goTo(entry)}
+            >
+              ${action}
+            </button>`
+          : nothing}
+      </li>
+    `;
+  }
+
+  /** Reviewed local copy for one diagnostic. Never the backend's message. */
+  #diagnosticCopy(entry: DiagnosticEntry): string {
+    for (const key of copyKeys(entry)) {
+      const copy = localize(`labels.${key}`, '', '', this.language);
+      if (copy !== `labels.${key}` && copy !== key) return copy;
+    }
+    return this._t('editor_severity_info');
+  }
+
+  #diagnosticAction(entry: DiagnosticEntry): string | null {
+    switch (entry.destination) {
+      case 'element':
+      case 'content':
+        return this._t(entry.control ? 'editor_go_to_control' : 'editor_go_to_element');
+      case 'profile':
+        return this._t('editor_go_to_profile');
+      case 'calibration':
+        return this._t('editor_go_to_calibration');
+      case 'retry':
+        return this._t('editor_retry');
+      case 'template':
+        return this._t('editor_reload');
+      default:
+        return null;
+    }
+  }
+
+  /** Take the user to where one diagnostic is corrected, and put focus there. */
+  async #goTo(entry: DiagnosticEntry): Promise<void> {
+    switch (entry.destination) {
+      case 'element':
+      case 'content': {
+        if (entry.elementId === null) return;
+        this.session?.select(entry.elementId);
+        this._workbench = 'selection';
+        this.#announceSelection();
+        await this.updateComplete;
+        const focused = entry.control ? await this._inspector?.focusControl(entry.control) : false;
+        if (!focused) this._inspector?.focus();
+        return;
+      }
+      case 'profile':
+      case 'calibration':
+        this._workbench = 'canvas';
+        await this.updateComplete;
+        await this._printPanel?.reveal(entry.destination);
+        return;
+      case 'retry':
+        await this.session?.render();
+        return;
+      case 'template':
+        await this.session?.reload();
+        return;
+    }
+  }
+
+  /** What the print panel hands back: a correction that lives in the editor. */
+  async #onPanelRecovery(event: CustomEvent<{ recovery: string }>): Promise<void> {
+    const { recovery } = event.detail;
+    if (recovery === 'fix_layout') {
+      const first = collectDiagnostics(
+        this._model?.validation ?? null,
+        this._model?.render ?? null
+      )[0];
+      if (first) await this.#goTo(first);
+      else this.renderRoot.querySelector<HTMLElement>('#editor-diagnostics')?.focus();
+      return;
+    }
+    if (recovery === 'publish') {
+      this.renderRoot.querySelector<HTMLElement>('[data-action="publish"]')?.focus();
+      this.#announce(this._t('editor_publish_first'));
+    }
   }
 
   /**
@@ -1253,25 +1443,26 @@ export class GrowspaceLabelEditor extends LitElement {
    */
   #renderStanding(model: SessionState): TemplateResult {
     const failed = model.render !== null && model.render.raster === null;
-    const key = failed
-      ? 'editor_raster_failed'
-      : model.rasterStanding === 'settled'
-        ? 'editor_raster_settled'
-        : model.rasterStanding === 'stale'
-          ? 'editor_raster_stale'
-          : 'editor_raster_absent';
-    const blocking = (model.render?.diagnostics ?? []).filter(
-      (item) => item.severity === 'error' || item.code.endsWith('render_failed')
-    );
+    const key = model.renderSlow
+      ? 'editor_raster_slow'
+      : model.rendering && model.rasterStanding !== 'settled'
+        ? 'editor_raster_rendering'
+        : failed
+          ? 'editor_raster_failed'
+          : model.rasterStanding === 'settled'
+            ? 'editor_raster_settled'
+            : model.rasterStanding === 'stale'
+              ? 'editor_raster_stale'
+              : 'editor_raster_absent';
     return html`
-      <p class="supporting" data-role="standing" data-standing=${model.rasterStanding}>
+      <p
+        class="supporting"
+        data-role="standing"
+        data-standing=${model.rasterStanding}
+        aria-busy=${model.rendering ? 'true' : 'false'}
+      >
         ${this._t(key)}
       </p>
-      ${failed && blocking.length > 0
-        ? html`<ul class="diagnostics" data-role="render-diagnostics">
-            ${blocking.map((item) => html`<li><code>${item.code}</code> ${item.message}</li>`)}
-          </ul>`
-        : nothing}
     `;
   }
 
@@ -1282,13 +1473,24 @@ export class GrowspaceLabelEditor extends LitElement {
     // it does not recognise leaves the reason and the dismissal, which is an
     // honest answer rather than a button that does nothing.
     const reloadable = refusal.recovery === 'reload_draft';
+    const retry =
+      refusal.recovery === 'retry_preview'
+        ? () => void this.session?.render()
+        : refusal.recovery === 'retry_save'
+          ? () => void this.session?.save()
+          : null;
+    const key = `refusal_${refusal.code.replace(/^label_template\./, '')}`;
+    const copy = this._t(key);
     return html`
       <div class="refusal" role="alert" data-code=${refusal.code}>
-        <p>${refusal.reason}</p>
+        <p>${copy === `labels.${key}` || copy === key ? this._t('refusal_generic') : copy}</p>
         ${reloadable
           ? html`<button data-action="reload" @click=${() => void this.session?.reload()}>
               ${this._t('editor_reload')}
             </button>`
+          : nothing}
+        ${retry
+          ? html`<button data-action="retry" @click=${retry}>${this._t('editor_retry')}</button>`
           : nothing}
         <button data-action="dismiss" @click=${() => this.session?.acknowledge()}>
           ${this._t('editor_dismiss')}
@@ -1389,7 +1591,6 @@ export class GrowspaceLabelEditor extends LitElement {
           mdiUndo,
           () => {
             this.session?.undo();
-            void this.session?.render();
           },
           !model.canUndo
         )}
@@ -1399,7 +1600,6 @@ export class GrowspaceLabelEditor extends LitElement {
           mdiRedo,
           () => {
             this.session?.redo();
-            void this.session?.render();
           },
           !model.canRedo
         )}
@@ -1554,6 +1754,14 @@ export class GrowspaceLabelEditor extends LitElement {
         >
           ${this.#renderToolbar(model)} ${this.#renderStage(model)} ${this.#renderStanding(model)}
           <p class="supporting" data-role="keyboard-hint">${this._t('editor_keyboard_hint')}</p>
+          ${this.#renderDiagnostics(model)}
+          <growspace-label-print-panel
+            .capability=${this.capability}
+            .session=${this.session}
+            .model=${model}
+            .language=${this.language}
+            @recovery=${this.#onPanelRecovery}
+          ></growspace-label-print-panel>
         </section>
         ${this.#renderInspector(model)}
       </div>
