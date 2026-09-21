@@ -28,6 +28,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { localize, localizeWithParams } from '../../../localize/localize';
+import { refusalCopy } from '../copy';
 import { variables } from '../../../styles/variables';
 import { getHass } from '../../../services/hass-call';
 import { getPrinters } from '../../shared/ui/printer-status-strip';
@@ -147,7 +148,9 @@ export class GrowspaceLabelPrintPanel extends LitElement {
         cursor: pointer;
       }
       button.primary {
-        background: var(--primary-color);
+        /* Darkened from the theme's primary so white text holds 4.5:1 on the
+           default blue (2.6:1 undarkened) and on any lighter one. */
+        background: color-mix(in srgb, var(--primary-color) 70%, black);
         color: var(--text-primary-color, #fff);
         border-color: transparent;
       }
@@ -521,8 +524,7 @@ export class GrowspaceLabelPrintPanel extends LitElement {
   // -------------------------------------------------------------------------
 
   #refusalCopy(refusal: LabelRefusal): string {
-    const key = `refusal_${refusal.code.replace(/^label_template\./, '')}`;
-    return this._has(key) ? this._t(key) : this._t('refusal_generic');
+    return refusalCopy(refusal.code, this.language);
   }
 
   #blockerCopy(blocker: string): string {

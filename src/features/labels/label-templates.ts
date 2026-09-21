@@ -19,6 +19,8 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { localize, localizeWithParams } from '../../localize/localize';
+import { labelCopy, refusalCopy } from './copy';
+import { copyKeys } from './editor/diagnostics';
 import { variables } from '../../styles/variables';
 import {
   labelSizeState,
@@ -141,7 +143,6 @@ export class GrowspaceLabelTemplates extends LitElement {
         font-size: var(--font-size-xs, 11px);
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        opacity: 0.8;
       }
 
       .stage {
@@ -314,8 +315,8 @@ export class GrowspaceLabelTemplates extends LitElement {
     if (preview.outcome === 'refused') {
       return html`<p class="supporting refusal" role="alert" data-state="refused">
         ${localizeWithParams(
-          'labels.preview_refused',
-          { reason: preview.refusal.reason, code: preview.refusal.code },
+          'labels.preview_refused_localized',
+          { detail: refusalCopy(preview.refusal.code, this.language) },
           this.language
         )}
       </p>`;
@@ -334,7 +335,10 @@ export class GrowspaceLabelTemplates extends LitElement {
         </p>
         <ul class="diagnostics">
           ${(blocking.length > 0 ? blocking : preview.render.diagnostics).map(
-            (item) => html`<li><code>${item.code}</code> ${item.message}</li>`
+            (item) =>
+              html`<li data-code=${item.code}>
+                ${labelCopy(copyKeys(item), 'diagnostic_severity_error', this.language)}
+              </li>`
           )}
         </ul>
       `;
@@ -425,7 +429,7 @@ export class GrowspaceLabelTemplates extends LitElement {
               : undefined
           );
       if (answer.outcome === 'refused') {
-        this._failure = `${answer.refusal.reason} (${answer.refusal.code})`;
+        this._failure = refusalCopy(answer.refusal.code, this.language);
         return;
       }
       const parsed = TemplateDraftSchema.safeParse(answer.draft);

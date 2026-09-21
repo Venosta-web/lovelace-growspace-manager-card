@@ -44,6 +44,7 @@ import type {
   BatchPreflightAnswer,
 } from '../../../slices/labels/batch-schema';
 import { copyKeys } from '../editor/diagnostics';
+import { refusalCopy } from '../copy';
 import {
   acknowledgementState,
   batchBlockers,
@@ -151,7 +152,9 @@ export class GrowspaceLabelBatch extends LitElement {
       cursor: pointer;
     }
     button.primary {
-      background: var(--primary-color);
+      /* Darkened from the theme's primary so white text holds 4.5:1 on the
+         default blue (2.6:1 undarkened) and on any lighter one. */
+      background: color-mix(in srgb, var(--primary-color) 70%, black);
       border-color: transparent;
       color: var(--text-primary-color, #fff);
     }
@@ -308,8 +311,7 @@ export class GrowspaceLabelBatch extends LitElement {
   }
 
   #refusalCopy(refusal: LabelRefusal): string {
-    const code = refusal.code.replace(/^label_template\./, '');
-    return this.#first([`batch_refusal_${code}`, `refusal_${code}`], 'refusal_generic');
+    return refusalCopy(refusal.code, this.language, ['batch_refusal_']);
   }
 
   #blockerCopy(blocker: string): string {

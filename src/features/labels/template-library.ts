@@ -4,6 +4,7 @@ import { LitElement, html, css, nothing, type PropertyValues, type TemplateResul
 import { customElement, property, state } from 'lit/decorators.js';
 import { z } from 'zod';
 import { localize } from '../../localize/localize';
+import { refusalCopy } from './copy';
 import { getHass } from '../../services/hass-call';
 import { TemplateDraftSchema, type LabelTemplateCapability } from '../../slices/labels';
 import {
@@ -167,7 +168,7 @@ export class GrowspaceTemplateLibrary extends LitElement {
       const answer = await manageTemplates('snapshot');
       if (read !== this.reading || !this.isConnected) return;
       if (answer.outcome === 'refused') {
-        this.failure = answer.refusal.reason;
+        this.failure = refusalCopy(answer.refusal.code, this.language);
         this.session?.refuse(answer.refusal);
         return;
       }
@@ -219,7 +220,7 @@ export class GrowspaceTemplateLibrary extends LitElement {
         { generation: action.generation, key: action.key }
       );
       if (answer.outcome === 'refused') {
-        this.failure = answer.refusal.reason;
+        this.failure = refusalCopy(answer.refusal.code, this.language);
         this.action = null;
         await this.refresh();
         return;
@@ -270,7 +271,7 @@ export class GrowspaceTemplateLibrary extends LitElement {
     try {
       const answer = await manageTemplates(operation, payload);
       if (answer.outcome === 'refused') {
-        this.failure = answer.refusal.reason;
+        this.failure = refusalCopy(answer.refusal.code, this.language);
         return;
       }
       this.library = answer.library;
@@ -292,7 +293,7 @@ export class GrowspaceTemplateLibrary extends LitElement {
         names: this.names,
       });
       if (answer.outcome === 'refused') {
-        this.failure = answer.refusal.reason;
+        this.failure = refusalCopy(answer.refusal.code, this.language);
         return;
       }
       this.library = answer.library;
