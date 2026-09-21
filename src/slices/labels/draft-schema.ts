@@ -213,7 +213,7 @@ export type PublicationCheck = z.infer<typeof PublicationCheckSchema>;
  * {@link ../../services/errors} flattens to `internal_error` when it does not
  * recognise it, which would erase all three distinctions at once.
  */
-function answer<T extends z.ZodRawShape>(shape: T) {
+export function answer<T extends z.ZodRawShape>(shape: T) {
   return z.discriminatedUnion('outcome', [
     z.object({ outcome: z.literal('ok'), contract: LabelContractIdentitySchema, ...shape }),
     z.object({ outcome: z.literal('refused'), refusal: LabelRefusalSchema }),
@@ -272,6 +272,13 @@ export const DraftPreviewSchema = answer({
   label_size_id: z.string(),
   fixture_family: z.string(),
   subject: z.string(),
+  /**
+   * What the backend held of this render, for a test print to name.
+   *
+   * Optional because an older backend does not hold previews, and a card
+   * that required it would stop previewing against one.
+   */
+  approval_id: z.string().optional(),
   render: RenderResultSchema,
 });
 export type DraftPreview = z.infer<typeof DraftPreviewSchema>;

@@ -209,6 +209,25 @@ export class GrowspaceLabelInspector extends LitElement {
   }
 
   /** Hand the editor a complete replacement for the element on display. */
+  /**
+   * Put focus on the control that edits one field, once it is rendered.
+   *
+   * What a diagnostic's "go to" ends in: not the element, the exact input.
+   * Waits for the update because the caller has usually just changed the
+   * selection, and the control it names does not exist until this renders
+   * the element it belongs to. Answers whether there was such a control.
+   */
+  async focusControl(field: string): Promise<boolean> {
+    await this.updateComplete;
+    const control = this.renderRoot.querySelector<HTMLElement>(
+      `[data-field="${CSS.escape(field)}"]`
+    );
+    if (!control) return false;
+    control.focus();
+    control.scrollIntoView?.({ block: 'nearest' });
+    return true;
+  }
+
   #change(element: LabelElement, gesture: string | null = null): void {
     this.dispatchEvent(
       new CustomEvent('element-change', {

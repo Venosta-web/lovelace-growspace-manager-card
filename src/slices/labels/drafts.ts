@@ -16,9 +16,6 @@
  * handed back to its caller unperformed.
  */
 
-import { z } from 'zod';
-
-import { hassCall } from '../../services/hass-call';
 import {
   DraftDiscardedSchema,
   DraftOpenedSchema,
@@ -34,8 +31,7 @@ import {
   type LabelDocument,
   type LibraryAnswer,
 } from './draft-schema';
-import { negotiatedContract, recoverFromContractRefusal } from './index';
-import { CONTRACT_INCOMPATIBLE } from './schema';
+import { gated } from './gated';
 
 export const WS_GET_LABEL_TEMPLATE_LIBRARY = 'growspace_manager/get_label_template_library';
 export const WS_OPEN_LABEL_TEMPLATE_DRAFT = 'growspace_manager/open_label_template_draft';
@@ -54,26 +50,6 @@ export const WS_DISCARD_LABEL_TEMPLATE_DRAFT = 'growspace_manager/discard_label_
 export interface DraftAddress {
   labelSizeId: string;
   templateId?: string | null;
-}
-
-async function gated<T>(
-  command: string,
-  payload: Record<string, unknown>,
-  schema: z.ZodType<T>
-): Promise<T> {
-  const contract = negotiatedContract();
-  if (contract === null) {
-    throw new Error('The Label Template capability has not been negotiated');
-  }
-  const answer = await hassCall(command, { contract, ...payload }, schema);
-  const refusal = (answer as { outcome?: string; refusal?: { code: string } }).refusal;
-  if (refusal?.code === CONTRACT_INCOMPATIBLE) {
-    // The recovery the refusal itself names. The refused call is not retried:
-    // the user asked for something under one contract and would be shown the
-    // result of something else.
-    await recoverFromContractRefusal(refusal as never);
-  }
-  return answer;
 }
 
 function addressed(address: DraftAddress): Record<string, unknown> {
@@ -150,7 +126,13 @@ export function autosaveLabelTemplateDraft(
 export function previewLabelTemplateDraft(
   address: DraftAddress,
   expectedDraftVersion: number,
-  options: { fixtureFamily?: string; density?: string; locale?: string } = {}
+  options: {
+    fixtureFamily?: string;
+    density?: string;
+    locale?: string;
+    profileId?: string | null;
+    deviceId?: string | null;
+  } = {}
 ): Promise<DraftPreview> {
   return gated(
     WS_PREVIEW_LABEL_TEMPLATE_DRAFT,
@@ -160,6 +142,8 @@ export function previewLabelTemplateDraft(
       ...(options.fixtureFamily ? { fixture_family: options.fixtureFamily } : {}),
       ...(options.density ? { density: options.density } : {}),
       ...(options.locale ? { locale: options.locale } : {}),
+      ...(options.profileId ? { profile_id: options.profileId } : {}),
+      ...(options.deviceId ? { device_id: options.deviceId } : {}),
     },
     DraftPreviewSchema
   );

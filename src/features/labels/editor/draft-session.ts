@@ -47,8 +47,34 @@ import {
 import type { LabelRefusal, RenderResult } from '../../../slices/labels/schema';
 import { DEFAULT_QUANTUM_MM, withFrame, type StockMm } from './geometry';
 
-/** How long the editor waits before persisting a run of edits. */
-export const AUTOSAVE_DEBOUNCE_MS = 800;
+/**
+ * How long the editor waits before persisting a run of edits.
+ *
+ * The raster is asked for as soon as that save lands, so this is most of the
+ * distance between a gesture ending and the render starting — and the target
+ * for that distance is 150 ms. The frames themselves are marked stale
+ * synchronously, on the edit, which is what keeps the picture honest while
+ * this runs.
+ */
+export const AUTOSAVE_DEBOUNCE_MS = 120;
+
+/**
+ * The interaction target for a settled raster. Crossing it is not a failure;
+ * it is a sentence ("still rendering") rather than silence.
+ */
+export const RENDER_SLOW_MS = 1_000;
+
+/**
+ * When a render that has not answered becomes a recoverable refusal.
+ *
+ * A lost WebSocket answer would otherwise leave the editor "rendering"
+ * forever. Timing out loses nothing: the draft is saved independently of its
+ * picture, and Retry asks again for the same version.
+ */
+export const RENDER_TIMEOUT_MS = 10_000;
+
+/** The refusal a render that did not answer in time becomes. */
+export const PREVIEW_TIMEOUT = 'label_template.preview_timeout';
 
 /** How deep the undo stack goes. Editing is not version control. */
 export const UNDO_LIMIT = 100;
@@ -100,6 +126,17 @@ export interface SessionState {
   render: RenderResult | null;
   rasterStanding: RasterStanding;
   rendering: boolean;
+  /** The one-second interaction target has elapsed, but the render may still settle. */
+  renderSlow: boolean;
+  /**
+   * What the backend held of the settled raster, for a test print to name.
+   *
+   * Only ever of the raster on screen: replaced by every render and dropped
+   * with it, so a test print cannot name a picture the user is not looking at.
+   */
+  approval: DraftApproval | null;
+  /** The printer and profile the raster is rendered for, once one is chosen. */
+  target: PrintTarget | null;
   /** The refusal the user has to answer, if any. */
   refusal: LabelRefusal | null;
   /** The name an untitled draft will publish under. */
@@ -109,6 +146,19 @@ export interface SessionState {
 }
 
 type Listener = (state: SessionState) => void;
+
+/** A held preview, named the way a test print presents it. */
+export interface DraftApproval {
+  approvalId: string;
+  draftVersion: number;
+  rasterIdentity: string;
+}
+
+/** Which printer, and which of its profiles, the raster is judged for. */
+export interface PrintTarget {
+  profileId: string | null;
+  deviceId: string | null;
+}
 
 /**
  * An editor command, as two documents.
@@ -155,6 +205,7 @@ export class DraftSession {
       locale?: string;
       /** Injected in tests so a debounce does not become a sleep. */
       schedule?: (run: () => void, ms: number) => ReturnType<typeof setTimeout>;
+      renderTimeoutMs?: number;
     } = {}
   ) {
     this.#opened = document;
@@ -172,6 +223,9 @@ export class DraftSession {
       render: null,
       rasterStanding: 'absent',
       rendering: false,
+      renderSlow: false,
+      approval: null,
+      target: null,
       refusal: null,
       name: '',
       canUndo: false,
@@ -424,12 +478,40 @@ export class DraftSession {
     // whose printer integration is absent is routinely in.
     if (state.render === null || state.render.raster === null) return 'absent';
     if (state.draft === null) return 'stale';
+    // A raster of the right geometry for the wrong profile is still a picture
+    // of something else: another profile compiles the same millimetres onto
+    // other pixels. The raster says which profile it was compiled for, so ask
+    // it rather than remembering. (The printer is not in the question: which
+    // device receives a bitmap does not change the bitmap.)
+    const profileId = state.target?.profileId;
+    if (profileId && state.render.render_context?.profile_id !== profileId) return 'stale';
     return this.#renderedVersion === state.draft.version && this.#edits === this.#savedEdits
       ? 'settled'
       : 'stale';
   }
 
+  /**
+   * Choose the printer and profile the raster is rendered for.
+   *
+   * A different profile stales the raster at once — it was compiled for
+   * another one — and a new one is asked for. A different printer does not:
+   * the bitmap is the same whichever device receives it. Nothing about the
+   * draft changes either way.
+   */
+  setTarget(target: PrintTarget): void {
+    const previous = this.#state.target;
+    if (previous?.profileId === target.profileId && previous?.deviceId === target.deviceId) return;
+    this.#emit({ target });
+    if (this.#state.rasterStanding === 'stale' && this.#state.approval !== null) {
+      this.#emit({ approval: null });
+    }
+    if (this.#state.rasterStanding !== 'settled') void this.render();
+  }
+
   #renderedVersion: number | null = null;
+  #renderQueued = false;
+  #renderRequest = 0;
+  #pendingSave = false;
 
   // -------------------------------------------------------------------------
   // Persisting
@@ -455,9 +537,12 @@ export class DraftSession {
    */
   async save(): Promise<void> {
     const draft = this.#state.draft;
+    if (this.#state.saving) {
+      this.#pendingSave = true;
+      return;
+    }
     if (
       draft === null ||
-      this.#state.saving ||
       this.#state.readOnly ||
       this.#state.refusal?.code === DRAFT_VERSION_CONFLICT
     )
@@ -474,7 +559,8 @@ export class DraftSession {
         ...(draft.template_id === null ? { name: name === '' ? null : name } : {}),
       });
     } catch (error) {
-      if (!this.#closed) this.#emit({ saving: false, refusal: asRefusal(error) });
+      if (!this.#closed) this.#emit({ saving: false, refusal: asRefusal(error, 'retry_save') });
+      this.#pendingSave = false;
       return;
     }
     if (this.#closed) return;
@@ -485,6 +571,7 @@ export class DraftSession {
       // is not is resolvable by writing again — that would be the overwrite
       // the compare-and-swap exists to prevent.
       this.#emit({ saving: false, refusal: answer.refusal });
+      this.#pendingSave = false;
       return;
     }
 
@@ -497,6 +584,29 @@ export class DraftSession {
       dirty: this.#edits !== sending,
       refusal: null,
     });
+    // A raster is requested only after the exact draft version exists on the
+    // server. Rendering before autosave was the old editor's stale-preview
+    // trap: it faithfully rendered the version the user had just moved past.
+    // And only of a layout that compiles: the backend refuses to picture an
+    // invalid one, and the diagnostics that say why are already on screen.
+    if (this.#edits === sending && answer.validation.allowed) void this.render();
+    this.#continueAfterSave();
+  }
+
+  /**
+   * Save again if edits arrived while the last save was in flight.
+   *
+   * Only after a save that *landed*. After a failure the session is still
+   * dirty, and continuing would turn one dropped connection into a tight loop
+   * of writes; the next edit's debounce, or Retry, is what tries again.
+   */
+  #continueAfterSave(): void {
+    if (this.#closed) return;
+    const again = this.#pendingSave || this.#state.dirty;
+    this.#pendingSave = false;
+    if (again && !this.#state.readOnly && this.#state.refusal?.code !== DRAFT_VERSION_CONFLICT) {
+      void this.save();
+    }
   }
 
   /**
@@ -508,22 +618,70 @@ export class DraftSession {
    */
   async render(): Promise<void> {
     const draft = this.#state.draft;
-    if (draft === null || this.#state.rendering) return;
-    this.#emit({ rendering: true });
+    if (draft === null) return;
+    if (this.#state.rendering) {
+      this.#renderQueued = true;
+      return;
+    }
+    const request = ++this.#renderRequest;
+    const version = draft.version;
+    const target = this.#state.target;
+    this.#emit({ rendering: true, renderSlow: false });
+
+    // One scheduler for both timers, so a test drives the whole render clock
+    // rather than half of it.
+    const schedule = this.options.schedule ?? setTimeout;
+    const slow = schedule(() => {
+      if (!this.#closed && request === this.#renderRequest && this.#state.rendering) {
+        this.#emit({ renderSlow: true });
+      }
+    }, RENDER_SLOW_MS);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
 
     let answer: DraftPreview;
     try {
-      answer = await previewLabelTemplateDraft(this.address, draft.version, {
+      const preview = previewLabelTemplateDraft(this.address, version, {
         fixtureFamily: this.options.fixtureFamily,
         density: this.options.density,
         locale: this.options.locale,
+        profileId: target?.profileId,
+        deviceId: target?.deviceId,
       });
+      const timedOut = new Promise<never>((_resolve, reject) => {
+        timeout = schedule(
+          () => reject(new Error(PREVIEW_TIMEOUT)),
+          this.options.renderTimeoutMs ?? RENDER_TIMEOUT_MS
+        );
+      });
+      answer = await Promise.race([preview, timedOut]);
     } catch (error) {
       if (this.#closed) return;
-      this.#emit({ rendering: false, refusal: asRefusal(error) });
+      if (request === this.#renderRequest) {
+        this.#emit({
+          rendering: false,
+          renderSlow: false,
+          refusal: asRefusal(error, 'retry_preview'),
+        });
+      }
+      this.#finishRender();
       return;
+    } finally {
+      clearTimeout(slow);
+      clearTimeout(timeout);
     }
     if (this.#closed) return;
+
+    // The user may have saved another version while this request was in
+    // flight. Its answer is useful to nobody and must never flash on screen.
+    if (
+      request !== this.#renderRequest ||
+      this.#state.draft?.version !== version ||
+      this.#state.target?.profileId !== target?.profileId
+    ) {
+      this.#emit({ rendering: false, renderSlow: false });
+      this.#finishRender();
+      return;
+    }
 
     if (answer.outcome === 'refused') {
       const { code } = answer.refusal;
@@ -532,13 +690,37 @@ export class DraftSession {
       // put in front of them.
       this.#emit({
         rendering: false,
+        renderSlow: false,
         refusal: code === DRAFT_VERSION_MISMATCH ? this.#state.refusal : answer.refusal,
       });
+      this.#finishRender();
       return;
     }
 
     this.#renderedVersion = answer.draft_version;
-    this.#emit({ rendering: false, render: answer.render, refusal: null });
+    this.#emit({
+      rendering: false,
+      renderSlow: false,
+      render: answer.render,
+      approval: answer.approval_id
+        ? {
+            approvalId: answer.approval_id,
+            draftVersion: answer.draft_version,
+            rasterIdentity: answer.render.raster_identity,
+          }
+        : null,
+      // A refusal about a render — a timeout, a failed transport — is answered
+      // by this one. Any other refusal is still the user's to read.
+      refusal: isRenderRefusal(this.#state.refusal) ? null : this.#state.refusal,
+    });
+    this.#finishRender();
+  }
+
+  #finishRender(): void {
+    if (this.#closed) return;
+    const again = this.#renderQueued;
+    this.#renderQueued = false;
+    if (again) void this.render();
   }
 
   /**
@@ -660,12 +842,41 @@ export function publishable(state: SessionState): boolean {
   return publishBlockedBy(state) === null;
 }
 
-/** Shape a thrown transport error like a refusal, so one banner renders both. */
-function asRefusal(error: unknown): LabelRefusal {
+/**
+ * The test print a settled raster authorizes, or nothing.
+ *
+ * Settled and held are both required: a raster the backend did not hold (an
+ * older backend) cannot be named, and a held one that is no longer on screen
+ * must not be.
+ */
+export function testPrintApproval(state: SessionState): DraftApproval | null {
+  const approval = state.approval;
+  if (approval === null || state.rasterStanding !== 'settled') return null;
+  if (state.draft?.version !== approval.draftVersion) return null;
+  return approval;
+}
+
+/** The code of a thrown transport failure, shaped as a refusal. */
+export const TRANSPORT_FAILED = 'label_template.transport_failed';
+
+function isRenderRefusal(refusal: LabelRefusal | null): boolean {
+  return refusal?.recovery === 'retry_preview';
+}
+
+/**
+ * Shape a thrown transport error like a refusal, so one banner renders both.
+ *
+ * `recovery` names what Retry does — save again, or render again — because
+ * the two failures look alike and are answered differently.
+ */
+function asRefusal(error: unknown, recovery: 'retry_save' | 'retry_preview'): LabelRefusal {
+  const timeout = error instanceof Error && error.message === PREVIEW_TIMEOUT;
   return {
-    code: 'label_template.transport_failed',
+    code: timeout ? PREVIEW_TIMEOUT : TRANSPORT_FAILED,
+    // Never shown: the editor maps the stable code to reviewed local copy.
+    // Kept because it is the one place a developer can see what threw.
     reason: error instanceof Error ? error.message : String(error),
-    recovery: 'none',
+    recovery,
     current: { family: '', major: 0, minor: 0, generation: 0 },
   };
 }
