@@ -8,6 +8,7 @@ import type { LabelTemplateCapability, LabelTemplateSupport } from '../../src/sl
 
 vi.mock('../../src/services/hass-call', () => ({
   hassCall: vi.fn(),
+  getHass: vi.fn(),
   callService: vi.fn(),
   callFetch: vi.fn(),
   setHass: vi.fn(),

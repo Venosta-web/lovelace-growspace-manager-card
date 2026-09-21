@@ -10,6 +10,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LabelDocument, TemplateDraft } from '../../../slices/labels/draft-schema';
+import type { ManagementLibrary } from '../../../slices/labels/management';
 import { DraftSession, publishBlockedBy } from './draft-session';
 
 const { autosave, preview, publish, discard, open } = vi.hoisted(() => ({
@@ -228,6 +229,19 @@ describe('durable autosave', () => {
 
     expect(autosave.mock.calls[0][2]).toMatchObject({ name: 'Bench label' });
   });
+
+  it('keeps local work recoverable when the transport fails', async () => {
+    const editor = session();
+    autosave.mockRejectedValue(new Error('socket closed'));
+    editor.moveElement('name', FRAME);
+
+    await editor.save();
+
+    expect(editor.state.document.elements[0].frame).toEqual(FRAME);
+    expect(editor.state.dirty).toBe(true);
+    expect(editor.state.saving).toBe(false);
+    expect(editor.state.refusal?.reason).toBe('socket closed');
+  });
 });
 
 describe('the settle rule', () => {
@@ -418,10 +432,55 @@ describe('what stops a publication', () => {
 
     expect(publishBlockedBy(editor.state)).toBeNull();
     await expect(editor.publish()).resolves.toEqual({ templateId: 'uuid', name: 'Bench label' });
+    expect(publish).toHaveBeenCalledWith(ADDRESS, 'draft-1', 1);
   });
 });
 
 describe('recovering', () => {
+  it('makes an orphaned draft read-only without replacing its local document', () => {
+    const editor = session();
+    const bound = { ...draftAt(1), template_id: 'template-1', base_revision: 1 };
+    editor.adopt(bound, VALID);
+    const library = {
+      store: { readable: true },
+      templates: [],
+      drafts: [{ ...bound, stale: false, orphaned: true, head_revision: null }],
+    } as unknown as ManagementLibrary;
+
+    editor.observeLibrary(library);
+    editor.moveElement('name', FRAME);
+
+    expect(editor.state.orphaned).toBe(true);
+    expect(editor.state.readOnly).toBe(true);
+    expect(editor.state.document).toEqual(DOCUMENT);
+    expect(publishBlockedBy(editor.state)).toBe('read_only');
+  });
+
+  it('turns a newer client save into an explicit reload conflict', () => {
+    const editor = session();
+    editor.observeLibrary({
+      store: { readable: true },
+      templates: [],
+      drafts: [{ ...draftAt(2), stale: false, orphaned: false, head_revision: null }],
+    } as unknown as ManagementLibrary);
+
+    expect(editor.state.refusal?.code).toBe('label_template.draft_version_conflict');
+    expect(publishBlockedBy(editor.state)).toBe('conflict');
+  });
+
+  it('becomes read-only when administrator authorization is lost', () => {
+    const editor = session();
+    editor.refuse({
+      code: 'label_template.not_authorized',
+      reason: 'administrator required',
+      recovery: 'sign_in_as_admin',
+      current: { family: 'f', major: 1, minor: 0, generation: 3 },
+    });
+
+    expect(editor.state.readOnly).toBe(true);
+    expect(publishBlockedBy(editor.state)).toBe('read_only');
+  });
+
   it('reloads the server copy and clears the refusal', async () => {
     const editor = session();
     open.mockResolvedValue({ outcome: 'ok', draft: draftAt(5), resumed: true });

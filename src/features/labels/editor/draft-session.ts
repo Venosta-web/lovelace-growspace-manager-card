@@ -62,6 +62,8 @@ export type RasterStanding =
   /** Rendered from an older version: the frames have moved since. */
   | 'stale';
 
+import type { ManagementLibrary } from '../../../slices/labels/management';
+
 export interface SessionState {
   /** The live document, mid-edit. */
   document: LabelDocument;
@@ -92,6 +94,8 @@ export interface SessionState {
   validation: PublicationCheck | null;
   /** Somebody published past this draft's base. Not a fault in the layout. */
   stale: boolean;
+  orphaned: boolean;
+  readOnly: boolean;
   /** The last authoritative raster, and what it is of. */
   render: RenderResult | null;
   rasterStanding: RasterStanding;
@@ -163,6 +167,8 @@ export class DraftSession {
       saving: false,
       validation: null,
       stale: false,
+      orphaned: false,
+      readOnly: false,
       render: null,
       rasterStanding: 'absent',
       rendering: false,
@@ -253,6 +259,8 @@ export class DraftSession {
       document: draft.document,
       validation,
       stale,
+      readOnly: false,
+      orphaned: false,
       dirty: false,
       name: draft.name ?? '',
       refusal: null,
@@ -286,6 +294,8 @@ export class DraftSession {
   }
 
   setName(name: string): void {
+    if (this.#state.readOnly) return;
+    this.#edits += 1;
     this.#emit({ name, dirty: true });
     this.#schedule();
   }
@@ -326,6 +336,7 @@ export class DraftSession {
     gesture: string | null = null,
     selectedIds?: readonly string[]
   ): void {
+    if (this.#state.readOnly) return;
     const before = this.#state.document;
     if (document === before) return;
 
@@ -373,6 +384,7 @@ export class DraftSession {
   }
 
   undo(): void {
+    if (this.#state.readOnly) return;
     const command = this.#undo.pop();
     if (!command) return;
     this.#redo.push(command);
@@ -382,6 +394,7 @@ export class DraftSession {
   }
 
   redo(): void {
+    if (this.#state.readOnly) return;
     const command = this.#redo.pop();
     if (!command) return;
     this.#undo.push(command);
@@ -442,16 +455,28 @@ export class DraftSession {
    */
   async save(): Promise<void> {
     const draft = this.#state.draft;
-    if (draft === null || this.#state.saving) return;
+    if (
+      draft === null ||
+      this.#state.saving ||
+      this.#state.readOnly ||
+      this.#state.refusal?.code === DRAFT_VERSION_CONFLICT
+    )
+      return;
     const sending = this.#edits;
     const document = this.#state.document;
     const name = this.#state.name.trim();
 
     this.#emit({ saving: true });
-    const answer = await autosaveLabelTemplateDraft(this.address, document, {
-      expectedVersion: draft.version,
-      ...(draft.template_id === null ? { name: name === '' ? null : name } : {}),
-    });
+    let answer;
+    try {
+      answer = await autosaveLabelTemplateDraft(this.address, document, {
+        expectedVersion: draft.version,
+        ...(draft.template_id === null ? { name: name === '' ? null : name } : {}),
+      });
+    } catch (error) {
+      if (!this.#closed) this.#emit({ saving: false, refusal: asRefusal(error) });
+      return;
+    }
     if (this.#closed) return;
 
     if (answer.outcome === 'refused') {
@@ -525,7 +550,7 @@ export class DraftSession {
   async publish(): Promise<{ templateId: string; name: string } | null> {
     const draft = this.#state.draft;
     if (draft === null) return null;
-    const answer = await publishLabelTemplateDraft(this.address, draft.id);
+    const answer = await publishLabelTemplateDraft(this.address, draft.id, draft.version);
     if (this.#closed) return null;
     if (answer.outcome === 'refused') {
       this.#emit({ refusal: answer.refusal });
@@ -561,6 +586,44 @@ export class DraftSession {
     this.adopt(answer.draft, this.#state.validation, this.#state.stale);
   }
 
+  /** Events only mark local work; they never replace it. */
+  observeLibrary(library: ManagementLibrary): void {
+    const draft = this.#state.draft;
+    if (!draft) return;
+    const stored = library.drafts.find((item) => item.id === draft.id);
+    const head = library.templates.find((item) => item.id === draft.template_id);
+    const orphaned = draft.template_id !== null && !head;
+    this.#emit({
+      stale: !!head && head.head_revision !== draft.base_revision,
+      orphaned,
+      readOnly: orphaned || !library.store.readable,
+    });
+    if (stored && stored.version !== draft.version && !this.#state.saving)
+      this.refuse({
+        code: DRAFT_VERSION_CONFLICT,
+        reason:
+          'Another client saved this draft. Export your work before reloading the server copy.',
+        recovery: 'reload_draft',
+        current: { family: '', major: 0, minor: 0, generation: 0 },
+      });
+  }
+
+  refuse(refusal: LabelRefusal): void {
+    this.#emit({
+      refusal,
+      ...(refusal.code === 'label_template.not_authorized' ? { readOnly: true } : {}),
+    });
+  }
+
+  /** Adopt the server version while retaining an undo step for Factory replacement. */
+  replaceFromFactory(draft: TemplateDraft): void {
+    const previous = this.#state.document;
+    this.adopt(draft, null);
+    this.#undo.push({ before: previous, after: draft.document, gesture: null });
+    this.#emit({});
+    void this.render();
+  }
+
   /** Dismiss a refusal the user has read and chosen not to act on. */
   acknowledge(): void {
     this.#emit({ refusal: null });
@@ -575,6 +638,8 @@ export class DraftSession {
  */
 export function publishBlockedBy(state: SessionState): string | null {
   if (state.draft === null) return 'no_draft';
+  if (state.readOnly || state.orphaned) return 'read_only';
+  if (state.refusal?.code === DRAFT_VERSION_CONFLICT) return 'conflict';
   if (state.dirty || state.saving) return 'unsaved';
   if (state.validation !== null && !state.validation.allowed) return 'invalid';
   if (state.stale) return 'stale';
