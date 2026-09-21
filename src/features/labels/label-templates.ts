@@ -33,6 +33,11 @@ import {
 import { openLabelTemplateDraft } from '../../slices/labels/drafts';
 import { DraftSession } from './editor/draft-session';
 import './editor/growspace-label-editor';
+import './template-library';
+import { getHass } from '../../services/hass-call';
+import { TemplateDraftSchema } from '../../slices/labels/draft-schema';
+import type { RecoveryDraft } from '../../slices/labels/management';
+import { downloadTemplateData } from '../../slices/labels/management';
 
 /** The localization key carrying each state's one truthful sentence. */
 const STATE_KEYS: Record<Exclude<LabelSizeState, 'classic'>, string> = {
@@ -387,9 +392,19 @@ export class GrowspaceLabelTemplates extends LitElement {
    * what a reload is supposed to recover. The two cases therefore say
    * different things below rather than both silently showing a layout.
    */
-  private async _openEditor(): Promise<void> {
+  private async _openEditor(
+    options: {
+      templateId?: string;
+      labelSizeId?: string;
+      blank?: boolean;
+      draft?: RecoveryDraft;
+    } = {}
+  ): Promise<void> {
     const capability = this.capability;
-    const choice = this._choice;
+    const choice = this._choice && {
+      ...this._choice,
+      labelSizeId: options.labelSizeId ?? this._choice.labelSizeId,
+    };
     if (!capability || !choice || this._opening) return;
     this._opening = true;
     this._failure = null;
@@ -397,19 +412,31 @@ export class GrowspaceLabelTemplates extends LitElement {
       const factory = capability.catalogues.factory_templates.find(
         (template) => template.label_size_id === choice.labelSizeId
       );
-      const answer = await openLabelTemplateDraft(
-        { labelSizeId: choice.labelSizeId },
-        factory ? { kind: 'factory', id: factory.id } : undefined
-      );
+      const address = { labelSizeId: choice.labelSizeId, templateId: options.templateId };
+      const answer = options.draft
+        ? { outcome: 'ok' as const, draft: options.draft }
+        : await openLabelTemplateDraft(
+            address,
+            !options.blank && !options.templateId && factory
+              ? { kind: 'factory', id: factory.id }
+              : undefined
+          );
       if (answer.outcome === 'refused') {
         this._failure = `${answer.refusal.reason} (${answer.refusal.code})`;
         return;
       }
+      const parsed = TemplateDraftSchema.safeParse(answer.draft);
+      if (!parsed.success || answer.draft.layout_schema_version !== 1) {
+        this._failure = this._t('library_opaque');
+        downloadTemplateData(answer.draft, 'label-draft-recovery.json');
+        return;
+      }
+      this._session?.close();
       const size = labelSizes(capability).find((item) => item.id === choice.labelSizeId)!;
       const session = new DraftSession(
-        { labelSizeId: choice.labelSizeId },
+        address,
         { widthMm: size.width_mm, heightMm: size.height_mm },
-        answer.draft.document,
+        parsed.data.document,
         {
           quantumMm: capability.limits.coordinate_quantum_mm,
           fixtureFamily: choice.fixtureFamily,
@@ -417,7 +444,7 @@ export class GrowspaceLabelTemplates extends LitElement {
           locale: choice.locale,
         }
       );
-      session.adopt(answer.draft, null);
+      session.adopt(parsed.data, null, options.draft?.stale);
       this._session = session;
       this._published = null;
       this.#announceEditing(true);
@@ -458,6 +485,7 @@ export class GrowspaceLabelTemplates extends LitElement {
 
   private _renderEditor(session: DraftSession): TemplateResult {
     return html`
+      ${this._renderLibrary(session)}
       <growspace-label-editor
         .capability=${this.capability}
         .session=${session}
@@ -467,6 +495,21 @@ export class GrowspaceLabelTemplates extends LitElement {
         @discarded=${this._closeEditor}
       ></growspace-label-editor>
     `;
+  }
+
+  private _renderLibrary(session: DraftSession | null = null): TemplateResult | typeof nothing {
+    // A user who loses administrator rights mid-edit still needs the recovery
+    // export. The child narrows that state to read-only instead of exposing
+    // the management catalogue or mutation controls.
+    if (!getHass()?.user?.is_admin && !session) return nothing;
+    return html`<growspace-template-library
+      .capability=${this.capability}
+      .labelSizeId=${this._choice?.labelSizeId ?? ''}
+      .language=${this.language}
+      .session=${session}
+      @open-template=${(event: CustomEvent) => void this._openEditor(event.detail)}
+      @close-editor=${this._closeEditor}
+    ></growspace-template-library>`;
   }
 
   protected render(): TemplateResult | typeof nothing {
@@ -490,7 +533,7 @@ export class GrowspaceLabelTemplates extends LitElement {
 
     return html`
       <p class="supporting" data-role="scope">${this._t('read_only')}</p>
-      ${this._renderSizes(capability)} ${this._renderFixtures(capability)}
+      ${this._renderSizes(capability)} ${this._renderLibrary()} ${this._renderFixtures(capability)}
       ${this._renderStage(capability)}
       <p>
         <button

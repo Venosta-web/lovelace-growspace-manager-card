@@ -175,11 +175,18 @@ export function previewLabelTemplateDraft(
  */
 export function publishLabelTemplateDraft(
   address: DraftAddress,
-  draftId?: string
+  draftId?: string,
+  expectedDraftVersion?: number
 ): Promise<DraftPublished> {
   return gated(
     WS_PUBLISH_LABEL_TEMPLATE_DRAFT,
-    { ...addressed(address), ...(draftId ? { draft_id: draftId } : {}) },
+    {
+      ...addressed(address),
+      ...(draftId ? { draft_id: draftId } : {}),
+      ...(expectedDraftVersion === undefined
+        ? {}
+        : { expected_draft_version: expectedDraftVersion }),
+    },
     DraftPublishedSchema
   );
 }
