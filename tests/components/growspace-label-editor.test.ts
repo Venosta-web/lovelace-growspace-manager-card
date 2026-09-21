@@ -249,7 +249,9 @@ describe('editing the selected element', () => {
     await element.updateComplete;
 
     const selected = element.renderRoot.querySelector('.element[aria-pressed="true"]');
-    expect(selected?.querySelectorAll('.handle')).toHaveLength(8);
+    // Beside the frame, never inside it: a button may not contain buttons.
+    expect(selected?.querySelectorAll('.handle')).toHaveLength(0);
+    expect(selected?.nextElementSibling?.querySelectorAll('.handle')).toHaveLength(8);
   });
 });
 

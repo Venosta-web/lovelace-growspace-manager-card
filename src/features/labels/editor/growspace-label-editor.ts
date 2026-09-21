@@ -53,6 +53,7 @@ import {
 } from '@mdi/js';
 
 import { localize, localizeWithParams } from '../../../localize/localize';
+import { refusalCopy } from '../copy';
 import { variables } from '../../../styles/variables';
 import type { LabelTemplateCapability } from '../../../slices/labels';
 import type { LabelElement, LabelFrame } from '../../../slices/labels/draft-schema';
@@ -386,7 +387,16 @@ export class GrowspaceLabelEditor extends LitElement {
         border-style: solid;
       }
 
+      /* The grips of the selected frame. A sibling laid over it rather than
+         children of it: a button inside a button is two controls the
+         accessibility tree can only report as one. */
+      .handles {
+        position: absolute;
+        pointer-events: none;
+      }
+
       .handle {
+        pointer-events: auto;
         position: absolute;
         /* Drawn small, hit at 44 px: a grip that looked 44 px across would
            cover the element it grips on a 50 mm label. */
@@ -500,7 +510,6 @@ export class GrowspaceLabelEditor extends LitElement {
 
       ul.elements .required {
         font-size: var(--font-size-xs, 11px);
-        opacity: 0.85;
       }
 
       .diagnostics-panel h3 {
@@ -1154,9 +1163,15 @@ export class GrowspaceLabelEditor extends LitElement {
         aria-label=${this.#elementName(element)}
         style=${styleMap(frameAsPercentages(element.frame, this.#stock))}
         @pointerdown=${(event: PointerEvent) => this.#onPointerDown(event, element.id, null)}
-      >
-        ${only ? HANDLES.map((handle) => this.#renderHandle(element, handle)) : nothing}
-      </button>
+      ></button>
+      ${only
+        ? html`<div
+            class="handles"
+            style=${styleMap(frameAsPercentages(element.frame, this.#stock))}
+          >
+            ${HANDLES.map((handle) => this.#renderHandle(element, handle))}
+          </div>`
+        : nothing}
     `;
   }
 
@@ -1479,11 +1494,10 @@ export class GrowspaceLabelEditor extends LitElement {
         : refusal.recovery === 'retry_save'
           ? () => void this.session?.save()
           : null;
-    const key = `refusal_${refusal.code.replace(/^label_template\./, '')}`;
-    const copy = this._t(key);
+    const copy = refusalCopy(refusal.code, this.language);
     return html`
       <div class="refusal" role="alert" data-code=${refusal.code}>
-        <p>${copy === `labels.${key}` || copy === key ? this._t('refusal_generic') : copy}</p>
+        <p>${copy}</p>
         ${reloadable
           ? html`<button data-action="reload" @click=${() => void this.session?.reload()}>
               ${this._t('editor_reload')}

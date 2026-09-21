@@ -4,6 +4,7 @@ import { fixture } from '@open-wc/testing-helpers';
 import capabilityFixture from '../fixtures/contract/label_template_capability_v1.json';
 import previewFixture from '../fixtures/contract/label_factory_template_preview_v1.json';
 import refusalFixture from '../fixtures/contract/label_factory_template_preview_refused_v1.json';
+import en from '../../src/localize/languages/en.json';
 import { hassCall } from '../../src/services/hass-call';
 import { GrowspaceLabelTemplates } from '../../src/features/labels/label-templates';
 import {
@@ -139,8 +140,13 @@ describe('the read-only Factory Template view', () => {
     const element = await mount();
 
     expect(text(element, '[data-state="no-raster"]')).toContain('could not render');
-    // The sentence points at diagnostics, so the diagnostics are on screen.
-    expect(text(element, 'ul.diagnostics')).toContain('niimbot.print not found');
+    // The sentence points at diagnostics, so the diagnostics are on screen --
+    // in the card's reviewed words, never the integration's log line.
+    const row = element.shadowRoot?.querySelector(
+      'ul.diagnostics [data-code="raster.render_failed"]'
+    );
+    expect(row?.textContent?.trim()).toBe(en.labels.diagnostic_raster_render_failed);
+    expect(text(element, 'ul.diagnostics')).not.toContain('niimbot.print not found');
   });
 
   test('makes no claim about a raster that is not there', async () => {
@@ -160,7 +166,9 @@ describe('the read-only Factory Template view', () => {
 
     const element = await mount();
 
-    expect(text(element, '[data-state="refused"]')).toContain('stale');
+    const refused = text(element, '[data-state="refused"]');
+    expect(refused).toContain(en.labels.refusal_contract_incompatible);
+    expect(refused).not.toContain(refusalFixture.refusal.reason);
     expect(element.shadowRoot?.querySelector('.stage img')).toBeNull();
   });
 
