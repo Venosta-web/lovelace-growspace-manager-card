@@ -374,7 +374,8 @@ export const ElementInkSchema = z.object({
   element_id: z.string(),
   kind: z.string(),
   basis: z.string(),
-  bounds: PixelFrameSchema,
+  /** `null` when the element put no ink down at all: an optional value left blank. */
+  bounds: PixelFrameSchema.nullable(),
   protected_area: PixelFrameSchema.nullable(),
   mask_digest: z.string(),
   /** Opaque Region (ADR 0031): per-kind measurement detail, as in `notes` above. */
@@ -447,6 +448,8 @@ export const LabelRefusalSchema = z.object({
   blocked_by: z.array(z.string()).optional(),
   /** A refused measurement: the one entered value it is about. */
   field: z.string().nullable().optional(),
+  /** A refused batch print or retry: the job still printing, or the one named. */
+  job_id: z.string().optional(),
 });
 export type LabelRefusal = z.infer<typeof LabelRefusalSchema>;
 

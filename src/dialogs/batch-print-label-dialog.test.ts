@@ -3,12 +3,13 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { page } from 'vitest/browser';
 import { GrowspaceSharedStore } from '../store/core/growspace-shared-store';
 import { GrowspaceStore } from '../store/core/growspace-store';
-import { BatchPrintLabelDialog } from './batch-print-label-dialog';
+import { BatchPrintLabelDialog, describePlant } from './batch-print-label-dialog';
 import './batch-print-label-dialog';
 import { __resetUiSliceForTests, notification$ } from '../slices/ui';
 import { printLabel } from '../slices/plant';
 import { getPrinters } from '../features/shared/ui/printer-status-strip';
 import { setDevices } from '../slices/grid';
+import capabilityFixture from '../../tests/fixtures/contract/label_template_capability_v1.json';
 import {
   buildQrTargetUrl,
   DEFAULT_LABEL_FIELDS,
@@ -23,6 +24,8 @@ vi.mock('../slices/plant', async (importOriginal) => ({
 afterEach(() => {
   setDevices([]);
 });
+
+const capability = capabilityFixture as never;
 
 // ---------------------------------------------------------------------------
 // GrowspaceStore.openBatchPrintLabelsDialog
@@ -638,6 +641,77 @@ describe('BatchPrintLabelDialog – willUpdate', () => {
     (el as any).willUpdate(new Map([['open', false]]));
     expect((el as any)._previewIndex).toBe(0);
   });
+});
+
+describe('BatchPrintLabelDialog – template path', () => {
+  it('reviews and prints through the template path when the capability is available', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['p1', 'p2'] }}
+        .support=${{ status: 'available', capability }}
+      ></batch-print-label-dialog>
+    `);
+
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('growspace-label-batch')).not.toBeNull()
+    );
+    const view = el.shadowRoot!.querySelector('growspace-label-batch') as any;
+    expect(view.plantIds).toEqual(['p1', 'p2']);
+    expect(view.capability).toBe(capability);
+    expect(el.shadowRoot!.querySelector('label-preview')).toBeNull();
+  });
+
+  it('names a plant by where it stands, so two of one strain differ', () => {
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        plants: [
+          {
+            entity_id: 'sensor.plant_1',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_1', strain: 'OG Kush', position: '(1,2)' },
+          },
+          {
+            entity_id: 'sensor.plant_3',
+            state: 'healthy',
+            attributes: {
+              plant_id: 'plant_3',
+              strain: 'OG Kush',
+              position: '(1,2)',
+              friendly_name: 'Mother Room OG Kush (1,2)',
+            },
+          },
+          {
+            entity_id: 'sensor.plant_2',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_2', strain: 'OG Kush' },
+          },
+        ],
+      },
+    ] as any);
+
+    expect(describePlant('plant_1')).toBe('OG Kush (1,2)');
+    expect(describePlant('plant_2')).toBe('OG Kush');
+    expect(describePlant('plant_3')).toBe('Mother Room OG Kush (1,2)');
+    expect(describePlant('gone')).toBe('gone');
+  });
+
+  it.each([{ status: 'classic', reason: 'none' }, { status: 'unknown' }, undefined])(
+    'stays the Classic dialog when the capability is %o',
+    async (support) => {
+      const el = await fixture<BatchPrintLabelDialog>(html`
+        <batch-print-label-dialog
+          .open=${true}
+          .dialogState=${{ plantIds: ['p1'] }}
+          .support=${support}
+        ></batch-print-label-dialog>
+      `);
+      expect(el.shadowRoot!.querySelector('[data-path="template"]')).toBeNull();
+      expect(el.shadowRoot!.querySelector('label-preview')).not.toBeNull();
+    }
+  );
 });
 
 describe('BatchPrintLabelDialog – render', () => {
