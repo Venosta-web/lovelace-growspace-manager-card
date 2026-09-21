@@ -1776,6 +1776,7 @@ export class GrowspaceDialogHost extends LitElement {
       <batch-print-label-dialog
         .open=${true}
         .dialogState=${active.payload}
+        .support=${this._labelSupportController.value}
         @close=${() => this._closeDialogIfActive('BATCH_PRINT_LABELS')}
       ></batch-print-label-dialog>
     `;

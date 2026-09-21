@@ -24,7 +24,31 @@ import {
   buildQrTargetUrl,
   DEFAULT_LABEL_FIELDS,
   deriveLabelFieldValues,
+  findLabelPlant,
 } from './print-label-logic';
+import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import type { LabelTemplateSupport } from '../slices/labels';
+import '../features/shared/ui/lazy-chunk-error';
+
+type ChunkState = 'idle' | 'loading' | 'ready' | 'missing';
+
+/**
+ * A plant's name in a batch review: where it stands, not only what it is.
+ *
+ * The strain alone is not a name — a batch of clones is one strain many
+ * times over, and a review that says "E2E Anchor" twice cannot say which one
+ * failed. The entity's own name carries the growspace and the position,
+ * which is what tells two plants apart on the bench; without it, the strain
+ * and the position.
+ */
+export function describePlant(plantId: string): string {
+  const attributes = findLabelPlant(plantId)?.attributes;
+  const friendly = attributes?.friendly_name;
+  if (typeof friendly === 'string' && friendly) return friendly;
+  const strain = attributes?.strain || plantId;
+  const position = attributes?.position;
+  return typeof position === 'string' && position ? `${strain} ${position}` : strain;
+}
 
 interface BatchPrintJob {
   plantIds: string[];
@@ -55,6 +79,15 @@ export class BatchPrintLabelDialog extends LitElement {
 
   @property({ type: Boolean }) public open = false;
   @property({ attribute: false }) public dialogState: BatchPrintLabelsDialogState | undefined;
+  /**
+   * Page-global Label Template capability, read from `labelTemplateSupport$`
+   * by the host. When it is `available` the batch is reviewed and printed
+   * through the template path; otherwise this dialog is the Classic one,
+   * unchanged.
+   */
+  @property({ attribute: false }) public support?: LabelTemplateSupport;
+
+  @state() private _templateChunk: ChunkState = 'idle';
 
   @state() private _selectedDeviceId = '';
   @state() private _copies = 1;
@@ -70,6 +103,11 @@ export class BatchPrintLabelDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
+      .template-path {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 0 4px;
+      }
       .copies-row {
         display: flex;
         align-items: center;
@@ -332,6 +370,9 @@ export class BatchPrintLabelDialog extends LitElement {
   ];
 
   protected willUpdate(changedProps: Map<string, unknown>): void {
+    if (changedProps.has('support') || changedProps.has('open')) {
+      void this._loadTemplateChunk();
+    }
     if (changedProps.has('open') && this.open) {
       this._resetForm();
     }
@@ -339,6 +380,53 @@ export class BatchPrintLabelDialog extends LitElement {
       const plantCount = this.dialogState?.plantIds?.length ?? 0;
       this._previewIndex = Math.min(this._previewIndex, Math.max(plantCount - 1, 0));
     }
+  }
+
+  /** Fetch the template path only once the capability says it exists. */
+  private async _loadTemplateChunk(): Promise<void> {
+    if (!this.open || this.support?.status !== 'available') return;
+    if (this._templateChunk !== 'idle') return;
+    this._templateChunk = 'loading';
+    const view = await loadLazyChunk(
+      LAZY_CHUNKS.labelTemplates,
+      () => import('../features/labels/label-templates')
+    );
+    this._templateChunk = view ? 'ready' : 'missing';
+  }
+
+  private _renderTemplatePath(support: Extract<LabelTemplateSupport, { status: 'available' }>) {
+    const plantIds = this.dialogState?.plantIds ?? [];
+    const language = this.hass?.language ?? 'en';
+    return html`
+      <gs-dialog
+        .open=${this.open}
+        heading="Print Labels"
+        .subtitle=${`${plantIds.length} plant(s) selected`}
+        .iconPath=${mdiPrinter}
+        stageColor="var(--gm-info-color)"
+        @close=${this._close}
+      >
+        <div class="template-path" data-path="template">
+          ${this._templateChunk === 'missing'
+            ? html`<growspace-lazy-chunk-error
+                .chunk=${LAZY_CHUNKS.labelTemplates}
+              ></growspace-lazy-chunk-error>`
+            : this._templateChunk !== 'ready'
+              ? html`<p>${localize('labels.view_loading', '', '', language)}</p>`
+              : html`<growspace-label-batch
+                  .capability=${support.capability}
+                  .plantIds=${plantIds}
+                  .describePlant=${describePlant}
+                  .language=${language}
+                ></growspace-label-batch>`}
+        </div>
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close}>
+            ${localize('labels.batch_close', '', '', language)}
+          </button>
+        </div>
+      </gs-dialog>
+    `;
   }
 
   private _resetForm() {
@@ -474,6 +562,9 @@ export class BatchPrintLabelDialog extends LitElement {
   }
 
   protected render() {
+    if (this.support?.status === 'available') {
+      return this._renderTemplatePath(this.support);
+    }
     const plantIds = this._activeJob?.plantIds ?? this.dialogState?.plantIds ?? [];
     const deviceId = this._activeJob ? this._activeJob.deviceId : this._selectedDeviceId;
     const copies = this._activeJob?.copies ?? this._copies;

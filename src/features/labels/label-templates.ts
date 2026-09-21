@@ -34,6 +34,9 @@ import { openLabelTemplateDraft } from '../../slices/labels/drafts';
 import { DraftSession } from './editor/draft-session';
 import './editor/growspace-label-editor';
 import './template-library';
+// The batch review lives in this chunk too: the batch dialog loads it only
+// once the capability says the template path exists.
+import './batch/growspace-label-batch';
 import { getHass } from '../../services/hass-call';
 import { TemplateDraftSchema } from '../../slices/labels/draft-schema';
 import type { RecoveryDraft } from '../../slices/labels/management';
