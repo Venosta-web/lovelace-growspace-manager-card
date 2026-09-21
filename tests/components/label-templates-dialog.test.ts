@@ -78,7 +78,10 @@ describe('the gate in front of the template path', () => {
     const element = await open({ status: 'available', capability: CAPABILITY });
 
     // Whatever the chunk does, the dialog itself is on screen and closable.
-    expect(element.shadowRoot?.querySelector('gs-dialog')).not.toBeNull();
+    const dialog = element.shadowRoot?.querySelector('gs-dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.getAttribute('width')).toBe('full');
+    expect(dialog?.containerStyle).not.toContain('max-width: 920px');
   });
 });
 

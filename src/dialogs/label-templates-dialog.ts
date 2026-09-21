@@ -27,14 +27,15 @@ import { mdiLabelOutline } from '@mdi/js';
 
 import { localize } from '../localize/localize';
 import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import { dialogStyles } from '../styles/dialog.styles';
 import type { LabelTemplateSupport } from '../slices/labels';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/lazy-chunk-error';
 
 type ChunkState = 'loading' | 'ready' | 'missing';
 
-/** The bounded desktop modal the other template-sized dialogs use. */
-const CONTAINER_STYLE = 'max-width: 920px; width: 100%; height: 720px; max-height: 85vh';
+/** The catalogue owns the available HA surface; only its vertical working area is bounded. */
+const CONTAINER_STYLE = 'width: 100%; height: 720px; max-height: 85vh';
 
 /**
  * The editor's own frame: a focused full-screen task mode.
@@ -64,40 +65,43 @@ export class LabelTemplatesDialog extends LitElement {
   /** Whether the pane below has entered the editor and wants the whole screen. */
   @state() private _editing = false;
 
-  static styles = css`
-    :host {
-      display: contents;
-    }
+  static styles = [
+    dialogStyles,
+    css`
+      :host {
+        display: contents;
+      }
 
-    .content-wrapper {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 16px 24px;
-    }
+      .content-wrapper {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 24px;
+      }
 
-    /* The editor draws its own chrome, so the dialog's padding would only
-       shrink the paper. */
-    .content-wrapper[data-editing] {
-      padding: 0;
-      overflow: hidden;
-    }
+      /* The editor draws its own chrome, so the dialog's padding would only
+         shrink the paper. */
+      .content-wrapper[data-editing] {
+        padding: 0;
+        overflow: hidden;
+      }
 
-    .supporting {
-      opacity: 0.75;
-      line-height: 1.45;
-    }
+      .supporting {
+        opacity: 0.75;
+        line-height: 1.45;
+      }
 
-    .compatibility {
-      color: var(--error-color, #f44336);
-    }
+      .compatibility {
+        color: var(--error-color, #f44336);
+      }
 
-    code {
-      overflow-wrap: anywhere;
-    }
-  `;
+      code {
+        overflow-wrap: anywhere;
+      }
+    `,
+  ];
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -163,6 +167,7 @@ export class LabelTemplatesDialog extends LitElement {
     return html`
       <gs-dialog
         .open=${true}
+        width="full"
         .heading=${this._t('view_title')}
         .iconPath=${mdiLabelOutline}
         .containerStyle=${this._editing ? EDITOR_CONTAINER_STYLE : CONTAINER_STYLE}
