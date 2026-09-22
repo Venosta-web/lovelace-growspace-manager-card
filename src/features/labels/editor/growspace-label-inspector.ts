@@ -148,8 +148,25 @@ export class GrowspaceLabelInspector extends LitElement {
         max-width: 180px;
       }
 
+      /* Keypad layout: up centered above down, left/down/right in a row below. */
       .nudge button:nth-child(1) {
         grid-column: 2;
+        grid-row: 1;
+      }
+
+      .nudge button:nth-child(2) {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      .nudge button:nth-child(3) {
+        grid-column: 2;
+        grid-row: 2;
+      }
+
+      .nudge button:nth-child(4) {
+        grid-column: 3;
+        grid-row: 2;
       }
 
       .segmented {
