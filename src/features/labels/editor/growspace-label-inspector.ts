@@ -121,9 +121,21 @@ export class GrowspaceLabelInspector extends LitElement {
         cursor: pointer;
       }
 
+      /* Darkened toward the theme's own text colour, matching
+         growspace-label-editor.ts's button[aria-pressed='true']: holds 4.5:1
+         on a light background (2.6:1 undarkened) without dimming the raw
+         token's own contrast on a dark one, where it already passes. */
       button[aria-pressed='true'] {
-        border-color: var(--primary-color, #4caf50);
-        color: var(--primary-color, #4caf50);
+        border-color: color-mix(
+          in srgb,
+          var(--primary-color, #4caf50) 55%,
+          var(--primary-text-color, #212121)
+        );
+        color: color-mix(
+          in srgb,
+          var(--primary-color, #4caf50) 55%,
+          var(--primary-text-color, #212121)
+        );
         /* Not colour alone: the pressed option is also underscored, which
            survives forced colours, greyscale and a monochrome display. */
         text-decoration: underline;

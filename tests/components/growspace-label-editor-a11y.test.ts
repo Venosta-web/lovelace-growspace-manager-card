@@ -66,7 +66,21 @@ const THEME = {
   '--error-color': '#f44336',
 };
 
-async function mount(): Promise<{ element: GrowspaceLabelEditor; session: DraftSession }> {
+/** Home Assistant's own default light-theme pair, the surface this editor's
+ *  contrast failed on before it was mixed toward --primary-text-color. */
+const LIGHT_SURFACE = '#ffffff';
+const LIGHT_THEME = {
+  '--primary-text-color': '#212121',
+  '--secondary-background-color': '#e5e5e5',
+  '--divider-color': 'rgba(0, 0, 0, 0.12)',
+  '--primary-color': '#009ac7',
+  '--error-color': '#f44336',
+};
+
+async function mount(
+  theme: Record<string, string> = THEME,
+  surface: string = SURFACE
+): Promise<{ element: GrowspaceLabelEditor; session: DraftSession }> {
   const session = new DraftSession(
     { labelSizeId: DRAFT.label_size_id },
     { widthMm: SIZE.width_mm, heightMm: SIZE.height_mm },
@@ -80,8 +94,8 @@ async function mount(): Promise<{ element: GrowspaceLabelEditor; session: DraftS
   const element = await fixture<GrowspaceLabelEditor>(
     '<growspace-label-editor></growspace-label-editor>'
   );
-  element.style.background = SURFACE;
-  for (const [name, value] of Object.entries(THEME)) element.style.setProperty(name, value);
+  element.style.background = surface;
+  for (const [name, value] of Object.entries(theme)) element.style.setProperty(name, value);
   element.capability = structuredClone(CAPABILITY);
   element.session = session;
   await element.updateComplete;
@@ -136,6 +150,21 @@ function pickTargets(element: GrowspaceLabelEditor): HTMLElement[] {
 type Rgb = [number, number, number];
 
 function parse(colour: string): { rgb: Rgb; alpha: number } {
+  // A `color-mix()` value's computed style is a `color(srgb r g b [/ a])`
+  // triple in the 0-1 range, not the legacy `rgb()` 0-255 triple every other
+  // resolved colour here uses -- Chromium's own serialisation, not a choice
+  // made in source. Read as `rgb()` it looks like near-black regardless of
+  // the actual mix, so it is parsed on its own terms first.
+  const colorFn = colour.match(
+    /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)$/
+  );
+  if (colorFn) {
+    const [, r, g, b, a] = colorFn;
+    return {
+      rgb: [Number(r) * 255, Number(g) * 255, Number(b) * 255],
+      alpha: a === undefined ? 1 : Number(a),
+    };
+  }
   const parts = colour.match(/[\d.]+/g)!.map(Number);
   return { rgb: [parts[0], parts[1], parts[2]], alpha: parts[3] ?? 1 };
 }
@@ -396,6 +425,89 @@ describe('contrast', () => {
     // And never colour alone: the box is bordered and carries role="alert".
     expect(refusal.getAttribute('role')).toBe('alert');
     expect(getComputedStyle(refusal).borderTopWidth).toBe('1px');
+  });
+
+  // Home Assistant's light theme, not the dark surface every other test in
+  // this file mounts against: --primary-color and --error-color both read
+  // below 4.5:1 as raw text here before being mixed toward --primary-text-color.
+  describe('in light theme', () => {
+    test('keeps the pressed toolbar option and the publish button at 4.5:1', async () => {
+      const { element } = await mount(LIGHT_THEME, LIGHT_SURFACE);
+      const snap = element.renderRoot.querySelector<HTMLElement>('[data-action="snap"]')!;
+      const publish =
+        element.renderRoot.querySelector<HTMLButtonElement>('[data-action="publish"]')!;
+
+      expect(snap.getAttribute('aria-pressed')).toBe('true');
+      expect(publish.disabled).toBe(false);
+      for (const button of [snap, publish]) {
+        const buttonBackground = parse(getComputedStyle(button).backgroundColor).rgb;
+        expect(
+          contrast(effective(button, buttonBackground), buttonBackground),
+          button.outerHTML.slice(0, 80)
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+
+    test("keeps the inspector's pressed content-source option at 4.5:1", async () => {
+      const { element, session } = await mount(LIGHT_THEME, LIGHT_SURFACE);
+      session.select(session.state.document.elements[0].id);
+      await element.updateComplete;
+      const panel = element.renderRoot.querySelector('growspace-label-inspector')!;
+      await panel.updateComplete;
+
+      const bound = panel.renderRoot.querySelector<HTMLElement>('[data-source="binding"]')!;
+      expect(bound.getAttribute('aria-pressed')).toBe('true');
+      const buttonBackground = parse(getComputedStyle(bound).backgroundColor).rgb;
+      expect(contrast(effective(bound, buttonBackground), buttonBackground)).toBeGreaterThanOrEqual(
+        4.5
+      );
+    });
+
+    test('keeps the error severity label and a refusal at 4.5:1', async () => {
+      const { element, session } = await mount(LIGHT_THEME, LIGHT_SURFACE);
+      const lightBackground: Rgb = [255, 255, 255];
+      session.adopt(DRAFT, {
+        operation: 'publish',
+        allowed: false,
+        diagnostics: [
+          {
+            code: 'label_template.test_error',
+            message: 'Something needs fixing.',
+            severity: 'error',
+            layer: 'validation',
+            element_id: null,
+            path: '',
+            recovery: '',
+            parameters: {},
+          },
+        ],
+      });
+      await element.updateComplete;
+
+      const severity = element.renderRoot.querySelector<HTMLElement>(
+        '.severity[data-severity="error"]'
+      )!;
+      expect(
+        contrast(effective(severity, lightBackground), lightBackground)
+      ).toBeGreaterThanOrEqual(4.5);
+
+      preview.mockResolvedValue({
+        outcome: 'refused',
+        refusal: {
+          code: 'label_template.draft_stale',
+          reason: 'Somebody published past this draft.',
+          recovery: 'reload_draft',
+          current: CAPABILITY.contract,
+        },
+      });
+      await session.render();
+      await element.updateComplete;
+
+      const refusal = element.renderRoot.querySelector<HTMLElement>('.refusal')!;
+      expect(contrast(effective(refusal, lightBackground), lightBackground)).toBeGreaterThanOrEqual(
+        4.5
+      );
+    });
   });
 
   test("dims no text below the point where the theme's own contrast stops holding", async () => {
