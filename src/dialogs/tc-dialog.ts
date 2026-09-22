@@ -29,6 +29,7 @@ import { mdiFlaskOutline } from '@mdi/js';
 
 import { localize } from '../localize/localize';
 import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import { dialogStyles } from '../styles/dialog.styles';
 import { tcSurfaces, type TcManifest, type TcSurfaceId } from '../slices/tc';
 import {
   initialTcDialogSM,
@@ -41,8 +42,8 @@ import '../features/shared/ui/lazy-chunk-error';
 
 type ChunkState = 'loading' | 'ready' | 'missing';
 
-/** #153's bounded desktop modal; small screens fall back to the full width. */
-const CONTAINER_STYLE = 'max-width: 920px; width: 100%; height: 720px; max-height: 85vh';
+/** The dialog owns the available HA surface; only its vertical working area is bounded. */
+const CONTAINER_STYLE = 'width: 100%; height: 720px; max-height: 85vh';
 
 @customElement('tc-dialog')
 export class TcDialog extends LitElement {
@@ -59,68 +60,83 @@ export class TcDialog extends LitElement {
   private _seeded = false;
   private _scrolled = false;
 
-  static styles = css`
-    :host {
-      display: contents;
-    }
+  static styles = [
+    dialogStyles,
+    css`
+      :host {
+        display: contents;
+      }
 
-    .content-wrapper {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-      padding: 16px 24px;
-    }
+      .content-wrapper {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        padding: 16px 24px;
+      }
 
-    .tab-bar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      padding-bottom: 2px;
-      flex-shrink: 0;
-    }
+      .tab-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        padding-bottom: 2px;
+        flex-shrink: 0;
+        overflow-x: auto;
+      }
 
-    .tab {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-      cursor: pointer;
-      transition: all 0.2s;
-      font-size: var(--font-size-sm);
-      font-family: inherit;
-    }
+      .tab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 44px;
+        padding: 8px 16px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        cursor: pointer;
+        transition:
+          color var(--transition-fast),
+          background var(--transition-fast),
+          border-color var(--transition-fast);
+        font-size: var(--font-size-sm);
+        font-family: inherit;
+        white-space: nowrap;
+      }
 
-    .tab:hover {
-      color: var(--primary-text-color, #fff);
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-    }
+      .tab:hover {
+        color: var(--primary-text-color, #fff);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      }
 
-    .tab.active {
-      color: var(--primary-color, #4caf50);
-      border-bottom-color: var(--primary-color, #4caf50);
-    }
+      .tab:focus-visible {
+        outline: 2px solid var(--primary-color, #4caf50);
+        outline-offset: -4px;
+      }
 
-    /* The pane scrolls; the header and the tab bar stay put. The view declares
-       no height and no overflow of its own, which is what lets it live in an
-       ha-card and in here. */
-    .pane {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      --growspace-tc-view-padding: 0;
-    }
+      .tab.active {
+        color: var(--primary-color, #4caf50);
+        border-bottom-color: var(--primary-color, #4caf50);
+      }
 
-    .supporting {
-      opacity: 0.7;
-    }
-  `;
+      /* The pane scrolls; the header and the tab bar stay put. The view declares
+         no height and no overflow of its own, which is what lets it live in an
+         ha-card and in here. */
+      .pane {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        --growspace-tc-view-padding: 0;
+      }
+
+      .supporting {
+        opacity: 0.7;
+      }
+    `,
+  ];
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -231,6 +247,7 @@ export class TcDialog extends LitElement {
     return html`
       <gs-dialog
         .open=${true}
+        width="full"
         .heading=${this._t('view_title')}
         .iconPath=${mdiFlaskOutline}
         .containerStyle=${CONTAINER_STYLE}
@@ -238,10 +255,11 @@ export class TcDialog extends LitElement {
       >
         <div class="content-wrapper">
           ${surfaces.length
-            ? html`<div class="tab-bar" role="tablist">
+            ? html`<div class="tab-bar" role="tablist" aria-label=${this._t('view_title')}>
                 ${surfaces.map(
                   (surface) => html`
                     <button
+                      type="button"
                       class="tab ${this._sm.activeTab === surface ? 'active' : ''}"
                       role="tab"
                       data-tab=${surface}

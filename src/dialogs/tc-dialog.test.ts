@@ -80,6 +80,10 @@ describe('TcDialog — the frame opens before the chunk', () => {
     // Nothing here waits on the fetch: a menu item that silently opens nothing
     // for the length of a round trip is indistinguishable from a broken one.
     expect(element.shadowRoot?.querySelector('gs-dialog')).not.toBeNull();
+    expect(element.shadowRoot?.querySelector('gs-dialog')?.getAttribute('width')).toBe('full');
+    expect(element.shadowRoot?.querySelector('gs-dialog')?.containerStyle).not.toContain(
+      'max-width: 920px'
+    );
     expect(tabs(element)).toEqual(['worklist', 'cultures', 'media', 'pairings']);
     expect(element.shadowRoot?.querySelector('.pane')?.textContent).toContain('Loading');
     expect(view(element)).toBeNull();
