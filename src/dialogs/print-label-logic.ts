@@ -54,6 +54,24 @@ export function findLabelPlant(plantId?: string): PlantEntity | null {
   return null;
 }
 
+/**
+ * A plant's name in a batch review: where it stands, not only what it is.
+ *
+ * The strain alone is not a name — a batch of clones is one strain many
+ * times over, and a review that says "E2E Anchor" twice cannot say which one
+ * failed. The entity's own name carries the growspace and the position,
+ * which is what tells two plants apart on the bench; without it, the strain
+ * and the position.
+ */
+export function describePlant(plantId: string): string {
+  const attributes = findLabelPlant(plantId)?.attributes;
+  const friendly = attributes?.friendly_name;
+  if (typeof friendly === 'string' && friendly) return friendly;
+  const strain = attributes?.strain || plantId;
+  const position = attributes?.position;
+  return typeof position === 'string' && position ? `${strain} ${position}` : strain;
+}
+
 /** A label's start date, in the viewer's locale; the raw string when it will not parse. */
 export function formatLabelDate(dateStr?: string | null): string {
   if (!dateStr) return '';
