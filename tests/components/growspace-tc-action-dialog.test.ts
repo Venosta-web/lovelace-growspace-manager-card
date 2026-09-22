@@ -1,0 +1,425 @@
+import { expect, test, describe } from 'vitest';
+import { fixture } from '@open-wc/testing-helpers';
+
+import { GrowspaceTcActionDialog } from '../../src/features/tc/components/growspace-tc-action-dialog';
+import type {
+  Culture,
+  CultureMedium,
+  MaintenanceAction,
+  MaintenanceActionType,
+  MaintenanceRequest,
+} from '../../src/slices/tc';
+import { CultureSchema, MaintenanceActionSchema } from '../../src/slices/tc/schema';
+
+if (!customElements.get('growspace-tc-action-dialog')) {
+  customElements.define('growspace-tc-action-dialog', GrowspaceTcActionDialog);
+}
+
+const aCulture = (overrides: Record<string, unknown> = {}): Culture =>
+  CultureSchema.parse({
+    id: 'culture-1',
+    line_id: 'line-1',
+    stage: 'multiplication',
+    status: 'active',
+    started_at: '2026-01-04T09:12:00+00:00',
+    last_replated_at: '2026-01-04T09:12:00+00:00',
+    plantlet_count: 6,
+    location: 'Shelf A',
+    replate_due_at: '2026-02-03T09:12:00+00:00',
+    ...overrides,
+  });
+
+const aMedium = (overrides: Record<string, unknown> = {}): CultureMedium =>
+  ({
+    id: 'medium-1',
+    name: 'MS + BAP 1.0',
+    created_at: '2026-01-04T09:12:00+00:00',
+    updated_at: '2026-01-04T09:12:00+00:00',
+    current_version: 2,
+    versions: [],
+    ...overrides,
+  }) as CultureMedium;
+
+const anAction = (overrides: Record<string, unknown> = {}): MaintenanceAction =>
+  MaintenanceActionSchema.parse({
+    id: 'action-1',
+    culture_id: 'culture-1',
+    line_id: 'line-1',
+    action: 'note',
+    recorded_at: '2026-02-03T09:20:00+00:00',
+    note: '',
+    medium_id: null,
+    medium_version: null,
+    vessels: [],
+    reason: null,
+    stage: null,
+    ...overrides,
+  });
+
+async function render(
+  action: MaintenanceActionType,
+  options: {
+    media?: CultureMedium[];
+    culture?: Culture;
+    history?: MaintenanceAction[];
+  } = {}
+): Promise<GrowspaceTcActionDialog> {
+  const element = await fixture<GrowspaceTcActionDialog>(
+    '<growspace-tc-action-dialog></growspace-tc-action-dialog>'
+  );
+  element.action = action;
+  element.culture = options.culture ?? aCulture();
+  element.lineName = 'Blue Dream — Pheno 2';
+  element.media = options.media ?? [aMedium()];
+  element.history = options.history ?? [];
+  await element.updateComplete;
+  return element;
+}
+
+const textOf = (element: GrowspaceTcActionDialog): string => element.shadowRoot?.textContent ?? '';
+
+const inputs = (element: GrowspaceTcActionDialog, selector: string): HTMLInputElement[] =>
+  Array.from(element.shadowRoot?.querySelectorAll(selector) ?? []);
+
+async function type(input: HTMLInputElement | HTMLTextAreaElement, value: string): Promise<void> {
+  input.value = value;
+  input.dispatchEvent(new Event('input'));
+}
+
+async function click(element: GrowspaceTcActionDialog, text: string): Promise<void> {
+  const button = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []).find(
+    (candidate) => (candidate.textContent ?? '').includes(text)
+  );
+  (button as HTMLButtonElement).click();
+  await element.updateComplete;
+}
+
+async function submit(element: GrowspaceTcActionDialog): Promise<MaintenanceRequest | undefined> {
+  let request: MaintenanceRequest | undefined;
+  element.addEventListener('maintenance-requested', (event) => {
+    request = (event as CustomEvent<{ request: MaintenanceRequest }>).detail.request;
+  });
+  (element.shadowRoot?.querySelector('form') as HTMLFormElement).requestSubmit();
+  await element.updateComplete;
+  return request;
+}
+
+describe('GrowspaceTcActionDialog — replate', () => {
+  test('starts from the vessel it is replating', async () => {
+    const element = await render('replate');
+
+    const counts = inputs(element, 'input[type="number"]');
+    expect(counts[0].value).toBe('6');
+    expect(inputs(element, 'input:not([type="number"])')[0].value).toBe('Shelf A');
+  });
+
+  test('pins the current version of the medium the grower picked', async () => {
+    const element = await render('replate', {
+      media: [aMedium(), aMedium({ id: 'medium-2', name: 'MS rooting', current_version: 5 })],
+    });
+    const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
+    select.value = 'medium-2';
+    select.dispatchEvent(new Event('change'));
+    await element.updateComplete;
+
+    const request = await submit(element);
+
+    expect(request).toMatchObject({
+      action: 'replate',
+      draft: { medium_id: 'medium-2', medium_version: 5 },
+    });
+  });
+
+  test('divides into further vessels, and can take one back', async () => {
+    const element = await render('replate');
+
+    await click(element, 'Divide into another vessel');
+    expect(inputs(element, 'input[type="number"]')).toHaveLength(2);
+
+    const request = await submit(element);
+    expect((request as { draft: { vessels: unknown[] } }).draft.vessels).toHaveLength(2);
+
+    await click(element, 'Remove');
+    expect(inputs(element, 'input[type="number"]')).toHaveLength(1);
+  });
+
+  test('leaves an uncounted vessel uncounted rather than zero', async () => {
+    const element = await render('replate');
+    await type(inputs(element, 'input[type="number"]')[0], '');
+
+    const request = await submit(element);
+
+    expect(
+      (request as { draft: { vessels: Array<{ plantlet_count: number | null }> } }).draft.vessels[0]
+        .plantlet_count
+    ).toBeNull();
+  });
+
+  test('refuses to record when there is no medium to pin', async () => {
+    const element = await render('replate', { media: [] });
+
+    expect(textOf(element)).toContain('No culture medium to pour from yet');
+    const record = element.shadowRoot?.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(record.disabled).toBe(true);
+  });
+});
+
+describe('GrowspaceTcActionDialog — the other four acts', () => {
+  test('sends a discard with its reason', async () => {
+    const element = await render('discard');
+    const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
+    select.value = 'spent';
+    select.dispatchEvent(new Event('change'));
+    await element.updateComplete;
+
+    const request = await submit(element);
+
+    expect(request).toEqual({
+      action: 'discard',
+      cultureId: 'culture-1',
+      reason: 'spent',
+      note: '',
+    });
+  });
+
+  test('says a discard keeps the vessel in history', async () => {
+    expect(textOf(await render('discard'))).toContain('stays in your history');
+  });
+
+  test('says a move to rooting does not re-plate the vessel', async () => {
+    expect(textOf(await render('move_to_rooting'))).toContain(
+      'stays on the medium it is already on'
+    );
+  });
+
+  test('explains graduation and optional plant creation', async () => {
+    expect(textOf(await render('graduate'))).toContain('End this culture and keep its history');
+  });
+
+  test('will not record an empty note', async () => {
+    const element = await render('note');
+    const record = element.shadowRoot?.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    expect(record.disabled).toBe(true);
+
+    await type(element.shadowRoot?.querySelector('textarea') as HTMLTextAreaElement, 'Vitrified.');
+    await element.updateComplete;
+
+    expect(await submit(element)).toEqual({
+      action: 'note',
+      cultureId: 'culture-1',
+      note: 'Vitrified.',
+    });
+  });
+
+  test('carries an optional note on the acts that do not need one', async () => {
+    const element = await render('graduate');
+    await type(element.shadowRoot?.querySelector('textarea') as HTMLTextAreaElement, 'Dome.');
+    await element.updateComplete;
+
+    expect(await submit(element)).toEqual({
+      action: 'graduate',
+      cultureId: 'culture-1',
+      note: 'Dome.',
+    });
+  });
+});
+
+describe('GrowspaceTcActionDialog — the vessel`s history', () => {
+  test('reads each act as a sentence, naming the medium a replate pinned', async () => {
+    const element = await render('note', {
+      history: [
+        anAction({
+          action: 'replate',
+          medium_id: 'medium-1',
+          medium_version: 2,
+          vessels: [{ culture_id: 'culture-1', plantlet_count: 5, location: 'Shelf A' }],
+        }),
+        anAction({ id: 'action-2', action: 'discard', reason: 'contamination' }),
+        anAction({ id: 'action-3', action: 'move_to_rooting', stage: 'rooting' }),
+      ],
+    });
+
+    await click(element, "Show this vessel's history");
+
+    expect(textOf(element)).toContain('Replated onto MS + BAP 1.0, version 2');
+    expect(textOf(element)).toContain('Discarded — Contamination');
+    expect(textOf(element)).toContain('Moved to rooting');
+  });
+
+  test('counts the vessels a division produced', async () => {
+    const element = await render('note', {
+      history: [
+        anAction({
+          action: 'replate',
+          medium_id: 'medium-1',
+          medium_version: 2,
+          vessels: [
+            { culture_id: 'culture-1', plantlet_count: 5, location: 'Shelf A' },
+            { culture_id: 'culture-2', plantlet_count: 4, location: 'Shelf B' },
+          ],
+        }),
+      ],
+    });
+
+    await click(element, "Show this vessel's history");
+
+    expect(textOf(element)).toContain('divided into 2 vessels');
+  });
+
+  test('names a medium that has since been deleted rather than showing its ID', async () => {
+    const element = await render('note', {
+      history: [anAction({ action: 'replate', medium_id: 'gone', medium_version: 1 })],
+    });
+
+    await click(element, "Show this vessel's history");
+
+    expect(textOf(element)).toContain('a medium no longer in the library');
+    expect(textOf(element)).not.toContain('gone');
+  });
+
+  test('says a vessel has no history rather than showing an empty list', async () => {
+    const element = await render('note');
+
+    await click(element, "Show this vessel's history");
+
+    expect(textOf(element)).toContain('Nothing recorded against this vessel yet');
+  });
+});
+
+describe('graduation bridge', () => {
+  async function bridgeForm(): Promise<GrowspaceTcActionDialog> {
+    const element = await render('graduate');
+    element.graduationBridge = true;
+    element.growspaces = [{ deviceId: 'tent', name: 'Nursery', rows: 2, plantsPerRow: 3 }];
+    element.genetics = { strain: 'Blue Dream', phenotype: 'Pheno 2' };
+    element.culture = aCulture();
+    await element.updateComplete;
+    return element;
+  }
+  test('defaults to opt-out, then sends the confirmed position only when opted in', async () => {
+    const element = await bridgeForm();
+    expect(await submit(element)).toEqual({ action: 'graduate', cultureId: 'culture-1', note: '' });
+    inputs(element, '[name="createPlant"]')[0].click();
+    await element.updateComplete;
+    await type(inputs(element, '[name="col"]')[0], '2');
+    expect(await submit(element)).toEqual({
+      action: 'graduate',
+      cultureId: 'culture-1',
+      note: '',
+      plant: { growspace_id: 'tent', strain: 'Blue Dream', phenotype: 'Pheno 2', row: 1, col: 2 },
+    });
+    inputs(element, '[name="createPlant"]')[0].click();
+    await element.updateComplete;
+    expect(await submit(element)).not.toHaveProperty('plant');
+  });
+  test('keeps the plain action available on older TC versions', async () => {
+    const element = await render('graduate');
+    expect(inputs(element, '[name="createPlant"]')).toHaveLength(0);
+    expect(await submit(element)).not.toHaveProperty('plant');
+  });
+  test('rejects out-of-bounds positions and missing genetics', async () => {
+    const element = await bridgeForm();
+    inputs(element, '[name="createPlant"]')[0].click();
+    await element.updateComplete;
+    await type(inputs(element, '[name="row"]')[0], '9');
+    expect(await submit(element)).toBeUndefined();
+    await type(inputs(element, '[name="row"]')[0], '1');
+    await type(inputs(element, '[name="strain"]')[0], '');
+    expect(await submit(element)).toBeUndefined();
+  });
+  /**
+   * An empty destination list means one of three things, and the grower is
+   * responsible for exactly one of them. Saying "No growspace is available" to
+   * someone with a half-empty tent because the fetch had not landed is the bug
+   * this distinction exists to prevent (workspace #188).
+   */
+  describe('what an empty destination list is allowed to claim', () => {
+    async function withStatus(status: 'loading' | 'ready' | 'failed') {
+      const element = await render('graduate');
+      element.graduationBridge = true;
+      element.growspaces = [];
+      element.growspacesStatus = status;
+      await element.updateComplete;
+      return element;
+    }
+
+    test('claims Growspace Manager has none only once the list is an answer', async () => {
+      expect(textOf(await withStatus('ready'))).toContain('No growspace is available');
+    });
+
+    test('says it is still looking while the list is in flight', async () => {
+      const element = await withStatus('loading');
+      expect(textOf(element)).not.toContain('No growspace is available');
+      expect(textOf(element)).toContain('Looking for somewhere');
+    });
+
+    test('says the growspaces are unknown when the fetch failed', async () => {
+      const element = await withStatus('failed');
+      expect(textOf(element)).not.toContain('No growspace is available');
+      expect(textOf(element)).toContain('growspaces are unknown');
+    });
+
+    test.each(['loading', 'ready', 'failed'] as const)(
+      'keeps the bridge out of reach and the act recordable — %s',
+      async (status) => {
+        const element = await withStatus(status);
+        expect(inputs(element, '[name="createPlant"]')[0].disabled).toBe(true);
+        expect(await submit(element)).toEqual({
+          action: 'graduate',
+          cultureId: 'culture-1',
+          note: '',
+        });
+      }
+    );
+
+    test('offers the bridge as soon as a pending list arrives non-empty', async () => {
+      const element = await withStatus('loading');
+
+      element.growspaces = [{ deviceId: 'tent', name: 'Nursery', rows: 2, plantsPerRow: 3 }];
+      element.growspacesStatus = 'ready';
+      await element.updateComplete;
+
+      expect(inputs(element, '[name="createPlant"]')[0].disabled).toBe(false);
+      inputs(element, '[name="createPlant"]')[0].click();
+      await element.updateComplete;
+      await type(inputs(element, '[name="strain"]')[0], 'Blue Dream');
+
+      // The destination defaults to the first one even though the list landed
+      // after the vessel did — otherwise the form would submit an empty ID.
+      expect(await submit(element)).toMatchObject({
+        plant: { growspace_id: 'tent', row: 1, col: 1 },
+      });
+    });
+  });
+
+  test('shows a stored plant link on an ended culture without another submit', async () => {
+    const element = await render('graduate', {
+      culture: aCulture({ status: 'graduated' }),
+      history: [anAction({ action: 'graduate', plant_id: 'plant / 1' })],
+    });
+    expect(element.shadowRoot?.querySelector('a')?.getAttribute('href')).toBe(
+      '?plantId=plant%20%2F%201'
+    );
+    expect(textOf(element)).toContain('View linked plant');
+    expect(element.shadowRoot?.querySelector('button[type="submit"]')).toBeNull();
+  });
+  test('asks the host to show the plant instead of navigating out of it', async () => {
+    const element = await render('graduate', {
+      culture: aCulture({ status: 'graduated' }),
+      history: [anAction({ action: 'graduate', plant_id: 'plant / 1' })],
+    });
+    const raised: Array<{ plantId: string }> = [];
+    element.addEventListener('plant-view-requested', (event) =>
+      raised.push((event as CustomEvent<{ plantId: string }>).detail)
+    );
+
+    const click = new MouseEvent('click', { bubbles: true, composed: true, cancelable: true });
+    element.shadowRoot?.querySelector('a')?.dispatchEvent(click);
+
+    // The two hosts answer this differently — the card navigates, the dialog
+    // opens the Plant Overview in place — so the link stops navigating here.
+    expect(raised).toEqual([{ plantId: 'plant / 1' }]);
+    expect(click.defaultPrevented).toBe(true);
+  });
+});

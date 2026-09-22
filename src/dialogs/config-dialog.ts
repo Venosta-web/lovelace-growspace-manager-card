@@ -113,8 +113,11 @@ import '../features/config/components/config-heatmap-tab';
 import { createHeatmapTabViewModel } from '../features/config/viewmodels/heatmap-tab.viewmodel';
 import '../features/config/components/config-subareas-tab';
 import { createSubareasTabViewModel } from '../features/config/viewmodels/subareas-tab.viewmodel';
-import { composeEnvironmentConfig } from '../features/config/environment-save';
-import { VISION_GROUP, isGroupDirty } from '../features/config/environment-persistence';
+import {
+  VISION_GROUP,
+  isEnvironmentGroupDirty,
+  type EnvironmentChangeRequest,
+} from '../features/config/environment-change';
 import {
   deriveConfigDialogCapabilities,
   type ConfigDialogCapabilities,
@@ -1315,8 +1318,12 @@ export class ConfigDialog extends LitElement {
 
   private _submitEnvironment() {
     this.dispatchEvent(
-      new CustomEvent('configure-environment-submit', {
-        detail: composeEnvironmentConfig(this._sm.environmentDraft, this._sm.environmentDirty),
+      new CustomEvent<EnvironmentChangeRequest>('environment-change-requested', {
+        detail: {
+          kind: 'shared-environment-draft',
+          draft: this._sm.environmentDraft,
+          dirty: this._sm.environmentDirty,
+        },
         bubbles: true,
         composed: true,
       })
@@ -1390,7 +1397,7 @@ export class ConfigDialog extends LitElement {
     if (!d.selectedGrowspaceId) return;
     // Dedicated service, gated on its own dirty group (ADR-0032): nothing was
     // edited, so there is nothing to write.
-    if (!isGroupDirty(this._sm.environmentDirty, VISION_GROUP)) return;
+    if (!isEnvironmentGroupDirty(this._sm.environmentDirty, VISION_GROUP)) return;
     this.dispatchEvent(
       new CustomEvent('vision-checkup-config-submit', {
         detail: {

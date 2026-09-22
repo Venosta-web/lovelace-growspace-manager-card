@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { mdiLink } from '@mdi/js';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { statusTokens } from '../../../styles/status.styles';
+import { focusRingStyles } from '../../../styles/focus-ring.styles';
 import { StatusLevel, STATUS_CUES, toStatusLevel } from '../../environment/constants';
 
 @customElement('growspace-chip')
@@ -21,6 +22,7 @@ export class GrowspaceChip extends LitElement {
   static styles = [
     sharedStyles,
     statusTokens,
+    focusRingStyles,
     css`
       :host {
         display: inline-flex;
@@ -50,12 +52,6 @@ export class GrowspaceChip extends LitElement {
         touch-action: auto;
         font: inherit;
         text-align: start;
-      }
-
-      .stat-chip:focus-visible,
-      .link-icon:focus-visible {
-        outline: 2px solid var(--primary-color, #4caf50);
-        outline-offset: 2px;
       }
 
       .stat-chip.has-link {
@@ -208,8 +204,8 @@ export class GrowspaceChip extends LitElement {
 
     return html`
       <button
-        class="stat-chip ${statusClass} ${this.linked ? 'has-link' : ''}"
-        title="${this.tooltip}"
+        class="stat-chip focus-ring ${statusClass} ${this.linked ? 'has-link' : ''}"
+        title=${this.tooltip || nothing}
         type="button"
         aria-label=${this.actionLabel || nothing}
         aria-pressed=${this.toggle ? String(this.active) : nothing}
@@ -234,7 +230,7 @@ export class GrowspaceChip extends LitElement {
       ${this.linked
         ? html`
             <button
-              class="link-icon"
+              class="link-icon focus-ring"
               @click=${this._handleLinkClick}
               title="Unlink Graph"
               aria-label="Unlink ${this.label || 'metric'} graph"

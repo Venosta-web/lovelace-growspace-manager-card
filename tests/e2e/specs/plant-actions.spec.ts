@@ -19,13 +19,13 @@ test.describe('Plant Actions - menu dialogs', () => {
   });
 
   test('IPM dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/log \/ manage ipm/i);
+    await growspaceCard.clickMenuAction('ipm');
     const dialog = new IPMDialog(page);
     await dialog.waitForOpen();
   });
 
   test('training dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/log training/i);
+    await growspaceCard.clickMenuAction('training');
     const dialog = new TrainingDialog(page);
     await dialog.waitForOpen();
   });

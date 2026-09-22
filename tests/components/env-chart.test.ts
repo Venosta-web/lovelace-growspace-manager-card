@@ -1,0 +1,427 @@
+/**
+ * `<growspace-env-chart>` — the marks an Env Graph draws over its traces.
+ *
+ * The hygiene half (#48) is about the chart not contradicting itself: one window
+ * behind the paths and the axis, one decision behind the header and the scrub,
+ * and no dashed mark that a grower could mistake for a configured
+ * [[Guide Mark]]. The [[Optimal Band]] half (#49) is the first real guide mark
+ * drawn on top of that. Rendering behaviour at large is specified in
+ * `tests/unit/growspace-env-chart.spec.ts`.
+ */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { LitElement } from 'lit';
+import { fixture, html } from '@open-wc/testing-helpers';
+import { ContextProvider } from '@lit/context';
+import '../../src/features/environment/components/env-chart';
+import type { GrowspaceEnvChart } from '../../src/features/environment/components/env-chart';
+import { hassContext } from '../../src/context';
+import { computeMetricDescriptors } from '../../src/slices/metric-descriptors';
+import { METRIC_CONFIG, MetricKey } from '../../src/features/environment/constants';
+
+const OVERVIEW_ENTITY = {
+  attributes: {
+    vpd_target_min: 0.8,
+    vpd_target_max: 1.2,
+    vpd_danger_min: 0.4,
+    vpd_danger_max: 1.6,
+  },
+};
+
+const DESCRIPTORS = computeMetricDescriptors(null, {}, OVERVIEW_ENTITY);
+
+const DEVICE: any = {
+  deviceId: 'd1',
+  name: 'Device 1',
+  sensors: {},
+  overviewEntityId: 'sensor.overview',
+};
+
+function reading(msAgo: number, state: string, attributes: Record<string, unknown> = {}) {
+  return {
+    state,
+    attributes,
+    last_changed: new Date(Date.now() - msAgo).toISOString(),
+  } as any;
+}
+
+describe('GrowspaceEnvChart hygiene', () => {
+  let element: GrowspaceEnvChart;
+
+  beforeEach(async () => {
+    (globalThis as any).ResizeObserver = class {
+      observe = vi.fn();
+      disconnect = vi.fn();
+      unobserve = vi.fn();
+    };
+
+    const parent = await fixture(html`
+      <div>
+        <growspace-env-chart .device=${DEVICE} .descriptors=${DESCRIPTORS}></growspace-env-chart>
+      </div>
+    `);
+    element = parent.querySelector('growspace-env-chart') as GrowspaceEnvChart;
+    new ContextProvider(parent, hassContext, { states: {}, locale: { language: 'en' } });
+    await element.updateComplete;
+  });
+
+  async function showMetric(metricKey: string, ...entries: any[]) {
+    element.metricKey = metricKey;
+    element.sensorHistory = { [metricKey]: entries } as any;
+    await element.updateComplete;
+  }
+
+  function chartSvg() {
+    return element.shadowRoot?.querySelector('svg.chart-svg') as SVGSVGElement;
+  }
+
+  function headerValue() {
+    return element.shadowRoot?.querySelector('.gs-env-graph-value')?.textContent?.trim();
+  }
+
+  function mockChartRect() {
+    const container = element.shadowRoot?.querySelector('.gs-env-chart-container') as HTMLElement;
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 200,
+    } as DOMRect);
+    return container;
+  }
+
+  /** Scrub to the right-hand edge, where the closest point is the latest one. */
+  async function scrubToNow() {
+    const container = mockChartRect();
+    (element as any)._cachedChartRect = null;
+    container.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 800,
+        pointerId: 1,
+        pointerType: 'touch',
+      })
+    );
+    await vi.runAllTimersAsync();
+    await element.updateComplete;
+    const readout = element.shadowRoot?.querySelector('chart-scrub-tooltip') as LitElement;
+    await readout?.updateComplete;
+    return readout?.shadowRoot?.querySelector('.chart-scrub-tooltip') as HTMLElement;
+  }
+
+  describe('pointer and screen-reader access', () => {
+    it('summarises the metric, window, observed range, average and current value', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '24'));
+
+      const svg = chartSvg();
+      expect(svg.getAttribute('role')).toBe('img');
+      expect(svg.getAttribute('aria-label')).toBe(
+        'Temperature, 24h window. range 20.0 °C to 24.0 °C, average 22.0 °C, current 24.0 °C.'
+      );
+    });
+
+    it('gives an empty chart an explicit no-data name', async () => {
+      element.metricKey = MetricKey.TEMPERATURE;
+      element.title = 'Temperature';
+      element.sensorHistory = {};
+      await element.updateComplete;
+
+      const svg = chartSvg();
+      expect(svg.getAttribute('role')).toBe('img');
+      expect(svg.getAttribute('aria-label')).toBe('Temperature, 24h window, no data.');
+    });
+
+    it('keeps vertical page panning available while the chart handles pointer scrubbing', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '24'));
+      const container = element.shadowRoot!.querySelector('.gs-env-chart-container')!;
+
+      expect(getComputedStyle(container).touchAction).toBe('pan-y');
+    });
+  });
+
+  describe('gridlines', () => {
+    it('draws a flat gridline set and no dashed mark of its own', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+
+      const svg = chartSvg();
+      expect(svg.getAttribute('viewBox')).toBe('0 0 800 200');
+      expect(svg.querySelector('[stroke-dasharray]')).toBeNull();
+
+      const gridlines = Array.from(svg.querySelectorAll('line')).filter(
+        (line) => line.getAttribute('stroke-width') === '0.5'
+      );
+      expect(gridlines.map((line) => line.getAttribute('y1'))).toEqual([
+        '200',
+        '150',
+        '100',
+        '50',
+        '0',
+      ]);
+    });
+
+    it('keeps the gridlines where they are when the data range moves', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+      const before = Array.from(chartSvg().querySelectorAll('line')).map((line) =>
+        line.getAttribute('y1')
+      );
+
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '-5'), reading(0, '41'));
+
+      expect(
+        Array.from(chartSvg().querySelectorAll('line')).map((line) => line.getAttribute('y1'))
+      ).toEqual(before);
+    });
+  });
+
+  describe('one readout', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('agrees between header and scrub on a binary metric', async () => {
+      await showMetric(MetricKey.IRRIGATION, reading(3_600_000, 'off'), reading(0, 'on'));
+
+      const tooltip = await scrubToNow();
+
+      expect(headerValue()).toBe('ON');
+      expect(tooltip.textContent).toContain('ON');
+      expect(tooltip.textContent).not.toContain('1.0');
+    });
+
+    it('agrees between header and scrub on a continuous metric', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+
+      const tooltip = await scrubToNow();
+
+      expect(headerValue()).toBe('22.0 °C');
+      expect(tooltip.textContent).toContain('22.0 °C');
+    });
+
+    it('draws the readout a Curated Combo draws, not one of its own', async () => {
+      // Whether a metric has a combo recipe is an editorial claim about which
+      // metrics pair with which context, and it decided the scrub's markup,
+      // clock and cursor until #866.
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+      await scrubToNow();
+
+      const readout = element.shadowRoot!.querySelector('chart-scrub-tooltip')!;
+      expect(readout).not.toBeNull();
+      expect(element.shadowRoot!.querySelector('.gs-tooltip')).toBeNull();
+      expect(element.shadowRoot!.querySelector('.gs-cursor-line')).toBeNull();
+      expect(readout.shadowRoot!.querySelectorAll('.chart-scrub-cursor')).toHaveLength(1);
+    });
+
+    it("prints the moment once, on the Home Assistant locale's clock", async () => {
+      (element as unknown as { hass: unknown }).hass = {
+        states: {},
+        locale: { language: 'de-DE' },
+      };
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+      const tooltip = await scrubToNow();
+
+      const headings = tooltip.querySelectorAll('.chart-scrub-time');
+      expect(headings).toHaveLength(1);
+      // The locale's own clock, never a forced 24-hour one — and never the
+      // browser's, which is what the delegating path used to fall back to.
+      expect(headings[0].textContent).not.toMatch(/AM|PM/i);
+      expect(
+        (element.shadowRoot!.querySelector('chart-scrub-tooltip') as { locale?: string }).locale
+      ).toBe('de-DE');
+      for (const row of tooltip.querySelectorAll('.chart-scrub-row')) {
+        expect(row.textContent).not.toMatch(/\d{1,2}:\d{2}/);
+      }
+    });
+
+    it('hugs the percent sign in the header and the scrub alike', async () => {
+      // Unit spacing is decided once, for every readout on the chart (#855).
+      await showMetric(MetricKey.HUMIDITY, reading(3_600_000, '50'), reading(0, '58'));
+
+      const tooltip = await scrubToNow();
+
+      expect(headerValue()).toBe('58.0%');
+      expect(tooltip.textContent).toContain('58.0%');
+    });
+  });
+
+  describe('one owner for value formatting', () => {
+    it('reads a binary metric as its state in the combined legend, not as 0.0–1.0', async () => {
+      // The legend took its own path to the same defect the header readout was
+      // written to fix: an irrigation trace printed as a number (#855).
+      element.isCombined = true;
+      element.metrics = [MetricKey.IRRIGATION];
+      element.sensorHistory = {
+        [MetricKey.IRRIGATION]: [reading(3_600_000, 'off'), reading(0, 'on')],
+      } as any;
+      await element.updateComplete;
+
+      const ranges = Array.from(element.shadowRoot!.querySelectorAll('.gs-legend-range')).map(
+        (node) => node.textContent!.trim()
+      );
+      expect(ranges).toEqual(['OFF–ON']);
+    });
+
+    it('summarises a binary metric by its states rather than by 0.0 to 1.0', async () => {
+      await showMetric(MetricKey.IRRIGATION, reading(3_600_000, 'off'), reading(0, 'on'));
+
+      const label = chartSvg().getAttribute('aria-label')!;
+
+      expect(label).toContain('range OFF–ON, current ON');
+      expect(label).not.toContain('0.0');
+    });
+
+    it('prints the value axis with the decimals its guide labels use', async () => {
+      // A VPD chart read `2kPa` on the axis, `1.2 kPa` on the band label and
+      // `1.3 kPa` in its accessible summary — three renderings of the same
+      // quantity on one chart (#855).
+      await showMetric(MetricKey.VPD, reading(3_600_000, '1.0'), reading(0, '1.1'));
+
+      const label = element.shadowRoot!.querySelector('.gs-guide-label')!.textContent!.trim();
+      const caps = Array.from(element.shadowRoot!.querySelectorAll('.gs-axis-target')).map((node) =>
+        node.textContent!.trim()
+      );
+
+      expect(label).toBe('1.2 kPa');
+      expect(caps).toHaveLength(2);
+      for (const cap of caps) {
+        expect(cap).toMatch(/^\d\.\d kPa$/);
+      }
+    });
+
+    it('stands a word unit apart from the axis number and hugs a percent sign', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '24'));
+      expect(
+        Array.from(element.shadowRoot!.querySelectorAll('.gs-axis-target')).map((node) =>
+          node.textContent!.trim()
+        )
+      ).toEqual(['24 °C', '20 °C']);
+
+      await showMetric(MetricKey.HUMIDITY, reading(3_600_000, '50'), reading(0, '60'));
+      expect(
+        Array.from(element.shadowRoot!.querySelectorAll('.gs-axis-target')).map((node) =>
+          node.textContent!.trim()
+        )
+      ).toEqual(['65%', '45%']);
+    });
+  });
+
+  describe('one window', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('scrubs the window its paths were built for, not a fresher one', async () => {
+      const builtAt = Date.now();
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+
+      // An hour passes and the chart re-renders for a reason the path build
+      // ignores. The axis and the scrub must not move without the paths.
+      vi.setSystemTime(builtAt + 3_600_000);
+      element.title = 'Renamed';
+      await element.updateComplete;
+
+      const tooltip = await scrubToNow();
+
+      expect(tooltip.textContent).toContain(
+        new Date(builtAt).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
+      );
+    });
+  });
+
+  describe('optimal band', () => {
+    /** The dashed marks, which the hygiene rules leave as the only ones on the pane. */
+    function dashedMarks() {
+      return Array.from(chartSvg().querySelectorAll('[stroke-dasharray]'));
+    }
+
+    function bandLabels() {
+      return Array.from(element.shadowRoot?.querySelectorAll('.gs-guide-label') ?? []);
+    }
+
+    async function showVpd() {
+      await showMetric(MetricKey.VPD, reading(3_600_000, '1.0'), reading(0, '1.1'));
+    }
+
+    it('draws the band as a tinted region with dashed edges in the metric colour', async () => {
+      await showVpd();
+
+      const region = chartSvg().querySelector('rect');
+      expect(region).not.toBeNull();
+      expect(Number(region!.getAttribute('fill-opacity'))).toBeGreaterThan(0);
+      expect(region!.getAttribute('fill')).toBe(METRIC_CONFIG[MetricKey.VPD].color);
+
+      // Two edges, both in the metric colour rather than the trace's status colour.
+      expect(dashedMarks()).toHaveLength(2);
+      for (const edge of dashedMarks()) {
+        expect(edge.getAttribute('stroke')).toBe(METRIC_CONFIG[MetricKey.VPD].color);
+        expect(edge.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+      }
+    });
+
+    it('labels both bounds with the values the grower configured', async () => {
+      await showVpd();
+
+      expect(bandLabels().map((label) => label.textContent?.trim())).toEqual([
+        '1.2 kPa',
+        '0.8 kPa',
+      ]);
+    });
+
+    it('contains the band in the value axis rather than clipping it', async () => {
+      // Every reading sat well below the 0.8–1.2 window.
+      await showMetric(MetricKey.VPD, reading(3_600_000, '0.2'), reading(0, '0.25'));
+
+      const edges = dashedMarks().map((edge) => Number(edge.getAttribute('y1')));
+      for (const y of edges) {
+        expect(y).toBeGreaterThan(0);
+        expect(y).toBeLessThan(200);
+      }
+    });
+
+    it('keeps the labels at one type size and percentage position when stretched', async () => {
+      await showVpd();
+
+      const before = bandLabels().map((label) => label.getAttribute('style'));
+      const sizeBefore = bandLabels().map((label) => getComputedStyle(label).fontSize);
+
+      // The Graph Wall hands the chart body a far taller row; the pane's viewBox
+      // is stretched into it rather than redrawn.
+      const container = element.shadowRoot?.querySelector('.gs-env-chart-container') as HTMLElement;
+      container.style.height = '640px';
+      await element.updateComplete;
+
+      expect(bandLabels().map((label) => label.getAttribute('style'))).toEqual(before);
+      expect(bandLabels().map((label) => getComputedStyle(label).fontSize)).toEqual(sizeBefore);
+      for (const style of before) {
+        expect(style).toMatch(/top:\d+(\.\d+)?%/);
+      }
+    });
+
+    it('draws nothing extra for a metric with no configured target', async () => {
+      await showMetric(MetricKey.TEMPERATURE, reading(3_600_000, '20'), reading(0, '22'));
+
+      expect(chartSvg().querySelector('rect')).toBeNull();
+      expect(dashedMarks()).toHaveLength(0);
+      expect(bandLabels()).toHaveLength(0);
+    });
+  });
+
+  describe('stroke weight', () => {
+    it('gives band and non-band traces the same non-scaling stroke', async () => {
+      // VPD is the only metric that draws status bands, so a chart holding both
+      // kinds of trace has to be a combined one.
+      element.isCombined = true;
+      element.metrics = [MetricKey.VPD, MetricKey.TEMPERATURE];
+      element.sensorHistory = {
+        [MetricKey.VPD]: [reading(3_600_000, '1.0'), reading(0, '0.2')],
+        [MetricKey.TEMPERATURE]: [reading(3_600_000, '20'), reading(0, '22')],
+      } as any;
+      await element.updateComplete;
+
+      const traces = Array.from(chartSvg().querySelectorAll('path')).filter(
+        (path) => (path.getAttribute('stroke') ?? 'none') !== 'none'
+      );
+
+      expect(traces.length).toBeGreaterThan(1);
+      for (const trace of traces) {
+        expect(trace.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+      }
+    });
+  });
+});

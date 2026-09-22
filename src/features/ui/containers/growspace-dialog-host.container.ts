@@ -28,7 +28,11 @@ import {
 import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { getStrainRecommendation } from '../../../slices/ai-insight';
 import { PlantUtils } from '../../../utils/plant-utils';
-import { needsExhaustCall } from '../../config/environment-save';
+import {
+  applyEnvironmentChange,
+  type EnvironmentChangeRequest,
+} from '../../config/environment-change';
+import { createEnvironmentChangeAdapter } from '../../../slices/growspace/environment-change.adapter';
 import {
   updateBreeder,
   deleteBreeder,
@@ -43,12 +47,18 @@ import {
   addGrowspace,
   updateGrowspace,
   removeGrowspace,
-  configureEnvironment,
-  configureExhaustFan,
   removeEnvironment,
 } from '../../../slices/growspace';
 import { saveNotificationSettings } from '../../../slices/notification';
 import { withToast, showError, showToast, closeDialog } from '../../../slices/ui';
+import {
+  mountedDialogPortals$,
+  portalOwnsDialog,
+  registerDialogPortal,
+  unregisterDialogPortal,
+} from '../../../slices/ui/dialog-portals';
+import { tcPresence$, type TcPresence } from '../../../slices/tc';
+import { labelTemplateSupport$, type LabelTemplateSupport } from '../../../slices/labels';
 import * as uiSlice from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
@@ -68,7 +78,6 @@ import {
   PlantOverviewDialogState,
 } from '../../../types';
 import type {
-  EnvironmentConfigEventDetail,
   VisionCheckupConfigEventDetail,
   StrainLibraryDialogState,
 } from '../../../lib/types/dialog';
@@ -83,6 +92,9 @@ import {
 } from '../../../slices/nutrient';
 
 import './growspace-nutrient-presets-editor.container';
+import '../../../dialogs/tc-dialog';
+import '../../irrigation/containers/recipe-library-dialog.container';
+import '../../irrigation/containers/program-library-dialog.container';
 import '../../../dialogs/add-plant-dialog';
 import '../../../dialogs/add-plants-dialog';
 import '../../../dialogs/clone-dialog';
@@ -93,6 +105,7 @@ import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
 import '../../../dialogs/logbook-dialog';
 import '../../../dialogs/print-label-dialog';
+import '../../../dialogs/label-templates-dialog';
 import '../../../dialogs/batch-print-label-dialog';
 import '../../../dialogs/batch-clone-dialog';
 import '../../../dialogs/snapshots-dialog';
@@ -142,7 +155,18 @@ export class GrowspaceDialogHost extends LitElement {
   }>;
   private _seedBatchesController!: StoreController<readonly SeedBatch[]>;
   private _pollinationEventsController!: StoreController<readonly PollinationEvent[]>;
+  private _mountedPortalsController!: StoreController<readonly string[]>;
+  /**
+   * Page-global TC installation state. The dialog needs the manifest and must
+   * not re-probe for it: presence is one answer per page owned by the TC slice,
+   * and it deliberately does not travel in the open payload — ADR-0027's payload
+   * discipline is about targeting a dialog, and this is not a per-dialog fact.
+   */
+  private _tcPresenceController!: StoreController<TcPresence>;
+  private _labelSupportController!: StoreController<LabelTemplateSupport>;
   private _controllersInitialized = false;
+  /** The id this portal currently holds in the page-global portal registry. */
+  private _registeredPortalId: string | null = null;
   private _dataChangeTimeout?: any;
   private _geneticsLoaded = false;
   @state() private _addPlantsLibraryError = '';
@@ -152,13 +176,41 @@ export class GrowspaceDialogHost extends LitElement {
     if (this.store) {
       this._initControllers();
     }
+    this._registerPortal();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unregisterPortal();
   }
 
   protected willUpdate(changed: PropertyValues): void {
     super.willUpdate(changed);
     if (changed.has('store')) {
       this._initControllers();
+      this._registerPortal();
     }
+  }
+
+  /**
+   * Announce this portal under its store's id, so a sibling portal can tell a
+   * dialog addressed to this one from a dialog addressed to nobody. The host
+   * registers itself rather than the card doing it: portals mount lazily on the
+   * first dialog open, and a card that forgot would be a portal that no sibling
+   * ever stands down for.
+   */
+  private _registerPortal(): void {
+    const portalId = this.store?.instanceId;
+    if (!portalId || this._registeredPortalId === portalId) return;
+    this._unregisterPortal();
+    registerDialogPortal(portalId);
+    this._registeredPortalId = portalId;
+  }
+
+  private _unregisterPortal(): void {
+    if (!this._registeredPortalId) return;
+    unregisterDialogPortal(this._registeredPortalId);
+    this._registeredPortalId = null;
   }
 
   protected updated(changed: PropertyValues): void {
@@ -175,6 +227,12 @@ export class GrowspaceDialogHost extends LitElement {
     this._dialogHostController = new StoreController(this, this.store.$dialogHostState);
     this._seedBatchesController = new StoreController(this, seedBatches$);
     this._pollinationEventsController = new StoreController(this, pollinationEvents$);
+    // Portals mount lazily, so the registry changes under an already-rendered
+    // dialog: this subscription is what makes a portal stand down when the one
+    // the payload named finally arrives.
+    this._mountedPortalsController = new StoreController(this, mountedDialogPortals$);
+    this._tcPresenceController = new StoreController(this, tcPresence$);
+    this._labelSupportController = new StoreController(this, labelTemplateSupport$);
     this._controllersInitialized = true;
   }
 
@@ -203,11 +261,29 @@ export class GrowspaceDialogHost extends LitElement {
     // Resolve context-specific device data (from payload or global selection)
     const payloadGrowspaceId = (active.payload as { growspaceId?: string })?.growspaceId;
 
-    // activeDialog$ is a global singleton shared by every growspace-manager-card
-    // instance, each of which mounts its own dialog-host portal. The irrigation
-    // dialog is opened with an explicit growspaceId, so only the portal whose
-    // `devices` list owns that growspace should render it — otherwise every other
-    // portal renders a duplicate dialog stacked on top with no matching device.
+    // activeDialog$ is a global singleton shared by every card that mounts a
+    // dialog-host portal, so a dialog that named no portal renders in all of
+    // them, stacked. The opener captures the opening card's `store.instanceId`
+    // as `portalId` (ADR-0055) and this portal stands down for it — but only
+    // when that portal is mounted, so a payload from a card that owns no portal
+    // still opens somewhere.
+    const payloadPortalId = (active.payload as { portalId?: string } | undefined)?.portalId;
+    if (
+      !portalOwnsDialog(
+        this.store.instanceId,
+        payloadPortalId,
+        this._mountedPortalsController.value
+      )
+    ) {
+      return html``;
+    }
+
+    // A device-ownership test, not an instance one: it suppresses a portal whose
+    // `devices` genuinely lacks the target growspace — before hydration, or for a
+    // collection that does not contain it. It cannot separate two portals on one
+    // dashboard, because `makePerCardGridSlice` computes `devices` from the
+    // page-global `devices$` and every portal therefore owns every growspace
+    // (#913). Portal identity above is what does that.
     if (
       active.type === 'IRRIGATION' &&
       payloadGrowspaceId &&
@@ -251,6 +327,10 @@ export class GrowspaceDialogHost extends LitElement {
               );
             case 'NUTRIENT_PRESETS':
               return this._renderNutrientPresetsDialog(active, effectiveDeviceData);
+            case 'IRRIGATION_RECIPES':
+              return this._renderIrrigationRecipesDialog(active);
+            case 'IRRIGATION_PROGRAMS':
+              return this._renderIrrigationProgramsDialog(active);
             case 'TRAINING':
               return this._renderTrainingDialog(active, effectiveDeviceData);
             case 'TAKE_CLONE':
@@ -275,6 +355,10 @@ export class GrowspaceDialogHost extends LitElement {
               return this._renderHarvestScoringDialog(active);
             case 'SNAPSHOTS':
               return this._renderSnapshotsDialog(active, effectiveDeviceData);
+            case 'TC':
+              return this._renderTcDialog(active);
+            case 'LABEL_TEMPLATES':
+              return this._renderLabelTemplatesDialog(active);
             default:
               return html``;
           }
@@ -1062,7 +1146,8 @@ export class GrowspaceDialogHost extends LitElement {
         @remove-environment-submit=${(e: CustomEvent<RemoveEnvironmentEventDetail>) => {
           e.detail.completion = this._handleRemoveEnvironment(e.detail);
         }}
-        @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
+        @environment-change-requested=${(e: CustomEvent<EnvironmentChangeRequest>) =>
+          this._handleEnvironmentChange(e.detail)}
         @save-notification-settings-submit=${(e: CustomEvent) =>
           this._handleSaveNotificationSettings(e.detail)}
         @vision-checkup-config-submit=${(e: CustomEvent) =>
@@ -1098,43 +1183,16 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
-  /**
-   * Guard the mandatory sensors — but only for a patch that actually carries
-   * them. Under sparse saves (ADR-0032) an untouched Sensors tab omits both
-   * keys, and the stored sensors still stand; rejecting that save would make
-   * every other tab unsavable.
-   */
-  private _isEnvironmentPatchValid(detail: EnvironmentConfigEventDetail): boolean {
-    const clearsTemperature =
-      'temperatureSensors' in detail && !(detail.temperatureSensors ?? []).length;
-    const clearsHumidity = 'humiditySensors' in detail && !(detail.humiditySensors ?? []).length;
-
-    if (!detail.selectedGrowspaceId || clearsTemperature || clearsHumidity) {
-      uiSlice.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
-      return false;
-    }
-    return true;
-  }
-
-  private async _handleEnvironmentConfig(detail: EnvironmentConfigEventDetail) {
-    if (!this._isEnvironmentPatchValid(detail)) return;
-
+  private async _handleEnvironmentChange(request: EnvironmentChangeRequest) {
     try {
-      await configureEnvironment(detail);
-      // Exhaust config can't ride the configure_environment payload (the backend
-      // service doesn't accept it), so persist it via its dedicated service.
-      // Under patch semantics (GSM ADR-0026) configure_environment preserves
-      // exhaust_fan_config, so the ordering is no longer load-bearing.
-      // Only when the user actually edited it (ADR-0032): an unrelated
-      // environment edit must not re-write the stored exhaust config.
-      if (needsExhaustCall(detail) && detail.exhaustFanConfig) {
-        await configureExhaustFan({
-          growspaceId: detail.selectedGrowspaceId,
-          fanConfig: detail.exhaustFanConfig,
-        });
-      }
+      await applyEnvironmentChange(
+        request,
+        createEnvironmentChangeAdapter(async () => {
+          if (!this.store) throw new Error('Growspace store is unavailable');
+          await this.store.refreshData();
+        })
+      );
       showToast('Environment configured successfully!', 'success');
-      await this._handleDataChanged();
       uiSlice.closeDialog();
     } catch (e: unknown) {
       showError(e, 'Failed to configure environment');
@@ -1288,6 +1346,65 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
+  /**
+   * The Label Templates dialog.
+   *
+   * The frame is rendered here and now; the view arrives when the lazy chunk
+   * does, or a compatibility state does. Support comes off
+   * `labelTemplateSupport$` rather than out of the payload, for the same
+   * reason TC's manifest does: it is page-global, one probe answers every
+   * card on the dashboard, and a dialog must not re-derive it per open.
+   */
+  private _renderLabelTemplatesDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'LABEL_TEMPLATES') return html``;
+    return html`
+      <label-templates-dialog
+        .open=${true}
+        .support=${this._labelSupportController.value}
+        .language=${this.hass?.language ?? 'en'}
+        @close=${() => this._closeDialogIfActive('LABEL_TEMPLATES')}
+      ></label-templates-dialog>
+    `;
+  }
+
+  /**
+   * The Tissue Culture dialog.
+   *
+   * The frame is rendered here and now; the view arrives when the lazy chunk
+   * does, or an error does. The manifest comes off `tcPresence$` rather than
+   * out of the payload, and nothing here filters TC by `growspaceId` — the
+   * dialog shows all cultures, and the id is carried for Graduation later.
+   */
+  private _renderTcDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'TC') return html``;
+    const presence = this._tcPresenceController.value;
+    return html`
+      <tc-dialog
+        .open=${true}
+        .manifest=${presence.status === 'present' ? presence.manifest : undefined}
+        .language=${this.hass?.language ?? 'en'}
+        .initialTab=${active.payload.initialTab}
+        .scrollToField=${active.payload.scrollToField}
+        @close=${() => this._closeDialogIfActive('TC')}
+        @plant-view-requested=${this._showPlantFromTc}
+      ></tc-dialog>
+    `;
+  }
+
+  /**
+   * A plant link inside the TC dialog: close the dialog and open the Plant
+   * Overview in place.
+   *
+   * The standalone card answers the same event with the full-page navigation
+   * the link describes, because it may be the only Growspace card on the
+   * dashboard. Here the manager card is on the page by definition, so
+   * `handleDeepLink` does it with no reload and nothing destroyed.
+   */
+  private _showPlantFromTc = (event: CustomEvent<{ plantId: string }>): void => {
+    this._closeDialogIfActive('TC');
+    uiSlice.handleDeepLink(event.detail.plantId);
+  };
+
   private _renderIrrigationDialog(
     active: ActiveDialogState,
     selectedDeviceData?: GrowspaceDevice
@@ -1390,6 +1507,41 @@ export class GrowspaceDialogHost extends LitElement {
     } catch (err: any) {
       uiSlice.showToast(`Watering failed: ${err.message || err}`, 'error');
     }
+  }
+
+  /**
+   * The standalone [[Irrigation Recipe]] library editor.
+   *
+   * Takes no growspace, unlike almost everything else here: the library is
+   * global, so this surface edits recipes as objects rather than as one tent's
+   * settings. It also needs no `data-changed` hook — the mutations it runs
+   * update `irrigationRecipes$` from their own replies.
+   */
+  private _renderIrrigationRecipesDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'IRRIGATION_RECIPES') return html``;
+    return html`
+      <recipe-library-dialog
+        .open=${true}
+        @close=${() => this._closeDialogIfActive('IRRIGATION_RECIPES')}
+      ></recipe-library-dialog>
+    `;
+  }
+
+  /**
+   * The standalone [[Irrigation Program]] editor.
+   *
+   * Takes no growspace, like the recipe library above: a program is a plan, not
+   * one tent's settings. It needs no `data-changed` hook either — saving and
+   * deleting update `irrigationPrograms$` from their own replies.
+   */
+  private _renderIrrigationProgramsDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'IRRIGATION_PROGRAMS') return html``;
+    return html`
+      <program-library-dialog
+        .open=${true}
+        @close=${() => this._closeDialogIfActive('IRRIGATION_PROGRAMS')}
+      ></program-library-dialog>
+    `;
   }
 
   private _renderNutrientPresetsDialog(
@@ -1612,6 +1764,7 @@ export class GrowspaceDialogHost extends LitElement {
       <print-label-dialog
         .open=${true}
         .dialogState=${active.payload}
+        .support=${this._labelSupportController.value}
         @close=${() => this._closeDialogIfActive('PRINT_LABEL')}
         @data-changed=${() => this._handleDataChanged()}
       ></print-label-dialog>
@@ -1624,6 +1777,7 @@ export class GrowspaceDialogHost extends LitElement {
       <batch-print-label-dialog
         .open=${true}
         .dialogState=${active.payload}
+        .support=${this._labelSupportController.value}
         @close=${() => this._closeDialogIfActive('BATCH_PRINT_LABELS')}
       ></batch-print-label-dialog>
     `;

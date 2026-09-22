@@ -12,6 +12,7 @@
  *
  * Structure:
  *   SM
+ *     .view         — captures browser, or the Vision evidence ledger
  *     .selectedPath — hero frame, or null to track the newest frame
  *     .playing      — timelapse playback
  *     .panelOpen    — findings strip expanded
@@ -31,9 +32,22 @@ export type CompareState =
   | { kind: 'picking'; aPath: string }
   | { kind: 'on'; aPath: string; bPath: string; pct: number };
 
+// ─── View ─────────────────────────────────────────────────────────────────────
+
+/**
+ * The dialog's two surfaces, which share a camera but not a data source.
+ *
+ * `captures` browses `/local/` snapshot files. `evidence` reads the `evidence_v1`
+ * projection, whose frames cross the wire as `media-source://` identifiers and
+ * are never `/local/` paths. Neither can gate the other: a growspace can have
+ * Vision evidence and no snapshot files, or the reverse.
+ */
+export type SnapshotsView = 'captures' | 'evidence';
+
 // ─── Root SM ──────────────────────────────────────────────────────────────────
 
 export interface SM {
+  view: SnapshotsView;
   selectedPath: string | null;
   playing: boolean;
   panelOpen: boolean;
@@ -45,6 +59,8 @@ export interface SM {
 // ─── Events ───────────────────────────────────────────────────────────────────
 
 export type SMEvent =
+  // Surface
+  | { type: 'ViewSelected'; view: SnapshotsView }
   // Navigation — `path` is resolved by the ViewModel before dispatch.
   | { type: 'FrameSelected'; path: string }
   // Playback
@@ -67,6 +83,7 @@ export type SMEvent =
 
 export function createInitialSM(): SM {
   return {
+    view: 'captures',
     selectedPath: null,
     playing: false,
     panelOpen: true,
@@ -87,6 +104,11 @@ const quiesce = (sm: SM): SM => ({ ...sm, playing: false, lightboxOpen: false })
 
 export function transition(sm: SM, event: SMEvent): SM {
   switch (event.type) {
+    case 'ViewSelected':
+      // Leaving the captures browser quiesces its transient chrome, so returning
+      // to it never resumes a timelapse the user cannot see running.
+      return event.view === sm.view ? sm : { ...quiesce(sm), view: event.view };
+
     case 'FrameSelected':
       // Picking a frame from the rail is also how you leave compare: the rail is
       // the only place both controls live, so a click there means "show me this".

@@ -350,6 +350,19 @@ describe('updateStrainMeta', () => {
     expect(call).toHaveProperty('image_base64', 'data:image/png;base64,xyz');
     expect(call).not.toHaveProperty('image');
   });
+
+  it('drops fields the service schema does not accept', async () => {
+    await updateStrainMeta({
+      strain: 'OG',
+      is_stub: true,
+      analytics: { avg_veg_days: 21, avg_flower_days: 63, total_harvests: 2 },
+      name: 'OG',
+      flowering_days: 63,
+    } as Parameters<typeof updateStrainMeta>[0]);
+
+    const call = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(call).toEqual({ strain: 'OG' });
+  });
 });
 
 // ---------------------------------------------------------------------------

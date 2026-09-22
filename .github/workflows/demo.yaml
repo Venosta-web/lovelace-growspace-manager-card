@@ -1,8 +1,10 @@
 name: Deploy Demo
 
 on:
-  push:
-    branches: [main]
+  # Stable publishing calls this workflow only after the release transaction
+  # succeeds. Keeping deployment in that dependency graph prevents the public
+  # demo from moving ahead of a failed stable release.
+  workflow_call:
   # Pull requests build and verify the site but do not deploy, so a change to
   # the demo is reviewable before it reaches Pages — the failure this workflow
   # guards against was invisible until after merge.

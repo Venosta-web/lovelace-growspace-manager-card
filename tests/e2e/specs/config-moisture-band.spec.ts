@@ -1,10 +1,11 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, haTest as test } from '../fixtures/ha-setup';
+import { callHAService, expect, haTest as test } from '../fixtures/ha-setup';
 import { ConfigDialog } from '../pages/Dialogs';
 import { GrowspaceCard } from '../pages/GrowspaceCard';
 
 const HEALTHY_MINIMUM = '33.7';
 const HEALTHY_MAXIMUM = '57.3';
+const UNRELATED_STRESS_THRESHOLD = '0.81';
 
 function moistureBound(dialog: ConfigDialog, label: string): Locator {
   return dialog.dialog
@@ -85,13 +86,21 @@ test('persists both moisture bounds through the live configure_environment servi
   page,
   testContext,
 }) => {
-  test.skip(!testContext.vwcFlowerDashboardPath, 'TEST_VWC_FLOWER_DASHBOARD_PATH is required');
+  test.skip(
+    !testContext.vwcFlowerDashboardPath || !testContext.vwcFlowerGrowspaceId,
+    'TEST_VWC_FLOWER_DASHBOARD_PATH and TEST_VWC_FLOWER_GROWSPACE_ID are required'
+  );
 
   const browserErrors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
+
+  await callHAService(page, 'growspace_manager', 'configure_environment', {
+    growspace_id: testContext.vwcFlowerGrowspaceId,
+    stress_threshold: Number(UNRELATED_STRESS_THRESHOLD),
+  });
 
   const card = new GrowspaceCard(page);
   await card.navigate(testContext.vwcFlowerDashboardPath);
@@ -114,4 +123,12 @@ test('persists both moisture bounds through the live configure_environment servi
 
   await expect(moistureBound(reopened, 'Healthy minimum')).toHaveValue(HEALTHY_MINIMUM);
   await expect(moistureBound(reopened, 'Healthy maximum')).toHaveValue(HEALTHY_MAXIMUM);
+
+  await reopened.clickTab('climate');
+  await expect(
+    reopened.dialog
+      .locator('config-climate-tab md3-number-input[label="Stress Threshold %"]')
+      .locator('input'),
+    'saving the moisture pair must preserve an unrelated EnvironmentConfig field'
+  ).toHaveValue(UNRELATED_STRESS_THRESHOLD);
 });

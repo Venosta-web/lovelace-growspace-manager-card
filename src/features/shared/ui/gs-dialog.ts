@@ -12,6 +12,8 @@ import { reducedMotion } from '../../../styles/reduced-motion.styles';
 @customElement('gs-dialog')
 export class GsDialog extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
+  /** Home Assistant's dialog surface size. Existing callers stay on `large`. */
+  @property({ type: String }) width: 'small' | 'medium' | 'large' | 'full' = 'large';
   @property({ type: String }) heading = '';
   @property({ type: String }) subtitle = '';
   @property({ type: String }) iconPath = '';
@@ -157,7 +159,7 @@ export class GsDialog extends LitElement {
         without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="large"
+        width=${this.width}
         @closed=${this._dispatchClose}
       >
         <div class="glass-dialog-container" style=${containerStyle}>

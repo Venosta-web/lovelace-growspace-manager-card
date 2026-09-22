@@ -17,6 +17,8 @@ import type {
   HarvestScoringDialogState,
   SnapshotsDialogState,
   IrrigationDialogState,
+  TcDialogState,
+  LabelTemplatesDialogState,
 } from '../../lib/types/dialog';
 
 // Discriminated union for central dialog management
@@ -33,6 +35,8 @@ export type ActiveDialogState =
   | { type: 'LOGBOOK'; payload: { growspaceId: string } }
   | { type: 'WATERING'; payload: WateringDialogState }
   | { type: 'NUTRIENT_PRESETS'; payload: NutrientPresetsDialogState }
+  | { type: 'IRRIGATION_RECIPES'; payload: Record<string, never> }
+  | { type: 'IRRIGATION_PROGRAMS'; payload: Record<string, never> }
   | { type: 'TRAINING'; payload: TrainingDialogState }
   | { type: 'IPM'; payload: IPMDialogState }
   | { type: 'TAKE_CLONE'; payload: CloneDialogState }
@@ -42,4 +46,6 @@ export type ActiveDialogState =
   | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
   | { type: 'NUTRIENTS'; payload: Record<string, never> }
   | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }
-  | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState };
+  | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
+  | { type: 'TC'; payload: TcDialogState }
+  | { type: 'LABEL_TEMPLATES'; payload: LabelTemplatesDialogState };

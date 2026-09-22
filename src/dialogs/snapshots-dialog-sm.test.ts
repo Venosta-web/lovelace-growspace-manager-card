@@ -154,3 +154,37 @@ describe('snapshots-dialog SM — FramesLoaded', () => {
     expect(transition(picking, { type: 'FramesLoaded', paths: [B] }).compare.kind).toBe('off');
   });
 });
+
+describe('snapshots-dialog SM — view', () => {
+  it('opens on the captures browser', () => {
+    expect(createInitialSM().view).toBe('captures');
+  });
+
+  it('ViewSelected switches surface', () => {
+    const sm = transition(createInitialSM(), { type: 'ViewSelected', view: 'evidence' });
+    expect(sm.view).toBe('evidence');
+  });
+
+  it('is a no-op when the surface is already selected', () => {
+    const sm = createInitialSM();
+    expect(transition(sm, { type: 'ViewSelected', view: 'captures' })).toBe(sm);
+  });
+
+  it('quiesces the captures chrome on the way out, so nothing plays unseen', () => {
+    const playing = transition(transition(createInitialSM(), { type: 'PlayToggled' }), {
+      type: 'LightboxOpened',
+    });
+    const sm = transition(playing, { type: 'ViewSelected', view: 'evidence' });
+
+    expect(sm.playing).toBe(false);
+    expect(sm.lightboxOpen).toBe(false);
+  });
+
+  it('keeps the selected frame, so returning to the browser lands where it left', () => {
+    const selected = transition(createInitialSM(), { type: 'FrameSelected', path: A });
+    const away = transition(selected, { type: 'ViewSelected', view: 'evidence' });
+    const back = transition(away, { type: 'ViewSelected', view: 'captures' });
+
+    expect(back.selectedPath).toBe(A);
+  });
+});

@@ -17,6 +17,7 @@ function createElement(
     iconPath: string;
     stageColor: string;
     submitting: boolean;
+    width: 'small' | 'medium' | 'large' | 'full';
   }> = {}
 ): GsDialog {
   const el = document.createElement('gs-dialog') as GsDialog;
@@ -40,6 +41,18 @@ describe('GsDialog – open state', () => {
     const el = createElement({ open: true, heading: 'Test' });
     await el.updateComplete;
     expect(el.shadowRoot?.querySelector('ha-dialog')).not.toBeNull();
+  });
+
+  it('keeps large as the default and forwards an explicit full width', async () => {
+    const defaultDialog = createElement({ open: true, heading: 'Default' });
+    await defaultDialog.updateComplete;
+    expect(defaultDialog.shadowRoot?.querySelector('ha-dialog')?.getAttribute('width')).toBe(
+      'large'
+    );
+
+    const fullDialog = createElement({ open: true, heading: 'Full', width: 'full' });
+    await fullDialog.updateComplete;
+    expect(fullDialog.shadowRoot?.querySelector('ha-dialog')?.getAttribute('width')).toBe('full');
   });
 });
 

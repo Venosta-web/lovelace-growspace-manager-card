@@ -197,41 +197,6 @@ export const growspaceCardStyles = css`
     border: 0;
   }
 
-  .gs-tooltip {
-    position: absolute;
-    top: 10px;
-    background: rgba(30, 30, 35, 0.9);
-    color: var(--primary-text-color, #fff);
-    padding: 8px 12px;
-    border-radius: var(--border-radius-sm, 8px);
-    font-size: 0.75rem;
-    pointer-events: none;
-    transform: translate(-50%, 0);
-    z-index: 10;
-    white-space: nowrap;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    line-height: 1.4;
-    text-align: center;
-  }
-  .gs-tooltip .time {
-    font-weight: bold;
-    color: var(--primary-light-color);
-    margin-bottom: 2px;
-  }
-
-  .gs-cursor-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: rgba(255, 255, 255, 0.3);
-    pointer-events: none;
-    z-index: 5;
-    border-left: 1px dashed rgba(255, 255, 255, 0.5);
-  }
-
   /* Light Cycle Card Nested */
   .gs-light-cycle-card {
     background: rgba(0, 0, 0, 0.2);

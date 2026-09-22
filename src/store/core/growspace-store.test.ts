@@ -82,6 +82,24 @@ describe('GrowspaceStore – computed atoms', () => {
   });
 });
 
+describe('GrowspaceStore – instanceId', () => {
+  // The store instance is the portal identity a dialog payload names (#913 /
+  // ADR-0055), so two cards must never share one.
+  it('gives every store a distinct id', () => {
+    const { store: first } = makeStore();
+    const { store: second } = makeStore();
+
+    expect(first.instanceId).toBeTruthy();
+    expect(second.instanceId).not.toBe(first.instanceId);
+  });
+
+  it('keeps the same id for the life of one store', () => {
+    const { store } = makeStore();
+
+    expect(store.instanceId).toBe(store.instanceId);
+  });
+});
+
 describe('GrowspaceStore – initialize and destroy', () => {
   let store: GrowspaceStore;
 

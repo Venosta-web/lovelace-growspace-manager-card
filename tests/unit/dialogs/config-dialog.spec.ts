@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
-import { needsExhaustCall } from '../../../src/features/config/environment-save';
 import {
   readThreshold,
   DEFAULT_DEHUM_THRESHOLDS,
@@ -362,13 +361,13 @@ describe('ConfigDialog', () => {
       await element.updateComplete;
 
       const listener = vi.fn();
-      element.addEventListener('configure-environment-submit', listener);
+      element.addEventListener('environment-change-requested', listener);
 
       const btn = element.shadowRoot?.querySelector('button.md3-button.primary');
       (btn as HTMLElement)?.click();
 
       expect(listener).toHaveBeenCalled();
-      expect(listener.mock.calls[0][0].detail.temperatureSensors).toEqual(['sensor.new']);
+      expect(listener.mock.calls[0][0].detail.draft.temperatureSensors).toEqual(['sensor.new']);
     });
   });
 
@@ -1303,7 +1302,7 @@ describe('ConfigDialog', () => {
   });
 
   describe('Climate save (env→host two-call path)', () => {
-    it('carries the edited exhaust config into the submit event so needsExhaustCall is true', async () => {
+    it('carries the Shared Environment Draft and Dirty Write Set into the request', async () => {
       element.currentTab = ConfigTab.CLIMATE;
       (element as any).envSelectedId = 'gs1';
       (element as any).envTemperatureSensors = ['sensor.temp'];
@@ -1320,14 +1319,15 @@ describe('ConfigDialog', () => {
       await element.updateComplete;
 
       const listener = vi.fn();
-      element.addEventListener('configure-environment-submit', listener);
+      element.addEventListener('environment-change-requested', listener);
       const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
       saveBtn?.click();
 
       expect(listener).toHaveBeenCalled();
       const detail = listener.mock.calls[0][0].detail;
-      expect(detail.exhaustFanConfig.enabled).toBe(true);
-      expect(needsExhaustCall(detail)).toBe(true);
+      expect(detail.kind).toBe('shared-environment-draft');
+      expect(detail.draft.exhaustFanConfig.enabled).toBe(true);
+      expect(detail.dirty.has('exhaustFanConfig')).toBe(true);
     });
   });
 });

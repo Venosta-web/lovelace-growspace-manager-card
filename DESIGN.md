@@ -113,6 +113,12 @@ colors:
   stage-flower-early: '#ff9800'
   stage-flower-mid: '#fb8c00'
   stage-flower-late: '#ef6c00'
+  # Feature chrome — Identity accents for feature surfaces, not plotted data. A feature
+  # accent may share a value with a stage or metric today while remaining free to diverge
+  # with its own UI role.
+  # The Steering Phase Hero Card's border, tint, active ring and icon. Its VWC trace
+  # remains on --metric-soil-moisture; phase data remains on --phase-p*. See ADR 0047.
+  crop-steering-accent: '#26c6da'
   # Crop steering phases — P0/P1/P2/P3 are painted as chart bands, listed as phase chips
   # and worn as the hero's phase badge, all from one family that lived as three literals
   # in slices/irrigation/index.ts. The P1/P2/P3 values are unchanged from those literals.
@@ -479,6 +485,12 @@ One pair everywhere the light cycle is reported — timeline icons, logbook entr
 
 - **P0 Activation** `#7e57c2` (`--phase-p0`), **P1 Saturation** `#4caf50` (`--phase-p1`), **P2 Maintenance** `#2196f3` (`--phase-p2`), **P3 Dryback** `#ff9800` (`--phase-p3`) — chart bands, phase chips, and the hero's dryback badge, from one family. P3 shares a value with Flowering Orange and is not it. P0 is the one phase in which no irrigation fires, so it sits off the green→blue→orange progression rather than extending it.
 
+The Steering Phase Hero Card's chrome uses **Crop Steering Accent** `#26c6da`
+(`--crop-steering-accent`) for its border, background tints, interaction states, inset ring,
+and icon. This is a feature-chrome role, not the colour of the VWC data plotted inside it;
+the trace remains on `--metric-soil-moisture`, and the threshold guides use the phase
+palette. See ADR 0047.
+
 ### Gradients
 
 `--primary-gradient`, `--secondary-gradient` and `--danger-gradient` run `135deg`, and **the direction is part of the token** — it is the card's fill direction for buttons and surfaces. A gradient bound to another direction (a liquid column runs `to bottom`) composes the same stops from the colour tokens instead of re-authoring them: `linear-gradient(to bottom, var(--secondary), var(--info-dark))`. **Both stops must theme alike** — pairing the theme-following `--gm-info-color` with a literal `--info-dark` runs the gradient between two unrelated hues under a theme that sets `--info-color`. `--secondary` and `--info-dark`, like `--error-color` and `--error-dark`, move together. Re-declaring the stops as literals is what ADR 0042 §3 stops. `--primary-gradient` is the filled-button treatment; a filled button must not carry its own gradient.
@@ -678,7 +690,7 @@ Nested card within the main card surface. `background: rgba(0,0,0,0.2)`, `border
 
 ### Domain-Specific: Environment Chart (`.gs-chart-container`)
 
-150px tall SVG chart with amber (`#ffeb3b`) stroke line, `drop-shadow(0 0 4px rgba(255,235,59,0.2))` glow filter, and gradient fill at 20% opacity. A tooltip on hover renders as a frosted glass card: `background: rgba(30,30,35,0.9)`, `backdrop-filter: blur(12px)`, 8px border-radius.
+150px tall SVG chart with amber (`#ffeb3b`) stroke line, `drop-shadow(0 0 4px rgba(255,235,59,0.2))` glow filter, and gradient fill at 20% opacity. Scrubbing is drawn by `<chart-scrub-tooltip>` — one component for every chart in the Env Graph family, so the readout does not change shape with the chart you happen to be on. It is a blurred card on a fixed-dark ground (`rgb(20,20,20)`, `backdrop-filter: blur(4px)`, 8px radius) taking `--on-overlay-*` foregrounds, headed once by the scrubbed moment on the Home Assistant locale's clock, with a swatch per row carrying the series hue — a dot for a reading at that moment, a bar for one averaged over a bucket. Its cursor is a single 1px dashed hairline in a theme-derived rule colour, because it is drawn on the chart's own pane rather than on the readout's ground.
 
 ## 5. Layout Principles
 

@@ -25,6 +25,7 @@ import {
   mdiAlertOctagon,
 } from '@mdi/js';
 import { token } from '../../styles/variables';
+import type { GrowspaceDevice } from '../../services/types';
 
 export enum MetricKey {
   TEMPERATURE = 'temperature',
@@ -100,6 +101,8 @@ export interface MetricConfigItem {
   title: string;
   unit: string;
   icon: string;
+  /** Smallest data range that still communicates meaningful variation on an auto axis. */
+  minimumSpan: number;
   type?: ChartType;
 }
 
@@ -109,54 +112,63 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Temperature',
     unit: '°C',
     icon: mdiThermometer,
+    minimumSpan: 4,
   },
   [MetricKey.HUMIDITY]: {
     color: token['--metric-humidity'],
     title: 'Humidity',
     unit: '%',
     icon: mdiWaterPercent,
+    minimumSpan: 20,
   },
   [MetricKey.VPD]: {
     color: token['--metric-vpd'],
     title: 'VPD',
     unit: 'kPa',
     icon: mdiCloudOutline,
+    minimumSpan: 0.6,
   },
   [MetricKey.CALCULATED_VPD]: {
     color: token['--metric-calculated-vpd'],
     title: 'Calc. VPD',
     unit: 'kPa',
     icon: mdiCalculator,
+    minimumSpan: 0.6,
   },
   [MetricKey.CO2]: {
     color: token['--metric-co2'],
     title: 'CO2',
     unit: 'ppm',
     icon: mdiWeatherCloudy,
+    minimumSpan: 400,
   },
   [MetricKey.AIR_EXCHANGE]: {
     color: token['--metric-air-exchange'],
     title: 'Air Exchange',
     unit: 'm³/h',
     icon: mdiAirFilter,
+    minimumSpan: 100,
   },
   [MetricKey.IRRIGATION_TANK_LEVEL]: {
     color: token['--metric-tank-level'],
     title: 'Tank Level',
     unit: '%',
     icon: mdiBarrel,
+    minimumSpan: 20,
   },
   [MetricKey.SOIL_MOISTURE]: {
     color: token['--metric-soil-moisture'],
     title: 'Soil Moisture',
     unit: '%',
     icon: mdiWaterPercent,
+    minimumSpan: 20,
   },
   [MetricKey.LIGHT]: {
     color: token['--metric-light'],
     title: 'Light',
     unit: 'state',
     icon: mdiLightbulbOn,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.IRRIGATION]: {
@@ -164,6 +176,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Irrigation',
     unit: 'state',
     icon: mdiWater,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.DRAIN]: {
@@ -171,6 +184,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Drain',
     unit: 'state',
     icon: mdiWater,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.EXHAUST]: {
@@ -178,24 +192,28 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Exhaust',
     unit: '',
     icon: mdiFan,
+    minimumSpan: 10,
   },
   [MetricKey.CIRCULATION_FAN]: {
     color: token['--metric-circulation-fan'],
     title: 'Circulation Fan',
     unit: '',
     icon: mdiFan,
+    minimumSpan: 10,
   },
   [MetricKey.HUMIDIFIER]: {
     color: token['--metric-humidifier'],
     title: 'Humidifier',
     unit: '',
     icon: mdiAirHumidifier,
+    minimumSpan: 10,
   },
   [MetricKey.DEHUMIDIFIER]: {
     color: token['--metric-dehumidifier'],
     title: 'Dehumidifier',
     unit: 'state',
     icon: mdiAirHumidifierOff,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.OPTIMAL]: {
@@ -203,6 +221,7 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Optimal Conditions',
     unit: 'state',
     icon: mdiRadioboxMarked,
+    minimumSpan: 1,
     type: ChartType.STEP,
   },
   [MetricKey.DLI]: {
@@ -210,70 +229,229 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'DLI',
     unit: 'mol/m²/d',
     icon: mdiWeatherSunny,
+    minimumSpan: 10,
   },
   [MetricKey.SUBSTRATE_TEMPERATURE]: {
     color: token['--danger-chip'],
     title: 'Substrate Temp',
     unit: '°C',
     icon: mdiThermometer,
+    minimumSpan: 4,
   },
   [MetricKey.CROP_STEERING]: {
     color: token['--metric-crop-steering'],
     title: 'Crop Steering',
     unit: '',
     icon: mdiSprout,
+    minimumSpan: 1,
   },
   [MetricKey.ENERGY]: {
     color: token['--metric-energy'],
     title: 'Energy',
     unit: 'kWh',
     icon: mdiFlash,
+    minimumSpan: 5,
   },
   [MetricKey.WATER]: {
     color: token['--metric-water'],
     title: 'Water Usage',
     unit: 'L/d',
     icon: mdiWaterMinus,
+    minimumSpan: 5,
   },
-  [MetricKey.PH]: { color: token['--metric-ph'], title: 'pH', unit: '', icon: mdiPh },
+  [MetricKey.PH]: {
+    color: token['--metric-ph'],
+    title: 'pH',
+    unit: '',
+    icon: mdiPh,
+    minimumSpan: 1,
+  },
   [MetricKey.FEED_EC]: {
     color: token['--metric-feed-ec'],
     title: 'Feed EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
+    minimumSpan: 1,
   },
   [MetricKey.BULK_EC]: {
     color: token['--metric-bulk-ec'],
     title: 'Bulk EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
+    minimumSpan: 1,
   },
   [MetricKey.PORE_EC]: {
     color: token['--danger-chip'],
     title: 'Pore EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
+    minimumSpan: 1,
   },
   [MetricKey.RUNOFF_EC]: {
     color: token['--danger-chip'],
     title: 'Runoff EC',
     unit: 'mS/cm',
     icon: mdiLightningBolt,
+    minimumSpan: 1,
   },
   [MetricKey.DRAIN_VOLUME]: {
     color: token['--metric-drain-volume'],
     title: 'Drain Volume',
     unit: 'L',
     icon: mdiWaterMinus,
+    minimumSpan: 5,
   },
   [MetricKey.IRRIGATION_FLOW]: {
     color: token['--metric-irrigation-flow'],
     title: 'Flow Rate',
     unit: 'L/h',
     icon: mdiWaterPump,
+    minimumSpan: 10,
   },
-  [MetricKey.POWER]: { color: token['--metric-power'], title: 'Power', unit: 'W', icon: mdiFlash },
+  [MetricKey.POWER]: {
+    color: token['--metric-power'],
+    title: 'Power',
+    unit: 'W',
+    icon: mdiFlash,
+    minimumSpan: 500,
+  },
 };
+
+/**
+ * One subordinate pane of a [[Curated Combo]].
+ *
+ * A pane usually reports one [[Interval Metric]]. Where the *difference*
+ * between two is the diagnostic — feed EC against runoff EC says whether the
+ * substrate is accumulating salt, which neither absolute trace says alone — the
+ * pane reports `metric` minus `relativeTo`. That is still one pane of bars under
+ * a cap; what changes is what a bar is, not how it is drawn.
+ */
+export interface ComboSecondary {
+  metric: MetricKey;
+  /** When set, the pane reports `metric` minus this one. */
+  relativeTo?: MetricKey;
+  /**
+   * The configured value the pane is read against, resolved from the growspace.
+   *
+   * A limit is device configuration rather than a constant, so the table names
+   * *where it comes from* and never the number. It is a function so the renderer
+   * needs no per-recipe knowledge: a second pane with a threshold adds a line
+   * here and no branch there.
+   */
+  limitOf?: (device: GrowspaceDevice) => number | undefined;
+}
+
+/**
+ * One [[Curated Combo]]: the pairing the card asserts, and which side of it is
+ * the primary metric.
+ */
+export interface MetricComboRecipe {
+  primary: MetricKey;
+  /**
+   * The subordinate contexts that give the primary meaning, in render order.
+   *
+   * A list rather than one metric because some questions have two halves that
+   * do not collapse into each other: humidity drifting with the humidifier idle
+   * and humidity drifting with the dehumidifier pinned are different readings of
+   * the same trace. The recipe's shape decides whether they become panes or
+   * faint overlays; the list itself only names the context.
+   */
+  secondaries: ComboSecondary[];
+  /** The fact ADR-0049 uses to choose overlay or two-pane geometry. */
+  secondaryShape: 'instantaneous' | 'interval';
+}
+
+/**
+ * The combo recipes, keyed by their primary metric.
+ *
+ * Hard-coded beside `METRIC_CONFIG`, where the pairing sits next to the colour,
+ * unit and icon facts it depends on, and deliberately **not** card YAML: the
+ * editorial claim is the whole value of a combo, and a `combos:` key would have
+ * growers curating before there is an established sense of what a good one is
+ * (ADR-0051). The recipe records the secondary data shape that selects its
+ * geometry, so the renderer applies ADR-0049 without metric-specific branches.
+ */
+export const METRIC_COMBOS: Record<string, MetricComboRecipe> = {
+  [MetricKey.TEMPERATURE]: {
+    primary: MetricKey.TEMPERATURE,
+    secondaries: [{ metric: MetricKey.EXHAUST }],
+    secondaryShape: 'interval',
+  },
+  // The same actuator-effort reading as temperature, in both directions: the
+  // {on, off} thresholds already render as setpoint pairs on the primary pane.
+  [MetricKey.HUMIDITY]: {
+    primary: MetricKey.HUMIDITY,
+    secondaries: [{ metric: MetricKey.HUMIDIFIER }, { metric: MetricKey.DEHUMIDIFIER }],
+    secondaryShape: 'interval',
+  },
+  // Exhaust dumps CO2, so the anticorrelation is the whole story — and it is
+  // invisible while the two are separate charts.
+  [MetricKey.CO2]: {
+    primary: MetricKey.CO2,
+    secondaries: [{ metric: MetricKey.EXHAUST }],
+    secondaryShape: 'interval',
+  },
+  // The literal stock-and-flow case: substrate water content over the shots
+  // that fill it.
+  [MetricKey.SOIL_MOISTURE]: {
+    primary: MetricKey.SOIL_MOISTURE,
+    secondaries: [{ metric: MetricKey.IRRIGATION }],
+    secondaryShape: 'interval',
+  },
+  // The delta between feed and runoff is the diagnostic, and the configured
+  // maximum EC delta is the mark to read it against.
+  [MetricKey.PORE_EC]: {
+    primary: MetricKey.PORE_EC,
+    secondaries: [
+      {
+        metric: MetricKey.RUNOFF_EC,
+        relativeTo: MetricKey.FEED_EC,
+        limitOf: (device) => device.drainConfig?.maxEcDelta,
+      },
+    ],
+    secondaryShape: 'interval',
+  },
+  // The tank pattern in another unit: an instantaneous draw over the
+  // accumulated consumption.
+  [MetricKey.ENERGY]: {
+    primary: MetricKey.ENERGY,
+    secondaries: [{ metric: MetricKey.POWER }],
+    secondaryShape: 'interval',
+  },
+  [MetricKey.VPD]: {
+    primary: MetricKey.VPD,
+    secondaries: [{ metric: MetricKey.TEMPERATURE }, { metric: MetricKey.HUMIDITY }],
+    secondaryShape: 'instantaneous',
+  },
+};
+
+/**
+ * The combo `metric` is the primary of, if any.
+ *
+ * Matched on the whole key, so a per-sensor graph id (`temperature:sensor.x`)
+ * resolves nothing: a combo is a claim about the growspace's temperature, not
+ * about one of several probes reporting it.
+ */
+export function metricComboFor(metric: string): MetricComboRecipe | undefined {
+  return METRIC_COMBOS[metric];
+}
+
+/**
+ * Every metric key a recipe involves, primary first.
+ *
+ * This is the combo's *identity* — what keys a render list and what a consumer
+ * needs history for — and deliberately not its structure: a delta pane
+ * contributes both of its metrics here, flattened, because both must be
+ * fetched. Whoever draws the panes reads the recipe itself.
+ */
+export function metricComboKeys(recipe: MetricComboRecipe): string[] {
+  return [
+    recipe.primary,
+    ...recipe.secondaries.flatMap((secondary) =>
+      secondary.relativeTo ? [secondary.metric, secondary.relativeTo] : [secondary.metric]
+    ),
+  ];
+}
 
 export enum StatusLevel {
   OPTIMAL = 'optimal',
@@ -357,6 +535,7 @@ export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {
   title: 'Unknown',
   unit: '',
   icon: mdiMagnify,
+  minimumSpan: 1,
   type: ChartType.LINE,
 };
 

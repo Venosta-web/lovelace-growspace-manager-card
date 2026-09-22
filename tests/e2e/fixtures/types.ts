@@ -42,6 +42,8 @@ export interface TestContext {
   /** Dedicated multi-camera and Vision Checkup capability profile */
   visionGrowspaceId: string;
   visionDashboardPath: string;
+  /** Dashboard whose only card is custom:growspace-tc-card. */
+  tcDashboardPath: string;
   /** Anchor plant for per-plant E2E tests (row 1, col 1 of veg growspace) */
   vegPlantId: string;
 }

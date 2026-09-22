@@ -28,6 +28,8 @@ import { variables } from '../styles/variables';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
+import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 
 @customElement('growspace-tank-card')
 export class GrowspaceTankCard extends LitElement implements LovelaceCard {
@@ -408,7 +410,13 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-tank-card-editor.js');
+    const editor = await loadLazyChunk(
+      LAZY_CHUNKS.tankCardEditor,
+      () => import('./editors/growspace-tank-card-editor.js')
+    );
+    if (!editor) {
+      return lazyChunkErrorEditor(LAZY_CHUNKS.tankCardEditor) as unknown as LovelaceCardEditor;
+    }
     return document.createElement('growspace-tank-card-editor') as unknown as LovelaceCardEditor;
   }
 

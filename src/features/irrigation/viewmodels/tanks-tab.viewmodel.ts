@@ -13,7 +13,7 @@
  * `tankLevels$` and the sensor options, and no `$caps` (it has no cross-tab
  * capability gating). See CONTEXT.md "Tank Config vs Tank Levels": the rows read
  * from `tankLevels$` (authoritative), while the Save effect writes through the
- * Growspace slice's `configureEnvironment` with eventual (sync-driven)
+ * Environment Change interface with eventual (sync-driven)
  * consistency — there is no optimistic Tank-Config bridge.
  *
  * The row formatting is transcribed verbatim from the dialog's former inline

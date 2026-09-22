@@ -27,12 +27,27 @@ import { strainLibrary$ } from '../../slices/strain';
 // New infrastructure (Phase 1)
 import { EventBus, DATA_STALE_EVENT } from '../../features/shared/events';
 
+/** Source of the per-instance ids handed out below. Page-lifetime, never reset. */
+let storeInstanceCounter = 0;
+
 export class GrowspaceStore {
   private readonly _shared: GrowspaceSharedStore;
   private _staleUnsub?: () => void;
   private _refreshCallback?: () => Promise<void>;
 
   hass!: HomeAssistant;
+
+  /**
+   * Identity of this store instance, and therefore of the dialog-host portal
+   * the owning card mounts for it.
+   *
+   * One store is created per card and handed to both that card's subtree (via
+   * the store context) and its portal, so "which store opened this dialog"
+   * and "which portal should render it" are the same question. A dialog that
+   * must appear once captures this as `portalId` in its open payload — see
+   * ADR-0055 and [[Dialog Portal Identity]].
+   */
+  public readonly instanceId: string = `gs-store-${++storeInstanceCounter}`;
 
   // Per-card stores
   public readonly ui: GrowspaceUIStore;

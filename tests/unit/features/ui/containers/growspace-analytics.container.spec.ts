@@ -42,6 +42,9 @@ const createViewStateAtom = (
 const buildMockStore = ($analyticsViewState: ReturnType<typeof atom>) => {
   const toggleEnvGraph = vi.fn();
   return {
+    // Portal identity the container forwards so the irrigation dialog the
+    // crop-steering chip opens lands in one portal (#913 / ADR-0055).
+    instanceId: 'gs-store-analytics',
     history: {
       $analyticsViewState,
       startAutoRefresh: vi.fn(),
@@ -127,10 +130,12 @@ describe('GrowspaceAnalyticsContainer', () => {
   });
 
   it('_items returns single-type item for each active graph without groups', async () => {
+    // Metrics the card pairs into no Curated Combo: an ungrouped open graph is
+    // a plain single item, which is the rule this asserts.
     $analyticsViewState.set({
       historyLoading: false,
       historyLoaded: true,
-      activeEnvGraphs: new Set(['temperature', 'humidity']),
+      activeEnvGraphs: new Set(['feed_ec', 'ph']),
       linkedGraphGroups: [],
       combinedHistory: {},
       graphRanges: {},
@@ -140,6 +145,148 @@ describe('GrowspaceAnalyticsContainer', () => {
     const items = (element as any)._items;
     expect(items).toHaveLength(2);
     expect(items.every((i: any) => i.type === 'single')).toBe(true);
+  });
+
+  it('_items types a metric the card pairs into a Curated Combo as a combo', async () => {
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['temperature']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['temperature', 'exhaust'], sortIndex: 0 },
+    ]);
+  });
+
+  it('_items types soil moisture as a combo with irrigation', async () => {
+    // The literal stock-and-flow case: substrate water content over the shots
+    // that fill it.
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['soil_moisture']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['soil_moisture', 'irrigation'], sortIndex: 5 },
+    ]);
+  });
+
+  it('_items carries every secondary of a multi-secondary combo', async () => {
+    // Humidity pairs with both appliances, and the item must name them in
+    // recipe order — the panes are stacked in the order they arrive.
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['humidity']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['humidity', 'humidifier', 'dehumidifier'], sortIndex: 1 },
+    ]);
+  });
+
+  it('_items types CO2 as a combo with exhaust duty', async () => {
+    // Exhaust dumps CO2, so the anticorrelation is the whole story — and it is
+    // invisible while the two are separate charts.
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['co2']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['co2', 'exhaust'], sortIndex: 3 },
+    ]);
+  });
+
+  it('_items names both halves of a delta secondary', async () => {
+    // Pore EC pairs with the feed/runoff delta, and both metrics must appear in
+    // the item: identity is what keys the render and says what history to fetch,
+    // so a half-named combo would fetch half its data.
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['pore_ec']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['pore_ec', 'runoff_ec', 'feed_ec'], sortIndex: 22 },
+    ]);
+  });
+
+  it('_items types energy as a combo with power', async () => {
+    // The tank pattern in another unit: an instantaneous draw over the
+    // accumulated consumption.
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['energy']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['energy', 'power'], sortIndex: 17 },
+    ]);
+  });
+
+  it('_items renders VPD with its instantaneous temperature and humidity context', async () => {
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['vpd']),
+      linkedGraphGroups: [],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'combo', metrics: ['vpd', 'temperature', 'humidity'], sortIndex: 2 },
+    ]);
+  });
+
+  it('_items keeps a Metric Comparison of the combo pair a group', async () => {
+    // The two types are orthogonal (ADR-0051): a grower who composed
+    // temperature and exhaust into a Comparison owns that grouping, and it
+    // must not be silently re-read as the card's editorial claim.
+    $analyticsViewState.set({
+      historyLoading: false,
+      historyLoaded: true,
+      activeEnvGraphs: new Set(['temperature', 'exhaust']),
+      linkedGraphGroups: [['temperature', 'exhaust']],
+      combinedHistory: {},
+      graphRanges: {},
+    });
+    await element.updateComplete;
+
+    expect((element as any)._items).toEqual([
+      { type: 'group', metrics: ['temperature', 'exhaust'], sortIndex: 0 },
+    ]);
   });
 
   it('_items groups linked metrics into group-type items', async () => {
@@ -161,13 +308,15 @@ describe('GrowspaceAnalyticsContainer', () => {
   });
 
   it('_items omits configured metrics without changing shared open graphs', async () => {
-    (element as any).hiddenMetrics = [MetricKey.HUMIDITY];
+    $analyticsViewState.set({
+      ...($analyticsViewState.get() as any),
+      activeEnvGraphs: new Set(['ph', 'vpd']),
+    });
+    (element as any).hiddenMetrics = [MetricKey.VPD];
     await element.updateComplete;
 
-    expect((element as any)._items).toEqual([
-      { type: 'single', metrics: ['temperature'], sortIndex: 0 },
-    ]);
-    expect($analyticsViewState.get().activeEnvGraphs).toEqual(new Set(['temperature', 'humidity']));
+    expect((element as any)._items).toEqual([{ type: 'single', metrics: ['ph'], sortIndex: 19 }]);
+    expect($analyticsViewState.get().activeEnvGraphs).toEqual(new Set(['ph', 'vpd']));
   });
 
   it('_items removes hidden metrics from linked graph groups', async () => {
@@ -244,7 +393,8 @@ describe('GrowspaceAnalyticsContainer', () => {
       'temperature',
       mockStore.history,
       mockStore.ui,
-      'grow1'
+      'grow1',
+      'gs-store-analytics'
     );
   });
 
@@ -255,7 +405,8 @@ describe('GrowspaceAnalyticsContainer', () => {
       'co2',
       mockStore.history,
       mockStore.ui,
-      'grow1'
+      'grow1',
+      'gs-store-analytics'
     );
   });
 

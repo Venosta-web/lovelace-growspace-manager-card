@@ -57,6 +57,21 @@ export type KPI = z.infer<typeof KPISchema>;
 // TriageAlert
 // ---------------------------------------------------------------------------
 
+/**
+ * One alert row from `get_ai_alerts`.
+ *
+ * The command serves every alert kind from one store, and they do not all carry
+ * the same fields. `capture_continuity_break` (an *equipment* condition raised by
+ * the Vision capture scheduler) has no Bayesian evidence and no AI enrichment at
+ * all, so `bayesian_reasons` and `ai_reasoning` default rather than being
+ * required: this schema parses the whole array at once, and a required field
+ * missing on one row made `fetchAlerts` drop **every** alert for the growspace.
+ * The continuity fields below are declared for the same reason — a plain
+ * `z.object` strips what it does not name.
+ *
+ * Continuity timestamps arrive as Unix seconds; `_serialize_alert` converts them
+ * on the way out, the same way it converts `timestamp`.
+ */
 export const TriageAlertSchema = z.object({
   id: z.string(),
   growspace_id: z.string(),
@@ -64,8 +79,8 @@ export const TriageAlertSchema = z.object({
   severity: z.enum(['info', 'warning', 'danger']).default('info'),
   title: z.string().optional(),
   description: z.string().nullable().optional(),
-  bayesian_reasons: z.array(z.string()),
-  ai_reasoning: z.string().nullable(),
+  bayesian_reasons: z.array(z.string()).default([]),
+  ai_reasoning: z.string().nullable().default(null),
   timestamp: z.number(),
   resolved: z.boolean(),
   resolution_note: z.string().nullable(),
@@ -73,6 +88,17 @@ export const TriageAlertSchema = z.object({
   suggested_actions: z.array(SuggestedActionSchema).optional(),
   kpis: z.array(KPISchema).optional(),
   snapshot_entity_id: z.string().nullable().optional(),
+
+  // Capture Continuity Break only.
+  camera_id: z.string().optional(),
+  streak_started_at: z.number().nullable().optional(),
+  consecutive_count: z.number().int().optional(),
+  reason_counts: z.record(z.string(), z.number()).optional(),
+  latest_capture_id: z.string().optional(),
+  latest_captured_at: z.number().nullable().optional(),
+  /** False once the streak ends; the durable alert record outlives the condition. */
+  condition_active: z.boolean().optional(),
+  cleared_at: z.number().nullable().optional(),
 });
 
 export type TriageAlert = z.infer<typeof TriageAlertSchema>;

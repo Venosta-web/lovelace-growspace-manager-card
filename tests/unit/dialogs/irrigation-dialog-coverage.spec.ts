@@ -49,7 +49,6 @@ const sliceMocks = vi.hoisted(() => ({
     .fn()
     .mockResolvedValue({ growspace_id: 'gs1', stage_aggregates: { veg: 12.5, flower: 30.0 } }),
   resetWaterTracking: vi.fn().mockResolvedValue(undefined),
-  configureEnvironment: vi.fn().mockResolvedValue(undefined),
   saveECRampCurve: vi.fn().mockResolvedValue(undefined),
   removeECRampCurve: vi.fn().mockResolvedValue(undefined),
   fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
@@ -71,7 +70,6 @@ vi.mock('../../../src/slices/growspace', async (importOriginal) => {
   return {
     ...actual,
     resetWaterTracking: sliceMocks.resetWaterTracking,
-    configureEnvironment: sliceMocks.configureEnvironment,
   };
 });
 
@@ -419,6 +417,8 @@ describe('IrrigationDialog - Coverage', () => {
   describe('EC Ramp tab (decomposed)', () => {
     const sampleCurve: ECRampCurve = {
       id: 'curve-1',
+      // The dialog lists only the curves this growspace owns (ADR-0046).
+      growspace_id: 'gs1',
       name: 'Veg Ramp',
       stage: 'veg',
       points: [
@@ -499,6 +499,7 @@ describe('IrrigationDialog - Coverage', () => {
       const [arg] = sliceMocks.saveECRampCurve.mock.calls[0];
       expect(arg.name).toBe('Veg Ramp');
       expect(arg.curve_id).toBe('curve-1');
+      expect(arg.growspace_id).toBe('gs1');
       // editor closed after save
       expect((element as any)._sm.tabs.ec_ramp.sub.kind).toBe('list');
     });

@@ -21,8 +21,13 @@ import {
   getSnapshots,
   captureSnapshot,
   visionHistory$,
+  visionHistoryV2$,
+  visionStatus$,
   setVisionHistory,
   getVisionHistory,
+  getVisionHistoryV2,
+  getVisionStatus,
+  resolveVisionImage,
   triggerVisionCheckup,
   updateVisionCheckupConfig,
 } from './index';
@@ -52,6 +57,18 @@ beforeEach(() => {
   setSnapshots([]);
   setVisionHistory([]);
   vi.clearAllMocks();
+});
+
+const aVisionCheckup = () => ({
+  result_schema: 'evidence_v1' as const,
+  checkup_id: 'checkup-1',
+  growspace_id: 'gs1',
+  trigger_source: 'scheduled' as const,
+  light_window: 'early' as const,
+  started_at: '2026-09-01T06:00:00Z',
+  completed_at: '2026-09-01T06:00:04Z',
+  status: 'completed' as const,
+  captures: [],
 });
 
 // ---------------------------------------------------------------------------
@@ -287,6 +304,43 @@ describe('getVisionHistory', () => {
   });
 });
 
+describe('V2 vision evidence state', () => {
+  it('reads cached service status through the additive command', async () => {
+    const status = {
+      availability: 'ready' as const,
+      connection_source: 'supervisor' as const,
+      service_version: '1.4.0',
+      vision_schema_version: 1,
+      model: { id: 'dinov2-small', version: '1.0.0', dimension: 384 },
+    };
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(status);
+
+    await getVisionStatus();
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_vision_status',
+      {},
+      expect.anything()
+    );
+    expect(visionStatus$.get()).toEqual(status);
+  });
+
+  it('keeps versioned checkup envelopes separate from legacy dialog state', async () => {
+    const response = { history: [aVisionCheckup()], total: 1, capture_total: 0 };
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(response);
+
+    await getVisionHistoryV2('gs1', 5);
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_vision_history_v2',
+      { growspace_id: 'gs1', limit: 5 },
+      expect.anything()
+    );
+    expect(visionHistoryV2$.get()).toEqual(response.history);
+    expect(visionHistory$.get()).toEqual([]);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // triggerVisionCheckup
 // ---------------------------------------------------------------------------
@@ -358,5 +412,35 @@ describe('updateVisionCheckupConfig', () => {
     vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('save failed'));
 
     await expect(updateVisionCheckupConfig('gs1', config)).rejects.toThrow('save failed');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveVisionImage
+// ---------------------------------------------------------------------------
+
+describe('resolveVisionImage', () => {
+  it('asks Home Assistant to resolve the capture identifier, not growspace_manager', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      url: '/media/local/growspace_vision/a.jpg?authSig=abc',
+      mime_type: 'image/jpeg',
+    });
+
+    const url = await resolveVisionImage(
+      'media-source://media_source/local/growspace_vision/a.jpg'
+    );
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'media_source/resolve_media',
+      { media_content_id: 'media-source://media_source/local/growspace_vision/a.jpg' },
+      expect.anything()
+    );
+    expect(url).toBe('/media/local/growspace_vision/a.jpg?authSig=abc');
+  });
+
+  it('re-throws so the caller can render "frame unavailable" instead of a broken image', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('gone'));
+
+    await expect(resolveVisionImage('media-source://x')).rejects.toThrow('gone');
   });
 });

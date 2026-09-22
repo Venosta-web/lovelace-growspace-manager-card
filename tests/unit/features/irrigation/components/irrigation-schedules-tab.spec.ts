@@ -15,6 +15,7 @@ import type {
   ScheduleSectionVM,
   CropSteeringScheduleVM,
 } from '../../../../../src/features/irrigation/viewmodels/schedules-tab.viewmodel';
+import type { CropSteeringDayChart } from '../../../../../src/features/environment/components/crop-steering-day-chart';
 
 // Stub HA + md3 + the shared chart custom elements unavailable in the test env.
 for (const tag of [
@@ -69,6 +70,7 @@ function cropSteeringPanel(
         color: '#4CAF50',
         target: 'Reach FC',
         shotCount: null,
+        skipped: false,
       },
       {
         id: 'p2',
@@ -77,6 +79,7 @@ function cropSteeringPanel(
         color: '#2196F3',
         target: 'Runoff target',
         shotCount: 9,
+        skipped: false,
       },
     ],
     hasPoreEc: true,
@@ -93,6 +96,7 @@ function makeVm(overrides: Partial<SchedulesTabViewModel> = {}): SchedulesTabVie
     drainSection: null,
     cropSteering: null,
     device: undefined,
+    steeringDraft: {},
     ...overrides,
   };
 }
@@ -247,6 +251,51 @@ describe('irrigation-schedules-tab', () => {
       b.textContent?.includes('ADD TIME')
     );
     expect(addTime).toBeUndefined();
+  });
+
+  it('hands the unsaved steering draft to the chart as its strategy (growspace_manager_workspace#130)', async () => {
+    const steeringDraft = { enabled: true, lightsOnTime: '06:00:00', p0DurationMinutes: 45 };
+    const el = await mount(
+      makeVm({
+        isCropSteering: true,
+        irrigationSection: null,
+        cropSteering: cropSteeringPanel(),
+        steeringDraft,
+      })
+    );
+
+    // The chart resolves its own strategy, so the draft has to reach it as a
+    // property — otherwise it keeps drawing the last saved one.
+    const chart = el.shadowRoot!.querySelector(
+      'crop-steering-day-chart'
+    ) as Partial<CropSteeringDayChart>;
+    expect(chart.strategyOverride).toBe(steeringDraft);
+  });
+
+  it('marks the P2 legend chip skipped without dropping it (growspace_manager_workspace#131)', async () => {
+    const panel = cropSteeringPanel();
+    const el = await mount(
+      makeVm({
+        isCropSteering: true,
+        irrigationSection: null,
+        cropSteering: {
+          ...panel,
+          shotCount: 3,
+          phases: panel.phases.map((p) =>
+            p.id === 'p2' ? { ...p, skipped: true, target: 'Skipped', shotCount: 0 } : p
+          ),
+        },
+      })
+    );
+
+    const p2 = el.shadowRoot!.querySelector('[data-phase="p2"]') as HTMLElement;
+    // Present, so the grower can see the phase exists and is bypassed.
+    expect(p2).not.toBeNull();
+    expect(p2.classList.contains('skipped')).toBe(true);
+    expect(norm(p2.textContent)).toContain('Skipped');
+    expect(
+      (el.shadowRoot!.querySelector('[data-phase="p1"]') as HTMLElement).classList
+    ).not.toContain('skipped');
   });
 
   it('shows the crop-steering empty state when not configured', async () => {

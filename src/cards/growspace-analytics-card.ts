@@ -21,6 +21,8 @@ import { GrowspaceStore } from '../store/core/growspace-store';
 import { toggleEnvGraph } from '../slices/ui';
 import { BootstrapController } from '../controllers/bootstrap.controller';
 import { StoreController } from '@nanostores/lit';
+import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 
 @customElement('growspace-analytics-card')
 export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
@@ -97,7 +99,13 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-analytics-card-editor.js');
+    const editor = await loadLazyChunk(
+      LAZY_CHUNKS.analyticsCardEditor,
+      () => import('./editors/growspace-analytics-card-editor.js')
+    );
+    if (!editor) {
+      return lazyChunkErrorEditor(LAZY_CHUNKS.analyticsCardEditor) as unknown as LovelaceCardEditor;
+    }
     return document.createElement(
       'growspace-analytics-card-editor'
     ) as unknown as LovelaceCardEditor;

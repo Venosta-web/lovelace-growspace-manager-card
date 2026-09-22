@@ -14,7 +14,9 @@ import minifyHTML from '@lit-labs/rollup-plugin-minify-html-literals';
 import summary from 'rollup-plugin-summary';
 import { failOnBareModuleSpecifiers } from './scripts/bare-module-specifiers.mjs';
 import { computeSourceFingerprint, createBuildBanner } from './scripts/e2e-build-state.mjs';
+import { bindLazyChunksToEntry } from './scripts/lazy-chunk-entry-binding.mjs';
 
+const entryFileName = 'growspace-manager-card.js';
 const isProduction = process.env.NODE_ENV === 'production';
 const isCoverage = process.env.COVERAGE === 'true';
 const bareModuleSpecifierAllowlist = [];
@@ -51,12 +53,19 @@ if (isProduction && !isCoverage) {
 }
 
 plugins.push(failOnBareModuleSpecifiers({ allowlist: bareModuleSpecifierAllowlist }));
+plugins.push(bindLazyChunksToEntry({ entryFileName }));
 
 export default {
   input: 'src/index.ts',
+  // HACS ships a frontend plugin as a single file and rewrites only that file on
+  // update, so an entry that defers its eager path to a hashed chunk turns one
+  // stale chunk into a dashboard with no cards at all. `false` keeps the entry
+  // module and its eager graph in the entry chunk instead of emitting a
+  // re-export facade in front of them. See scripts/entry-bundle-shape.mjs.
+  preserveEntrySignatures: false,
   output: {
     dir: 'dist',
-    entryFileNames: 'growspace-manager-card.js',
+    entryFileNames: entryFileName,
     chunkFileNames: 'growspace-[name]-[hash].js',
     format: 'es',
     sourcemap: !isProduction || isCoverage,

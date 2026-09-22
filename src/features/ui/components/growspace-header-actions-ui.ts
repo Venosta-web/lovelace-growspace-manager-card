@@ -19,13 +19,17 @@ import {
   mdiClipboardTextClock,
   mdiWater,
   mdiWaterPlus,
+  mdiBookmarkMultipleOutline,
+  mdiCalendarClock,
   mdiBottleTonicPlus,
   mdiBug,
   mdiDumbbell,
   mdiPlus,
+  mdiFlaskOutline,
   mdiDna,
   mdiCube,
   mdiCamera,
+  mdiLabelOutline,
 } from '@mdi/js';
 
 @customElement('growspace-header-actions-ui')
@@ -43,6 +47,24 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   @property({ type: Boolean }) public canArrange = false;
   @property({ type: Boolean }) public canCompare = false;
   @property() public language = 'en';
+  /**
+   * Whether Growspace Manager TC answered the presence probe.
+   *
+   * False while the answer is `unknown`, so the item is absent until the probe
+   * resolves rather than appearing and vanishing. The probe is one per page and
+   * its answer stands for the life of the page (ADR 0057), so this flips at
+   * most once.
+   */
+  @property({ type: Boolean }) public tcAvailable = false;
+  /**
+   * Whether the backend published the complete Label Template capability.
+   *
+   * False on an old backend, on a new one holding its capability back, and on
+   * one whose envelope this card cannot use — and in every one of those cases
+   * the item is absent rather than disabled. A disabled control promises a
+   * feature is coming; none of these is.
+   */
+  @property({ type: Boolean }) public labelTemplatesAvailable = false;
 
   @state() private _draggedMetric: string | null = null;
   @state() private _menuOpen = false;
@@ -628,8 +650,14 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         )}
         ${this.isMobile ? this._menuItem(mdiCog, 'Settings', 'config') : nothing}
         ${this._menuItem(mdiWater, 'Irrigation', 'irrigation')}
+        ${this._menuItem(mdiBookmarkMultipleOutline, 'Irrigation Recipes', 'irrigation-recipes')}
+        ${this._menuItem(mdiCalendarClock, 'Irrigation Programs', 'irrigation-programs')}
         ${this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients')}
         ${this._menuItem(mdiDna, 'Strains', 'strains')}
+        ${this.tcAvailable ? this._menuItem(mdiFlaskOutline, 'Tissue Culture', 'tc') : nothing}
+        ${this.labelTemplatesAvailable
+          ? this._menuItem(mdiLabelOutline, 'Label Templates', 'label-templates')
+          : nothing}
 
         <div class="menu-divider" role="separator"></div>
 

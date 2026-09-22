@@ -25,11 +25,23 @@ import { dialogStyles } from '../styles/dialog.styles';
 import {
   type Snapshot,
   type VisionCheckupResult,
+  type VisionHistoryItem,
+  type VisionStatus,
   getSnapshots,
   captureSnapshot,
   getVisionHistory,
+  getVisionHistoryV2,
+  getVisionStatus,
+  resolveVisionImage,
   triggerVisionCheckup,
 } from '../slices/camera';
+import { aiAlerts$, fetchAlerts } from '../slices/ai-insight';
+import type { TriageAlert } from '../slices/ai-insight/schema';
+import '../features/vision/components/growspace-vision-evidence';
+import {
+  createVisionEvidenceViewModel,
+  type VisionEvidenceViewModel,
+} from '../features/vision/vision-evidence.viewmodel';
 import { withToast } from '../slices/ui';
 import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -41,7 +53,13 @@ import {
   type SnapshotsDialogViewModel,
   type SnapshotsViewModelDeps,
 } from '../features/camera/viewmodels/snapshots-dialog.viewmodel';
-import { createInitialSM, transition, type SM, type SMEvent } from './snapshots-dialog-sm';
+import {
+  createInitialSM,
+  transition,
+  type SM,
+  type SMEvent,
+  type SnapshotsView,
+} from './snapshots-dialog-sm';
 
 /** Inline placeholder for a snapshot the browser cannot load (pruned, still writing). */
 const BROKEN_IMAGE_FALLBACK =
@@ -66,6 +84,13 @@ export class SnapshotsDialog extends LitElement {
 
   @state() private _snapshots: Snapshot[] = [];
   @state() private _visionHistory: VisionCheckupResult[] = [];
+  @state() private _evidence: VisionHistoryItem[] = [];
+  @state() private _evidenceTotal = 0;
+  @state() private _visionStatus: VisionStatus | null = null;
+  @state() private _continuityAlerts: TriageAlert[] = [];
+  /** `capture_id` → signed media URL. Signed URLs expire; never persisted. */
+  @state() private _evidenceImages: Record<string, string> = {};
+  @state() private _evidenceError: string | null = null;
   @state() private _isLoading = false;
   @state() private _isCapturing = false;
   @state() private _isRunningCheckup = false;
@@ -78,6 +103,7 @@ export class SnapshotsDialog extends LitElement {
   private _actionContextId = 0;
   private _captureRequestId = 0;
   private _checkupRequestId = 0;
+  private _evidenceRequestId = 0;
   private _overlayReturnFocus: HTMLElement | null = null;
 
   static styles = [
@@ -89,6 +115,44 @@ export class SnapshotsDialog extends LitElement {
         flex: 1;
         min-height: 0;
         display: flex;
+      }
+
+      /* ── View switch ───────────────────────────────────────────────────── */
+
+      .view-switch {
+        display: flex;
+        gap: 4px;
+        padding: 8px 16px 0;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+        flex-shrink: 0;
+      }
+
+      .view-tab {
+        font: inherit;
+        font-size: 0.875rem;
+        padding: 8px 14px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        cursor: pointer;
+      }
+
+      .view-tab.selected {
+        color: var(--primary-text-color, #fff);
+        border-bottom-color: var(--gm-primary-color, #4caf50);
+      }
+
+      .view-tab:focus-visible {
+        outline: 2px solid var(--gm-primary-color, #4caf50);
+        outline-offset: -2px;
+      }
+
+      .evidence-pane {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 16px;
       }
 
       /* ── Header actions ────────────────────────────────────────────────── */
@@ -1384,8 +1448,15 @@ export class SnapshotsDialog extends LitElement {
     this._loadRequestId += 1;
     this._actionContextId += 1;
     this._stopPlayback();
+    this._evidenceRequestId += 1;
     this._snapshots = [];
     this._visionHistory = [];
+    this._evidence = [];
+    this._evidenceTotal = 0;
+    this._visionStatus = null;
+    this._continuityAlerts = [];
+    this._evidenceImages = {};
+    this._evidenceError = null;
     this._loadError = null;
     this._actionError = null;
     this._isCapturing = false;
@@ -1405,6 +1476,8 @@ export class SnapshotsDialog extends LitElement {
       getSnapshots(growspaceId),
       getVisionHistory(growspaceId),
     ]);
+
+    void this._fetchEvidence(growspaceId);
 
     if (
       requestId !== this._loadRequestId ||
@@ -1442,6 +1515,103 @@ export class SnapshotsDialog extends LitElement {
       this._loadError =
         "Vision findings couldn't be refreshed. The available captures are still shown.";
     }
+  }
+
+  /**
+   * Load the `evidence_v1` surface.
+   *
+   * Three independent reads, none of which may fail the others: the checkup
+   * history, the service status (which describes how the history must be read,
+   * not whether it exists), and the growspace's Triage Alerts, from which only
+   * `capture_continuity_break` is used — the projection carries no continuity
+   * field, so the banner's data lives on the alert surface.
+   *
+   * Frames are then resolved one `media-source://` identifier at a time, and a
+   * frame that will not resolve is dropped from the map rather than failing the
+   * panel: the ledger renders an explicit "frame unavailable" placeholder, which
+   * is evidence about the capture, not an error about the request.
+   */
+  private async _fetchEvidence(growspaceId: string) {
+    const requestId = ++this._evidenceRequestId;
+    this._evidenceError = null;
+
+    const [historyResult, statusResult] = await Promise.allSettled([
+      getVisionHistoryV2(growspaceId),
+      getVisionStatus(),
+    ]);
+    await fetchAlerts(growspaceId);
+
+    if (!this._evidenceIsCurrent(requestId, growspaceId)) return;
+
+    if (statusResult.status === 'fulfilled') {
+      this._visionStatus = statusResult.value;
+    } else {
+      console.error('[SnapshotsDialog] Failed to fetch Vision status:', statusResult.reason);
+      this._visionStatus = null;
+    }
+
+    this._continuityAlerts = (aiAlerts$.get().get(growspaceId) ?? []).filter(
+      (alert) => alert.type === 'capture_continuity_break'
+    );
+
+    if (historyResult.status === 'rejected') {
+      console.error('[SnapshotsDialog] Failed to fetch Vision evidence:', historyResult.reason);
+      this._evidenceError =
+        "Vision evidence couldn't be loaded. Check the connection and try again.";
+      return;
+    }
+
+    this._evidence = historyResult.value.history;
+    this._evidenceTotal = historyResult.value.total;
+    await this._resolveEvidenceImages(requestId, growspaceId);
+  }
+
+  private _evidenceIsCurrent(requestId: number, growspaceId: string): boolean {
+    return (
+      requestId === this._evidenceRequestId &&
+      this.open &&
+      this.dialogState?.growspaceId === growspaceId
+    );
+  }
+
+  private async _resolveEvidenceImages(requestId: number, growspaceId: string) {
+    const wanted = this._evidence
+      .filter((item) => item.result_schema === 'evidence_v1')
+      .flatMap((item) => item.captures)
+      .filter((capture) => capture.image.available && capture.image.media_content_id !== undefined)
+      .map((capture) => [capture.capture_id, capture.image.media_content_id as string] as const);
+
+    const resolved = await Promise.all(
+      wanted.map(async ([captureId, mediaContentId]) => {
+        try {
+          return [captureId, await resolveVisionImage(mediaContentId)] as const;
+        } catch (err: unknown) {
+          console.error('[SnapshotsDialog] Failed to resolve Vision frame:', err);
+          return null;
+        }
+      })
+    );
+
+    if (!this._evidenceIsCurrent(requestId, growspaceId)) return;
+    this._evidenceImages = Object.fromEntries(
+      resolved.filter((entry): entry is readonly [string, string] => entry !== null)
+    );
+  }
+
+  private _evidenceViewModel(): VisionEvidenceViewModel {
+    return createVisionEvidenceViewModel(
+      {
+        history: this._evidence,
+        total: this._evidenceTotal,
+        status: this._visionStatus,
+        alerts: this._continuityAlerts,
+        images: this._evidenceImages,
+      },
+      {
+        cameraName: this._viewModelDeps().cameraName,
+        language: this.hass?.language ?? 'en',
+      }
+    );
   }
 
   private async _captureSnapshot() {
@@ -1686,7 +1856,8 @@ export class SnapshotsDialog extends LitElement {
         <div class="header-actions" slot="header-extra">${this._renderActionButtons(true)}</div>
 
         <div class="mobile-actions">${this._renderActionButtons(false, true)}</div>
-        ${this._renderBody(vm)} ${this._renderPicker(vm)} ${this._renderLightbox(vm)}
+        ${this._renderViewSwitch()} ${this._renderBody(vm)} ${this._renderPicker(vm)}
+        ${this._renderLightbox(vm)}
       </gs-dialog>
     `;
   }
@@ -1731,7 +1902,48 @@ export class SnapshotsDialog extends LitElement {
     `;
   }
 
+  /**
+   * The two surfaces are peers, not a primary and a fallback.
+   *
+   * Rendering the switch above `_renderBody` keeps the Vision evidence panel
+   * outside every `hasFrames` guard below it — a growspace that has evidence but
+   * no `/local/` snapshot files (the normal case once V1 writes captures to the
+   * media directory) must still be able to reach it.
+   */
+  private _renderViewSwitch(): TemplateResult {
+    const tab = (view: SnapshotsView, label: string) => html`
+      <button
+        role="tab"
+        type="button"
+        class=${classMap({ 'view-tab': true, selected: this._sm.view === view })}
+        aria-selected=${this._sm.view === view ? 'true' : 'false'}
+        @click=${() => this._transition({ type: 'ViewSelected', view })}
+      >
+        ${label}
+      </button>
+    `;
+    return html`
+      <div class="view-switch" role="tablist" aria-label="Camera dialog view">
+        ${tab('captures', 'Captures')} ${tab('evidence', 'Vision evidence')}
+      </div>
+    `;
+  }
+
+  private _renderEvidence(): TemplateResult {
+    return html`
+      <div class="evidence-pane">
+        <growspace-vision-evidence
+          .vm=${this._evidenceViewModel()}
+          .loading=${this._isLoading}
+          .error=${this._evidenceError ?? ''}
+          @vision-retry=${() => this._fetchAll()}
+        ></growspace-vision-evidence>
+      </div>
+    `;
+  }
+
   private _renderBody(vm: SnapshotsDialogViewModel): TemplateResult {
+    if (this._sm.view === 'evidence') return this._renderEvidence();
     if (this._isLoading && !vm.hasFrames) {
       return html`<div class="snap-centered" role="status" aria-live="polite">
         <ha-circular-progress active></ha-circular-progress>

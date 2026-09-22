@@ -56,6 +56,7 @@ function secondsPhaseShots(): PhaseShotDescriptor[] {
       intervalField: 'p1ShotIntervalMinutes',
       intervalValue: 15,
       isVolume: false,
+      bypassed: false,
     },
     {
       id: 'p2',
@@ -66,6 +67,7 @@ function secondsPhaseShots(): PhaseShotDescriptor[] {
       intervalField: 'p2ShotIntervalMinutes',
       intervalValue: 15,
       isVolume: false,
+      bypassed: false,
     },
   ];
 }
@@ -130,6 +132,7 @@ function makeVm(overrides: Partial<SteeringTabViewModel> = {}): SteeringTabViewM
     resolvedDayHours: 12,
     timingExplainer: null,
     adaptiveEnabled: true,
+    skipP2AfterP1: false,
     soilTriggerPercent: null,
     autoAdvanceP1ToP2: false,
     autoAdvanceP2ToP3: false,
@@ -261,6 +264,106 @@ describe('irrigation-steering-tab', () => {
       sw.dispatchEvent(new Event('change'));
     });
     expect(evt.detail).toEqual({ partial: { autoAdvanceP1ToP2: true } });
+  });
+
+  // ── Skip P2 (growspace_manager_workspace#131) ──
+
+  it('emits steering-draft-changed when Skip P2 after P1 toggles', async () => {
+    const el = await mount(makeVm());
+    const sw = el.shadowRoot!.querySelector('[data-field="skipP2AfterP1"]') as HTMLElement & {
+      checked: boolean;
+    };
+    expect(norm(el.shadowRoot!.textContent)).toContain('Skip P2 after P1');
+    expect(norm(el.shadowRoot!.textContent)).toContain(
+      'When enabled, irrigation transitions directly from P1 to P3 once P1 is complete.'
+    );
+    // A steering-draft intent, not a config one: the preview reads that draft.
+    const evt = await captureIntent(el, 'steering-draft-changed', () => {
+      (sw as unknown as { checked: boolean }).checked = true;
+      sw.dispatchEvent(new Event('change'));
+    });
+    expect(evt.detail).toEqual({ partial: { skipP2AfterP1: true } });
+  });
+
+  it('leaves the P2 controls enabled while Skip P2 is off', async () => {
+    const el = await mount(makeVm());
+    const p2size = el.shadowRoot!.querySelector(
+      '[data-field="p2ShotDurationSeconds"]'
+    ) as HTMLElement & {
+      disabled?: boolean;
+    };
+    expect(p2size.disabled).toBeFalsy();
+    expect(el.shadowRoot!.querySelector('[data-field="p2BypassedHint"]')).toBeNull();
+  });
+
+  it('keeps the P2 controls visible but disabled and dimmed while Skip P2 is on', async () => {
+    const el = await mount(
+      makeVm({
+        skipP2AfterP1: true,
+        soilTriggerPercent: 38,
+        phaseShots: secondsPhaseShots().map((p) => ({ ...p, bypassed: p.id === 'p2' })),
+      })
+    );
+    const field = (name: string) =>
+      el.shadowRoot!.querySelector(`[data-field="${name}"]`) as HTMLElement & {
+        disabled?: boolean;
+        value?: string;
+      };
+
+    // Still rendered, still carrying their values — bypassed, not cleared.
+    expect(field('p2ShotDurationSeconds')).not.toBeNull();
+    expect(field('p2ShotDurationSeconds').disabled).toBe(true);
+    expect(field('p2ShotIntervalMinutes').disabled).toBe(true);
+    expect(field('soilTriggerPercent').disabled).toBe(true);
+    expect(field('p1ShotDurationSeconds').disabled).toBeFalsy();
+    expect(norm(el.shadowRoot!.textContent)).toContain('They are kept, not cleared');
+  });
+
+  // ── Skip P2 (growspace_manager_workspace#131) ──
+
+  it('emits steering-draft-changed when Skip P2 after P1 toggles', async () => {
+    const el = await mount(makeVm());
+    const sw = el.shadowRoot!.querySelector('[data-field="skipP2AfterP1"]') as HTMLElement & {
+      checked: boolean;
+    };
+    const evt = await captureIntent(el, 'steering-draft-changed', () => {
+      (sw as unknown as { checked: boolean }).checked = true;
+      sw.dispatchEvent(new Event('change'));
+    });
+    // The steering draft, not the config draft: the projected day is drawn from
+    // it, so the preview follows the gesture with nothing saved.
+    expect(evt.detail).toEqual({ partial: { skipP2AfterP1: true } });
+  });
+
+  it('leaves the P2 dosing fields visible but disabled while P2 is skipped', async () => {
+    const bypassed = secondsPhaseShots().map((p) => ({ ...p, bypassed: p.id === 'p2' }));
+    const el = await mount(makeVm({ skipP2AfterP1: true, phaseShots: bypassed }));
+    const field = (name: string) =>
+      el.shadowRoot!.querySelector(`[data-field="${name}"]`) as unknown as {
+        disabled: boolean;
+        value: string;
+      } | null;
+
+    expect(field('p1ShotDurationSeconds')!.disabled).toBeFalsy();
+    expect(field('p2ShotDurationSeconds')!.disabled).toBe(true);
+    expect(field('p2ShotIntervalMinutes')!.disabled).toBe(true);
+    // Still rendered, and still showing what the grower configured.
+    expect(field('p2ShotDurationSeconds')!.value).toBe('15');
+    // The P2 Direct Trigger is bypassed with them.
+    expect(field('soilTriggerPercent')!.disabled).toBe(true);
+    // …and the UI says they are kept rather than cleared.
+    expect(el.shadowRoot!.querySelector('[data-field="p2BypassedHint"]')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-field="skipP2AfterP1Hint"]')).not.toBeNull();
+  });
+
+  it('leaves the P2 fields enabled and unexplained while P2 runs', async () => {
+    const el = await mount(makeVm());
+    const p2 = el.shadowRoot!.querySelector('[data-field="p2ShotDurationSeconds"]') as unknown as {
+      disabled: boolean;
+    };
+    expect(p2.disabled).toBeFalsy();
+    expect(el.shadowRoot!.querySelector('[data-field="p2BypassedHint"]')).toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-field="skipP2AfterP1Hint"]')).toBeNull();
   });
 
   it('emits steering-config-changed setting the halt-EC threshold to 4.0 on enable', async () => {

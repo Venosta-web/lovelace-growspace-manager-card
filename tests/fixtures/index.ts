@@ -279,6 +279,7 @@ export function anECRampPoint(overrides: Partial<ECRampPoint> = {}): ECRampPoint
 export function anECRampCurve(overrides: Partial<ECRampCurve> = {}): ECRampCurve {
   return {
     id: 'test-curve',
+    growspace_id: 'test-growspace',
     name: 'Test Curve',
     stage: 'flower',
     points: [anECRampPoint(), anECRampPoint({ day: 14, target_ec: 1.4 })],
