@@ -286,3 +286,122 @@ describe('progress and retry', () => {
     expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);
   });
 });
+
+describe("a plant's own label, as a one-plant batch (hub #243)", () => {
+  /** The recorded review, narrowed to plant A alone. */
+  function onePlant(copies = 1, change: (review: Review) => void = () => {}): Review {
+    return review((copy) => {
+      const preflight = copy.preflight;
+      preflight.records = preflight.records.filter((record) => record.subject === 'A');
+      preflight.diagnostics = preflight.diagnostics.filter((item) => item.subject === 'A');
+      preflight.attempts = preflight.attempts
+        .filter((attempt) => attempt.subject === 'A' && attempt.copy_index <= copies)
+        .map((attempt, position) => ({ ...attempt, position }));
+      change(copy);
+    });
+  }
+
+  async function mountSingle() {
+    const view = await mount();
+    view.plantIds = ['A'];
+    view.single = true;
+    await view.updateComplete;
+    return view;
+  }
+
+  const text = (view: GrowspaceLabelBatch) =>
+    (view.renderRoot.textContent ?? '').replace(/\s+/g, ' ');
+
+  test('reviews and prints through the batch routes, worded for one plant', async () => {
+    const view = await mountSingle();
+    expect($(view, '#batch-setup')!.textContent).toContain("Print this plant's label");
+    expect($(view, '[data-action="preflight"]')!.textContent!.trim()).toBe('Review the label');
+
+    await reviewed(view, onePlant());
+    expect(mocks.preflight).toHaveBeenCalledWith(
+      expect.objectContaining({ plantIds: ['A'], copies: 1, deviceId: PRINTER })
+    );
+
+    // Nothing to move between, and nothing that speaks of a batch or of plants.
+    expect($(view, '[data-role="navigation"]')).toBeNull();
+    expect($(view, '#batch-review')!.textContent).toContain('Review before printing');
+    expect($(view, '[data-role="record"] h4')!.textContent).toContain('Plant A');
+    expect($(view, '[data-role="acknowledge"]')!.textContent).toContain(
+      'all 6 warnings on this label'
+    );
+    expect(text(view)).not.toMatch(/\bbatch\b|\bplants\b|Plant 1 of/i);
+
+    const print = () => $<HTMLButtonElement>(view, '[data-action="print"]')!;
+    expect(print().textContent!.trim()).toBe('Print label');
+    expect(print().disabled).toBe(true);
+    await acknowledge(view);
+    mocks.print.mockResolvedValueOnce(jobFixture);
+    await click(view, '[data-action="print"]');
+    expect(mocks.print).toHaveBeenCalledWith(RECORDED.preflight_id, IDENTITY);
+  });
+
+  test('counts copies, not plants', async () => {
+    const view = await mountSingle();
+    await setCopies(view, 2);
+    expect($(view, '[data-action="preflight"]')!.textContent!.trim()).toBe('Review 2 copies');
+
+    await reviewed(view, onePlant(2));
+    const rows = [...view.renderRoot.querySelectorAll<HTMLElement>('[data-role="plan"] li')];
+    expect(rows.map((row) => row.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+      'Copy 1 — Not printed yet',
+      'Copy 2 — Not printed yet',
+    ]);
+    expect($(view, '[data-action="print"]')!.textContent!.trim()).toBe('Print 2 copies');
+  });
+
+  test('a refused print says why, the way a batch does, without the batch', async () => {
+    const view = await mountSingle();
+    await reviewed(view, onePlant());
+    await acknowledge(view);
+    mocks.print.mockResolvedValueOnce(refusedFixture);
+
+    await click(view, '[data-action="print"]');
+    await vi.waitFor(() => expect($(view, '[data-role="refusal"]')).not.toBeNull());
+
+    const refusal = $(view, '[data-role="refusal"]')!;
+    expect(refusal.textContent).toContain('The label was not printed.');
+    expect(refusal.textContent).toContain('Acknowledge the warnings first.');
+    expect(refusal.querySelector('[data-action="recover"]')).not.toBeNull();
+  });
+
+  test('a blocked label prints nothing and says so for the one label', async () => {
+    const view = await mountSingle();
+    await reviewed(
+      view,
+      onePlant(1, (copy) => {
+        copy.preflight.allowed = false;
+        copy.preflight.blocked_by = ['profile_not_product_verified'];
+        copy.recovery = 'select_profile';
+      })
+    );
+
+    const blocked = $(view, '[data-role="blocked"]')!;
+    expect(blocked.textContent).toContain(
+      'This label will not print until every problem is fixed.'
+    );
+    expect(blocked.textContent).toContain('has not passed physical testing');
+    expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);
+  });
+
+  test('a plant that is gone is described as that plant', async () => {
+    const view = await mountSingle();
+    mocks.preflight.mockResolvedValueOnce({
+      ...refusedFixture,
+      refusal: {
+        ...(refusedFixture as { refusal: object }).refusal,
+        code: 'label_template.unknown_subject',
+        blocked_by: [],
+        recovery: 'none',
+      },
+    });
+    await click(view, '[data-action="preflight"]');
+    await vi.waitFor(() => expect($(view, '[data-role="refusal"]')).not.toBeNull());
+
+    expect($(view, '[data-role="refusal"]')!.textContent).toContain('This plant no longer exists.');
+  });
+});

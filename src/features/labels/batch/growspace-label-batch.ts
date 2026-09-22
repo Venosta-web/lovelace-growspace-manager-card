@@ -20,12 +20,18 @@
  *
  * Every rule about what may be pressed is in `batch-review.ts`; the backend
  * decides again on every call regardless.
+ *
+ * A plant's own "Print label" is this same view over a one-plant batch
+ * (`single`): the same preflight, consent and print routes, so the backend
+ * needs nothing new. Only the words change — there is nothing to move
+ * between, no print order worth explaining, and "the batch" is not what a
+ * user printing one plant's label is looking at.
  */
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-import { localize, localizeWithParams } from '../../../localize/localize';
+import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
 import { getHass } from '../../../services/hass-call';
 import { getPrinters } from '../../shared/ui/printer-status-strip';
 import { profilesForSize, type LabelTemplateCapability } from '../../../slices/labels';
@@ -82,6 +88,8 @@ export class GrowspaceLabelBatch extends LitElement {
   /** A human name for a plant ID; the ID itself when not given. */
   @property({ attribute: false }) describePlant?: (plantId: string) => string;
   @property({ type: String }) language = 'en';
+  /** One plant's label rather than a batch: the same flow, worded for one. */
+  @property({ type: Boolean }) single = false;
 
   @state() private _templates: TemplateOption[] = [];
   @state() private _templateKey = '';
@@ -192,9 +200,17 @@ export class GrowspaceLabelBatch extends LitElement {
       opacity: 0.8;
       line-height: 1.45;
     }
+    /* Marked by the border, not the text: error-red body copy is under 4.5:1
+       on Home Assistant's dark surfaces. An error inside a record says so in
+       words ("Error:"), so it needs no colour of its own either. */
     .refusal,
-    .error {
-      color: var(--error-color);
+    [data-role='blocked'] {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 2px solid var(--error-color);
+      border-radius: 8px;
+      padding: 8px 12px;
     }
     .warning {
       color: var(--warning-color);
@@ -306,12 +322,34 @@ export class GrowspaceLabelBatch extends LitElement {
     return found ? this._t(found) : this._t(fallback);
   }
 
+  /**
+   * Batch copy, or its one-plant wording in `single` mode.
+   *
+   * A `single_` key stands in for its `batch_` namesake where one exists;
+   * `count` picks its `_one`/`_other` form, because "Print 1 labels" is the
+   * sentence a one-plant print meets first.
+   */
+  #say(key: string, params: Record<string, string | number> = {}, count?: number): string {
+    if (this.single) {
+      const single = key.replace(/^batch_/, 'single_');
+      if (count !== undefined && this._has(`${single}_other`)) {
+        return localizePlural(`labels.${single}`, count, params, this.language);
+      }
+      if (this._has(single)) return this._t(single, params);
+    }
+    return this._t(key, params);
+  }
+
   #plant(plantId: string): string {
     return this.describePlant?.(plantId) || plantId;
   }
 
   #refusalCopy(refusal: LabelRefusal): string {
-    return refusalCopy(refusal.code, this.language, ['batch_refusal_']);
+    return refusalCopy(
+      refusal.code,
+      this.language,
+      this.single ? ['single_refusal_', 'batch_refusal_'] : ['batch_refusal_']
+    );
   }
 
   #blockerCopy(blocker: string): string {
@@ -401,12 +439,14 @@ export class GrowspaceLabelBatch extends LitElement {
       this._focus = initialFocus(answer.preflight);
       const counts = severityCounts(answer.preflight);
       this.#announce(
-        this._t('batch_reviewed', {
-          records: answer.preflight.records.length,
-          labels: answer.preflight.attempts.length,
-          errors: counts.error,
-          warnings: counts.warning,
-        })
+        this.single
+          ? this._t(`single_reviewed_${recordSeverity(answer.preflight, 0)}`)
+          : this._t('batch_reviewed', {
+              records: answer.preflight.records.length,
+              labels: answer.preflight.attempts.length,
+              errors: counts.error,
+              warnings: counts.warning,
+            })
       );
       await this.updateComplete;
       this.renderRoot.querySelector<HTMLElement>('[data-role="record"] h4')?.focus();
@@ -475,7 +515,7 @@ export class GrowspaceLabelBatch extends LitElement {
       this.#announce(
         job.state === 'refused'
           ? this._t('batch_job_refused')
-          : this._t('batch_done', { printed: progress.printedOverall, failed: progress.failed })
+          : this.#say('batch_done', { printed: progress.printedOverall, failed: progress.failed })
       );
       return;
     }
@@ -568,7 +608,7 @@ export class GrowspaceLabelBatch extends LitElement {
     const locked = this._busy || printing;
     return html`
       <section data-section="setup" aria-labelledby="batch-setup">
-        <h3 id="batch-setup">${this._t('batch_setup', { plants: this.plantIds.length })}</h3>
+        <h3 id="batch-setup">${this.#say('batch_setup', { plants: this.plantIds.length })}</h3>
         <div class="grid">
           <label>
             ${this._t('batch_template')}
@@ -630,7 +670,7 @@ export class GrowspaceLabelBatch extends LitElement {
             </select>
           </label>
           <label>
-            ${this._t('batch_copies')}
+            ${this.#say('batch_copies')}
             <input
               name="copies"
               type="number"
@@ -663,9 +703,11 @@ export class GrowspaceLabelBatch extends LitElement {
             ?disabled=${locked || !this._template || !this._deviceId || this.plantIds.length === 0}
             @click=${() => void this.#preflight()}
           >
-            ${this._t(this._review ? 'batch_review_again' : 'batch_review', {
-              labels: this.plantIds.length * this._copies,
-            })}
+            ${this.#say(
+              this._review ? 'batch_review_again' : 'batch_review',
+              { labels: this.plantIds.length * this._copies },
+              this.plantIds.length * this._copies
+            )}
           </button>
         </div>
       </section>
@@ -700,13 +742,13 @@ export class GrowspaceLabelBatch extends LitElement {
     return html`
       <section data-section="review" aria-labelledby="batch-review">
         <h3 id="batch-review">
-          ${this._t('batch_review_heading', {
+          ${this.#say('batch_review_heading', {
             records: preflight.records.length,
             labels: preflight.attempts.length,
           })}
         </h3>
         <p class="supporting" data-role="summary">
-          ${this._t('batch_review_summary', {
+          ${this.#say('batch_review_summary', {
             template: review.template.name,
             revision: review.template.revision,
             errors: counts.error,
@@ -715,12 +757,12 @@ export class GrowspaceLabelBatch extends LitElement {
         </p>
         ${this._changed
           ? html`<p class="stale" role="alert" data-role="changed">
-              ${this._t('batch_changed_since_review')}
+              ${this.#say('batch_changed_since_review')}
             </p>`
           : nothing}
         ${!preflight.allowed
           ? html`<div class="error" data-role="blocked">
-              <p class="supporting">${this._t('batch_blocked')}</p>
+              <p class="supporting">${this.#say('batch_blocked')}</p>
               ${blockers.length
                 ? html`<ul>
                     ${blockers.map((blocker) => html`<li>${this.#blockerCopy(blocker)}</li>`)}
@@ -731,7 +773,7 @@ export class GrowspaceLabelBatch extends LitElement {
                 : nothing}
             </div>`
           : nothing}
-        ${this.#renderNavigation(review)} ${this.#renderRecord(review)}
+        ${this.single ? nothing : this.#renderNavigation(review)} ${this.#renderRecord(review)}
         ${this.#renderPlan(review, this._job)} ${this.#renderConsent(review)}
         <div class="row">
           <button
@@ -743,7 +785,11 @@ export class GrowspaceLabelBatch extends LitElement {
             !mayPrint(preflight, this._acknowledged, this._changed)}
             @click=${() => void this.#print()}
           >
-            ${this._t('batch_print', { labels: preflight.attempts.length })}
+            ${this.#say(
+              'batch_print',
+              { labels: preflight.attempts.length },
+              preflight.attempts.length
+            )}
           </button>
         </div>
       </section>
@@ -827,7 +873,11 @@ export class GrowspaceLabelBatch extends LitElement {
       <div>
         <h4 tabindex="-1">${name}</h4>
         <p class="supporting ${severity === 'ok' ? '' : severity}">
-          ${this._t(`batch_record_${severity}`, { count: diagnostics.length })}
+          ${this.#say(
+            `batch_record_${severity}`,
+            { count: diagnostics.length },
+            diagnostics.length
+          )}
         </p>
         ${diagnostics.length
           ? html`<ul data-role="diagnostics">
@@ -847,14 +897,14 @@ export class GrowspaceLabelBatch extends LitElement {
   #renderPlan(review: Review, job: BatchJob | null): TemplateResult {
     const statuses = new Map(job?.attempts.map((attempt) => [attempt.id, attempt]) ?? []);
     return html`<div>
-      <h4 id="batch-plan">${this._t('batch_plan')}</h4>
-      <p class="supporting">${this._t('batch_plan_hint')}</p>
+      <h4 id="batch-plan">${this.#say('batch_plan')}</h4>
+      ${this.single ? nothing : html`<p class="supporting">${this._t('batch_plan_hint')}</p>`}
       <ol class="plan" data-role="plan" aria-labelledby="batch-plan">
         ${review.preflight.attempts.map((attempt) => {
           const current = statuses.get(attempt.id);
           const status = current?.status ?? 'queued';
           return html`<li data-attempt=${attempt.id} data-status=${status}>
-            ${this._t('batch_attempt', {
+            ${this.#say('batch_attempt', {
               plant: this.#plant(attempt.subject),
               copy: attempt.copy_index,
             })}
@@ -878,7 +928,7 @@ export class GrowspaceLabelBatch extends LitElement {
     return html`<div data-role="acknowledge" data-state=${consent}>
       ${consent === 'stale'
         ? html`<p class="stale" role="alert" data-role="acknowledgement-stale">
-            ${this._t('batch_acknowledgement_stale')}
+            ${this.#say('batch_acknowledgement_stale')}
           </p>`
         : nothing}
       <label class="consent">
@@ -888,10 +938,14 @@ export class GrowspaceLabelBatch extends LitElement {
           ?disabled=${this._busy || this._job !== null || !preflight.allowed}
           @change=${(e: Event) => this.#acknowledge((e.target as HTMLInputElement).checked)}
         />
-        ${this._t('batch_acknowledge', {
-          warnings: warningCount(preflight),
-          review: preflight.identity.replace(/^sha256:/, '').slice(0, 8),
-        })}
+        ${this.#say(
+          'batch_acknowledge',
+          {
+            warnings: warningCount(preflight),
+            review: preflight.identity.replace(/^sha256:/, '').slice(0, 8),
+          },
+          warningCount(preflight)
+        )}
       </label>
     </div>`;
   }
@@ -901,9 +955,11 @@ export class GrowspaceLabelBatch extends LitElement {
     const failed = failedAttempts(job);
     return html`<section data-section="job" aria-labelledby="batch-job" data-state=${job.state}>
       <h3 id="batch-job">
-        ${this._t(job.retry_of ? 'batch_job_retry' : 'batch_job', {
-          labels: progress.selected,
-        })}
+        ${this.#say(
+          job.retry_of ? 'batch_job_retry' : 'batch_job',
+          { labels: progress.selected },
+          progress.selected
+        )}
       </h3>
       <progress
         max=${Math.max(progress.selected, 1)}
@@ -936,7 +992,11 @@ export class GrowspaceLabelBatch extends LitElement {
       ${progress.finished && job.state !== 'refused'
         ? html`<p class="supporting" data-role="done">
             ${failed.length === 0
-              ? this._t('batch_all_printed', { labels: progress.printedOverall })
+              ? this.#say(
+                  'batch_all_printed',
+                  { labels: progress.printedOverall },
+                  progress.printedOverall
+                )
               : this._t('batch_partial', {
                   printed: progress.printedOverall,
                   failed: failed.length,
@@ -945,14 +1005,14 @@ export class GrowspaceLabelBatch extends LitElement {
         : nothing}
       ${mayRetry(job)
         ? html`<div data-role="retry">
-            <p class="supporting">${this._t('batch_retry_hint')}</p>
+            <p class="supporting">${this.#say('batch_retry_hint')}</p>
             <button
               class="primary"
               data-action="retry"
               ?disabled=${this._busy}
               @click=${() => void this.#retry()}
             >
-              ${this._t('batch_retry', { labels: failed.length })}
+              ${this.#say('batch_retry', { labels: failed.length }, failed.length)}
             </button>
           </div>`
         : nothing}

@@ -33,6 +33,7 @@ import sheetFixture from '../fixtures/contract/label_calibration_sheet_v1.json';
 import recordPreviewFixture from '../fixtures/contract/label_record_preview_v1.json';
 import refusedFixture from '../fixtures/contract/label_print_refused_v1.json';
 import preflightFixture from '../fixtures/contract/label_batch_preflight_v1.json';
+import batchRefusedFixture from '../fixtures/contract/label_batch_refused_v1.json';
 import { GrowspaceLabelEditor } from '../../src/features/labels/editor/growspace-label-editor';
 import { GrowspaceLabelPrintPanel } from '../../src/features/labels/editor/growspace-label-print-panel';
 import { GrowspaceLabelBatch } from '../../src/features/labels/batch/growspace-label-batch';
@@ -58,6 +59,7 @@ const mocks = vi.hoisted(() => ({
   print: vi.fn(),
   strains: vi.fn(),
   preflight: vi.fn(),
+  batchPrint: vi.fn(),
   library: vi.fn(),
   hass: { current: null as unknown },
 }));
@@ -83,7 +85,7 @@ vi.mock('../../src/slices/labels/printing', () => ({
 vi.mock('../../src/slices/labels/batch', () => ({
   MAX_BATCH_COPIES: 10,
   preflightLabelBatch: mocks.preflight,
-  printLabelBatch: vi.fn(),
+  printLabelBatch: mocks.batchPrint,
   fetchLabelBatchJob: vi.fn(),
   retryLabelBatch: vi.fn(),
 }));
@@ -261,6 +263,54 @@ async function batchReview(): Promise<LitElement> {
   return view;
 }
 
+/** A plant's own label: a one-plant batch, reviewed, its warnings awaiting consent. */
+async function plantReview(): Promise<GrowspaceLabelBatch> {
+  mocks.hass.current = {
+    user: { is_admin: false },
+    states: { [PRINTER]: { attributes: { friendly_name: 'B1' } } },
+  };
+  const view = await fixture<GrowspaceLabelBatch>(
+    '<growspace-label-batch single></growspace-label-batch>'
+  );
+  theme(view);
+  view.capability = structuredClone(CAPABILITY);
+  view.plantIds = ['A'];
+  view.describePlant = (id) => `Plant ${id}`;
+  await view.updateComplete;
+  const answer = structuredClone(preflightFixture) as unknown as {
+    preflight: {
+      records: { subject: string }[];
+      diagnostics: { subject: string }[];
+      attempts: { subject: string; copy_index: number; position: number }[];
+    };
+  };
+  const preflight = answer.preflight;
+  preflight.records = preflight.records.filter((record) => record.subject === 'A');
+  preflight.diagnostics = preflight.diagnostics.filter((item) => item.subject === 'A');
+  preflight.attempts = preflight.attempts
+    .filter((attempt) => attempt.subject === 'A' && attempt.copy_index === 1)
+    .map((attempt, position) => ({ ...attempt, position }));
+  mocks.preflight.mockResolvedValueOnce(answer);
+  $<HTMLButtonElement>(view, '[data-action="preflight"]')!.click();
+  await vi.waitFor(() => expect($(view, '[data-section="review"]')).not.toBeNull());
+  await settle(view);
+  return view;
+}
+
+/** A plant's own label, its print refused by the integration. */
+async function plantRefused(): Promise<LitElement> {
+  const view = await plantReview();
+  const box = $<HTMLInputElement>(view, '[data-role="acknowledge"] input')!;
+  box.checked = true;
+  box.dispatchEvent(new Event('change'));
+  await view.updateComplete;
+  mocks.batchPrint.mockResolvedValueOnce(structuredClone(batchRefusedFixture));
+  $<HTMLButtonElement>(view, '[data-action="print"]')!.click();
+  await vi.waitFor(() => expect($(view, '[data-role="refusal"]')).not.toBeNull());
+  await settle(view);
+  return view;
+}
+
 /** The strain library's print, mounted for one saved strain. */
 async function strainPrint(): Promise<GrowspaceLabelRecordPrint> {
   mocks.hass.current = {
@@ -335,6 +385,8 @@ const SURFACES: [string, () => Promise<LitElement>][] = [
   ['the template view', templates],
   ['strain-library print, blocked with its recovery', strainPrintBlocked],
   ['strain-library print, refused by the integration', strainPrintRefused],
+  ["a plant's own label, under review", plantReview],
+  ["a plant's own label, refused by the integration", plantRefused],
 ];
 
 beforeEach(() => {

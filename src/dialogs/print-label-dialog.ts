@@ -23,6 +23,7 @@ import {
   buildQrTargetUrl,
   DEFAULT_LABEL_FIELDS,
   deriveLabelFieldValues,
+  describePlant,
 } from './print-label-logic';
 import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
 import type { LabelTemplateSupport } from '../slices/labels';
@@ -56,10 +57,10 @@ export class PrintLabelDialog extends LitElement {
   @property({ attribute: false }) public dialogState: PrintLabelDialogState | undefined;
   /**
    * Page-global Label Template capability, read from `labelTemplateSupport$`
-   * by the host. A strain-library request prints through a Label Template
-   * when it is `available`, and never through the Classic service then;
-   * without it this is the Classic dialog, marked as the compatibility
-   * workflow. Plant requests are Classic either way.
+   * by the host. A strain-library or plant request prints through a Label
+   * Template when it is `available`, and never through the Classic service
+   * then; without it this is the Classic dialog, marked as the compatibility
+   * workflow.
    */
   @property({ attribute: false }) public support?: LabelTemplateSupport;
 
@@ -417,9 +418,25 @@ export class PrintLabelDialog extends LitElement {
     return this.dialogState?.source === 'strain_library';
   }
 
+  /**
+   * The plant this label is for, when it is one plant's label.
+   *
+   * It prints through a Label Template as a one-plant batch: the batch
+   * preflight and print routes already capture a plant, so nothing new is
+   * asked of the backend.
+   */
+  private get _plantId(): string | undefined {
+    return this._fromStrainLibrary ? undefined : this.dialogState?.plantId || undefined;
+  }
+
+  /** Whether a Label Template can print this request at all. */
+  private get _templatePrintable(): boolean {
+    return this._fromStrainLibrary || this._plantId !== undefined;
+  }
+
   /** Fetch the template path only once the capability says it exists. */
   private async _loadTemplateChunk(): Promise<void> {
-    if (!this.open || !this._fromStrainLibrary) return;
+    if (!this.open || !this._templatePrintable) return;
     if (this.support?.status !== 'available' || this._templateChunk !== 'idle') return;
     this._templateChunk = 'loading';
     const view = await loadLazyChunk(
@@ -434,17 +451,19 @@ export class PrintLabelDialog extends LitElement {
   }
 
   /**
-   * The strain library's request, while the capability is still being asked
-   * for or once it says templates exist. Never the Classic form: a request
-   * pressed before the answer arrived must not print the old way on an
-   * integration that serves the new one.
+   * A strain-library or plant request, while the capability is still being
+   * asked for or once it says templates exist. Never the Classic form: a
+   * request pressed before the answer arrived must not print the old way on
+   * an integration that serves the new one.
    */
   private _renderTemplatePath(): TemplateResult {
     const ds = this.dialogState;
     const support = this.support;
     const language = this._language;
-    const subtitle =
-      ds?.phenotype && ds.phenotype !== 'default'
+    const plantId = this._plantId;
+    const subtitle = plantId
+      ? describePlant(plantId)
+      : ds?.phenotype && ds.phenotype !== 'default'
         ? `${ds.strainName ?? ''} · ${ds.phenotype}`
         : (ds?.strainName ?? '');
     return html`
@@ -463,14 +482,22 @@ export class PrintLabelDialog extends LitElement {
               ? html`<growspace-lazy-chunk-error
                   .chunk=${LAZY_CHUNKS.labelTemplates}
                 ></growspace-lazy-chunk-error>`
-              : this._templateChunk === 'ready'
-                ? html`<growspace-label-record-print
+              : this._templateChunk === 'ready' && plantId
+                ? html`<growspace-label-batch
+                    single
                     .capability=${support.capability}
-                    .strain=${ds?.strainName ?? ''}
-                    .phenotype=${ds?.phenotype ?? null}
+                    .plantIds=${[plantId]}
+                    .describePlant=${describePlant}
                     .language=${language}
-                  ></growspace-label-record-print>`
-                : html`<p role="status">${localize('labels.view_loading', '', '', language)}</p>`}
+                  ></growspace-label-batch>`
+                : this._templateChunk === 'ready'
+                  ? html`<growspace-label-record-print
+                      .capability=${support.capability}
+                      .strain=${ds?.strainName ?? ''}
+                      .phenotype=${ds?.phenotype ?? null}
+                      .language=${language}
+                    ></growspace-label-record-print>`
+                  : html`<p role="status">${localize('labels.view_loading', '', '', language)}</p>`}
         </div>
         <div class="button-group">
           <button class="md3-button tonal" @click=${this._close}>
@@ -481,13 +508,14 @@ export class PrintLabelDialog extends LitElement {
     `;
   }
 
-  /** The Classic dialog, when a strain-library request reaches it: say why. */
+  /** The Classic dialog, when a request templates could print reaches it: say why. */
   private _renderCompatibilityNotice(): TemplateResult | typeof nothing {
-    if (!this._fromStrainLibrary) return nothing;
+    if (!this._templatePrintable) return nothing;
+    const subject = this._plantId ? 'plant' : 'record';
     const key =
       this.support?.status === 'incompatible'
-        ? 'labels.record_compatibility_incompatible'
-        : 'labels.record_compatibility_classic';
+        ? `labels.${subject}_compatibility_incompatible`
+        : `labels.${subject}_compatibility_classic`;
     return html`
       <div class="compatibility-notice" data-role="compatibility" role="note">
         <strong>${localize('labels.record_compatibility_title', '', '', this._language)}</strong>
@@ -594,7 +622,7 @@ export class PrintLabelDialog extends LitElement {
   protected render() {
     if (!this.open) return nothing;
     if (
-      this._fromStrainLibrary &&
+      this._templatePrintable &&
       (this.support?.status === 'unknown' || this.support?.status === 'available')
     ) {
       return this._renderTemplatePath();

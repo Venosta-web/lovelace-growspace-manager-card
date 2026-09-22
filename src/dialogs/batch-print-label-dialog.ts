@@ -24,31 +24,13 @@ import {
   buildQrTargetUrl,
   DEFAULT_LABEL_FIELDS,
   deriveLabelFieldValues,
-  findLabelPlant,
+  describePlant,
 } from './print-label-logic';
 import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
 import type { LabelTemplateSupport } from '../slices/labels';
 import '../features/shared/ui/lazy-chunk-error';
 
 type ChunkState = 'idle' | 'loading' | 'ready' | 'missing';
-
-/**
- * A plant's name in a batch review: where it stands, not only what it is.
- *
- * The strain alone is not a name — a batch of clones is one strain many
- * times over, and a review that says "E2E Anchor" twice cannot say which one
- * failed. The entity's own name carries the growspace and the position,
- * which is what tells two plants apart on the bench; without it, the strain
- * and the position.
- */
-export function describePlant(plantId: string): string {
-  const attributes = findLabelPlant(plantId)?.attributes;
-  const friendly = attributes?.friendly_name;
-  if (typeof friendly === 'string' && friendly) return friendly;
-  const strain = attributes?.strain || plantId;
-  const position = attributes?.position;
-  return typeof position === 'string' && position ? `${strain} ${position}` : strain;
-}
 
 interface BatchPrintJob {
   plantIds: string[];

@@ -111,7 +111,7 @@ describe('refusals', () => {
 
   test('refusal copy interpolates nothing the wire does not carry', () => {
     for (const [key, copy] of Object.entries(LABELS)) {
-      if (key.startsWith('refusal_') || key.startsWith('batch_refusal_')) {
+      if (/^(batch_|single_)?refusal_/.test(key)) {
         expect(placeholders(copy), key).toEqual([]);
       }
     }
