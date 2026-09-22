@@ -134,13 +134,21 @@ export function warningCount(preflight: BatchPreflight): number {
   );
 }
 
-/** Whether printing may be asked for; the backend decides again regardless. */
+/**
+ * Whether printing may be asked for; the backend decides again regardless.
+ *
+ * `anyway` asks whether printing past the refusals would be allowed: only
+ * when every refusal is about an unproven printer, and never instead of
+ * acknowledging warnings.
+ */
 export function mayPrint(
   preflight: BatchPreflight,
   acknowledged: string | null,
-  changedSinceReview: boolean
+  changedSinceReview: boolean,
+  anyway = false
 ): boolean {
-  if (changedSinceReview || !preflight.allowed) return false;
+  if (changedSinceReview) return false;
+  if (!preflight.allowed && !(anyway && preflight.override_available)) return false;
   const consent = acknowledgementState(preflight, acknowledged);
   return consent === 'not_required' || consent === 'current';
 }

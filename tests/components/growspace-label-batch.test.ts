@@ -195,6 +195,56 @@ describe('review', () => {
     );
     expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);
     expect($<HTMLInputElement>(view, '[data-role="acknowledge"] input')!.disabled).toBe(true);
+    expect($(view, '[data-action="print-anyway"]')).toBeNull();
+  });
+});
+
+describe('printing anyway', () => {
+  /** Refused only because this printer was never calibrated. */
+  const uncalibrated = () =>
+    review((copy) => {
+      copy.preflight.allowed = false;
+      copy.preflight.blocked_by = ['local_calibration_missing'];
+      copy.preflight.override_available = true;
+      copy.recovery = 'calibrate';
+    });
+
+  test('is offered for an unproven printer, after the warnings are acknowledged', async () => {
+    const view = await mount();
+    await reviewed(view, uncalibrated());
+    const anyway = () => $<HTMLButtonElement>(view, '[data-action="print-anyway"]')!;
+
+    expect($(view, '[data-role="blocked"]')!.textContent).toContain('not the labels');
+    expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);
+    expect(anyway().disabled).toBe(true);
+
+    await acknowledge(view);
+    expect(anyway().disabled).toBe(false);
+    expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);
+
+    mocks.print.mockResolvedValueOnce(startedFixture);
+    mocks.job.mockResolvedValue(jobFixture);
+    await click(view, '[data-action="print-anyway"]');
+    expect(mocks.print).toHaveBeenCalledWith(RECORDED.preflight_id, IDENTITY, IDENTITY);
+
+    // A retry is the same review, so it carries the same choice.
+    await vi.waitFor(() => expect($(view, '[data-role="retry"]')).not.toBeNull(), {
+      timeout: 3000,
+    });
+    mocks.retry.mockResolvedValueOnce(retryFixture);
+    await click(view, '[data-action="retry"]');
+    const job = (jobFixture as { job: { id: string } }).job;
+    expect(mocks.retry).toHaveBeenCalledWith(job.id, IDENTITY, IDENTITY);
+  });
+
+  test('is not offered once the setup changed after the review', async () => {
+    const view = await mount();
+    await reviewed(view, uncalibrated());
+    await acknowledge(view);
+
+    await setCopies(view, 3);
+
+    expect($<HTMLButtonElement>(view, '[data-action="print-anyway"]')!.disabled).toBe(true);
   });
 });
 
@@ -281,7 +331,7 @@ describe('progress and retry', () => {
     mocks.retry.mockResolvedValueOnce(retryFixture);
     const job = (jobFixture as { job: { id: string } }).job;
     await click(view, '[data-action="retry"]');
-    expect(mocks.retry).toHaveBeenCalledWith(job.id, IDENTITY);
+    expect(mocks.retry).toHaveBeenCalledWith(job.id, IDENTITY, null);
     expect($(view, '[data-section="job"]')!.textContent).toContain('Retrying 1 failed labels');
     expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);
   });
