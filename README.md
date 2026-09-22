@@ -35,7 +35,7 @@ This card is the frontend companion to the **Growspace Manager Backend** integra
 ### 🧠 Intelligence & Automation
 
 - **Grow Master AI**: Integrated AI assistant that analyzes your sensor data to provide context-aware gardening advice and stress diagnosis.
-- **Smart Irrigation**: Manage complex irrigation schedules and strategies (e.g., "Crop Steering") directly from the UI.
+- **Smart Irrigation**: Manage complex irrigation schedules and strategies (e.g., "Crop Steering") directly from the UI, save a proven setup as a reusable Recipe, and plan a whole run with the standalone Recipe library editor.
 - **Strain Recommendations**: Get data-driven strain suggestions based on your specific environmental conditions.
 - **Integrated Pest Management (IPM)**: Track and manage pest treatments with customizable presets for foliar sprays, root drenches, and beneficial insects.
 
@@ -50,6 +50,22 @@ This card is the frontend companion to the **Growspace Manager Backend** integra
 - **Real-time Analytics**: Toggleable chips for Temperature, Humidity, VPD, and CO2 with historical sparklines.
 - **Light Cycle History**: Visual timeline of light ON/OFF states over the last 24 hours.
 - **Calculated Metrics**: Automatic VPD calculation and "Lung Room" monitoring.
+
+### 🏷️ Label Printing
+
+- **Direct-Manipulation Template Editor**: Design and publish your own Niimbot label layouts, with drafts protected against concurrent editing.
+- **Batch Printing**: Preview, print, and retry labels across a whole selection of plants, backed by preflight checks on the batch itself.
+- **Calibration & Recovery**: Calibrate a printer and recover from print diagnostics without leaving the card.
+- **Print Anyway**: Explicit override to print past a printer profile that hasn't yet proven itself.
+
+### 📷 Growspace Vision
+
+- **Evidence Checkups**: Review AI camera evidence history for a plant, with comparison sparklines against its own recorded baseline over time.
+
+### 🧫 Tissue Culture (optional)
+
+- **Companion Integration**: When the [Growspace Manager TC](https://github.com/Venosta-web/growspace_manager_tc) integration is installed, its view is detected and lazy-loaded automatically — no extra configuration.
+- **Full Bench Management**: Worklist, culture board, Culture Medium library with version history, curated Pairings, and graduating a culture into a tracked plant.
 
 ### 🎨 Modern UX
 
