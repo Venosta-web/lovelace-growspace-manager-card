@@ -29,7 +29,6 @@ on:
 permissions:
   contents: write
   issues: write
-  pull-requests: write
 
 jobs:
   drift:
@@ -118,26 +117,6 @@ jobs:
           git commit -m 'chore: back-merge main into dev'
           git push origin "$branch"
 
-      - name: Open the back-merge PR
-        id: pr
-        if: steps.drift.outputs.drifted == 'true' && steps.prepare.outputs.conflicts == 'none'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # A human opening this branch through GitHub's compare-link UI gets a
-          # title auto-generated from the branch name — "Chore/backmerge
-          # 20260922-184356" — which fails the PR Title workflow's
-          # conventional-commit check every single time (#953, #825, #781).
-          # Opening it here with the same message the merge commit already
-          # uses sidesteps that human step entirely.
-          url="$(gh pr create \
-            --repo '${{ github.repository }}' \
-            --base dev \
-            --head '${{ steps.prepare.outputs.branch }}' \
-            --title 'chore: back-merge main into dev' \
-            --body 'Automated back-merge of `main` into `dev`, opened by the `Back-merge drift` workflow.')"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
-
       - name: Report
         if: steps.drift.outputs.drifted == 'true'
         env:
@@ -147,7 +126,22 @@ jobs:
           branch='${{ steps.prepare.outputs.branch }}'
 
           if [ '${{ steps.prepare.outputs.conflicts }}' = 'none' ]; then
-            action="**[Review the back-merge PR](${{ steps.pr.outputs.url }})** — branch \`$branch\` is pushed and merges cleanly."
+            # Opened by the workflow's own GITHUB_TOKEN, this PR would never
+            # raise a `pull_request` event, so `test`, `lint`, `pr-title`,
+            # `release-preflight` and `contract-fixture` would never run and
+            # dev's ruleset could never be satisfied — the same restriction
+            # promote.yml documents. A human has to click "Create pull
+            # request" for the checks to fire at all, so this only pre-fills
+            # that form's title via the compare page's query string instead of
+            # leaving GitHub to guess one from the branch name — which is what
+            # produced "Chore/backmerge 20260922 184356" and failed pr-title
+            # on #953, #825 and #781. Nothing here can make that guess worse:
+            # a client that ignores the query string just falls back to the
+            # status quo.
+            title='chore: back-merge main into dev'
+            encoded_title="$(printf '%s' "$title" | sed 's/:/%3A/g; s/ /%20/g')"
+            pr_url="https://github.com/$repo/compare/dev...$branch?expand=1&title=$encoded_title"
+            action="**[Open the back-merge PR]($pr_url)** — branch \`$branch\` is pushed and merges cleanly. The title is pre-filled; check it before creating."
           else
             action="$(printf 'The back-merge conflicts, so no branch was pushed. Resolve it locally:\n\n```bash\ngit switch -c chore/backmerge origin/dev\ngit merge origin/main\n```\n\nConflicting files:\n%s\n\nA conflict here often means the same fix was written on both branches — check before resolving.' '${{ steps.prepare.outputs.files }}')"
           fi
