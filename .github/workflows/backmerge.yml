@@ -29,6 +29,7 @@ on:
 permissions:
   contents: write
   issues: write
+  pull-requests: write
 
 jobs:
   drift:
@@ -117,6 +118,26 @@ jobs:
           git commit -m 'chore: back-merge main into dev'
           git push origin "$branch"
 
+      - name: Open the back-merge PR
+        id: pr
+        if: steps.drift.outputs.drifted == 'true' && steps.prepare.outputs.conflicts == 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # A human opening this branch through GitHub's compare-link UI gets a
+          # title auto-generated from the branch name — "Chore/backmerge
+          # 20260922-184356" — which fails the PR Title workflow's
+          # conventional-commit check every single time (#953, #825, #781).
+          # Opening it here with the same message the merge commit already
+          # uses sidesteps that human step entirely.
+          url="$(gh pr create \
+            --repo '${{ github.repository }}' \
+            --base dev \
+            --head '${{ steps.prepare.outputs.branch }}' \
+            --title 'chore: back-merge main into dev' \
+            --body 'Automated back-merge of `main` into `dev`, opened by the `Back-merge drift` workflow.')"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
       - name: Report
         if: steps.drift.outputs.drifted == 'true'
         env:
@@ -126,7 +147,7 @@ jobs:
           branch='${{ steps.prepare.outputs.branch }}'
 
           if [ '${{ steps.prepare.outputs.conflicts }}' = 'none' ]; then
-            action="**[Open the back-merge PR](https://github.com/$repo/compare/dev...$branch?expand=1)** — branch \`$branch\` is pushed and merges cleanly."
+            action="**[Review the back-merge PR](${{ steps.pr.outputs.url }})** — branch \`$branch\` is pushed and merges cleanly."
           else
             action="$(printf 'The back-merge conflicts, so no branch was pushed. Resolve it locally:\n\n```bash\ngit switch -c chore/backmerge origin/dev\ngit merge origin/main\n```\n\nConflicting files:\n%s\n\nA conflict here often means the same fix was written on both branches — check before resolving.' '${{ steps.prepare.outputs.files }}')"
           fi
