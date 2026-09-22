@@ -88,6 +88,12 @@ export const BatchPreflightSchema = z.object({
   acknowledgement_required: z.boolean(),
   /** Every distinct hard refusal across the records. */
   blocked_by: z.array(z.string()),
+  /**
+   * Whether every refusal is about how far the printer has been proven — an
+   * unverified profile, a missing or stale calibration — so the user may
+   * print anyway. Absent from a backend older than the override.
+   */
+  override_available: z.boolean().default(false),
   source: PrintSourceSchema,
   profile: CapabilityProfileSchema,
   printer: BatchPrinterSchema,

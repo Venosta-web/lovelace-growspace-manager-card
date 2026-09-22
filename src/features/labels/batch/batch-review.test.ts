@@ -158,6 +158,22 @@ describe('consent to one exact review', () => {
     expect(batchBlockers(preflight)).toEqual([]);
   });
 
+  it('prints anyway only past an unproven printer, and never without consent', () => {
+    const unproven = {
+      ...recorded(),
+      allowed: false,
+      blocked_by: ['local_calibration_missing'],
+      override_available: true,
+    };
+    expect(mayPrint(unproven, unproven.identity, false)).toBe(false);
+    expect(mayPrint(unproven, unproven.identity, false, true)).toBe(true);
+    expect(mayPrint(unproven, null, false, true)).toBe(false);
+    expect(mayPrint(unproven, unproven.identity, true, true)).toBe(false);
+
+    const broken = { ...unproven, blocked_by: ['no_raster'], override_available: false };
+    expect(mayPrint(broken, broken.identity, false, true)).toBe(false);
+  });
+
   it('separates batch-wide blockers from a record’s own', () => {
     const preflight = {
       ...recorded(),

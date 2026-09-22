@@ -103,6 +103,8 @@ export class GrowspaceLabelBatch extends LitElement {
   @state() private _changed = false;
   /** The preflight identity the user consented to, if any. */
   @state() private _acknowledged: string | null = null;
+  /** The preflight identity the user chose to print anyway, if any. */
+  @state() private _overridden: string | null = null;
   @state() private _focus = 0;
   @state() private _job: BatchJob | null = null;
   @state() private _announcement = '';
@@ -476,10 +478,25 @@ export class GrowspaceLabelBatch extends LitElement {
     await this.#start(() => printLabelBatch(review.preflight_id, this.#consent()));
   }
 
+  /** Print past an unproven printer, with consent bound to this exact review. */
+  async #printAnyway(): Promise<void> {
+    const review = this._review;
+    if (!review || !mayPrint(review.preflight, this._acknowledged, this._changed, true)) return;
+    const identity = review.preflight.identity;
+    this._overridden = identity;
+    await this.#start(() => printLabelBatch(review.preflight_id, this.#consent(), identity));
+  }
+
   async #retry(): Promise<void> {
     const job = this._job;
     if (!job || !mayRetry(job)) return;
-    await this.#start(() => retryLabelBatch(job.id, this.#consent()));
+    await this.#start(() => retryLabelBatch(job.id, this.#consent(), this.#override()));
+  }
+
+  /** The override a retry repeats: only one given to the review it retries. */
+  #override(): string | null {
+    const identity = this._review?.preflight.identity;
+    return identity && this._overridden === identity ? identity : null;
   }
 
   #consent(): string | null {
@@ -557,6 +574,7 @@ export class GrowspaceLabelBatch extends LitElement {
     switch (recovery) {
       case 'preflight_again':
         this._acknowledged = null;
+        this._overridden = null;
         await this.#preflight();
         return;
       case 'acknowledge_warnings':
@@ -771,6 +789,7 @@ export class GrowspaceLabelBatch extends LitElement {
               ${this._has(`batch_recovery_${review.recovery}`)
                 ? html`<p class="supporting">${this._t(`batch_recovery_${review.recovery}`)}</p>`
                 : nothing}
+              ${preflight.override_available ? this.#renderAnyway(review, printing) : nothing}
             </div>`
           : nothing}
         ${this.single ? nothing : this.#renderNavigation(review)} ${this.#renderRecord(review)}
@@ -794,6 +813,29 @@ export class GrowspaceLabelBatch extends LitElement {
         </div>
       </section>
     `;
+  }
+
+  /**
+   * The way past an unproven printer: its profile not yet physically tested,
+   * or this printer not calibrated. The label itself is fine; what is missing
+   * is proof of where the ink lands, and the user can judge that from the
+   * label that comes out.
+   */
+  #renderAnyway(review: Review, printing: boolean): TemplateResult {
+    const preflight = review.preflight;
+    return html`<div class="row" data-role="print-anyway">
+      <p class="supporting">${this.#say('batch_print_anyway_hint')}</p>
+      <button
+        data-action="print-anyway"
+        ?disabled=${this._busy ||
+        printing ||
+        this._job !== null ||
+        !mayPrint(preflight, this._acknowledged, this._changed, true)}
+        @click=${() => void this.#printAnyway()}
+      >
+        ${this._t('batch_print_anyway')}
+      </button>
+    </div>`;
   }
 
   #renderNavigation(review: Review): TemplateResult {
@@ -935,7 +977,9 @@ export class GrowspaceLabelBatch extends LitElement {
         <input
           type="checkbox"
           .checked=${consent === 'current'}
-          ?disabled=${this._busy || this._job !== null || !preflight.allowed}
+          ?disabled=${this._busy ||
+          this._job !== null ||
+          !(preflight.allowed || preflight.override_available)}
           @change=${(e: Event) => this.#acknowledge((e.target as HTMLInputElement).checked)}
         />
         ${this.#say(

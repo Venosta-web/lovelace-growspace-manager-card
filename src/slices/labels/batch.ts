@@ -57,17 +57,26 @@ export function preflightLabelBatch(request: BatchRequest): Promise<BatchPreflig
  *
  * `acknowledgement` is the preflight identity the user consented to, sent
  * only when they did; the backend refuses consent that belongs to another
- * review.
+ * review. `override` is the same identity, sent only when the user chose to
+ * print past an unproven printer.
  */
 export function printLabelBatch(
   preflightId: string,
-  acknowledgement: string | null
+  acknowledgement: string | null,
+  override: string | null = null
 ): Promise<BatchJobAnswer> {
   return gated(
     WS_PRINT_LABEL_BATCH,
-    { preflight_id: preflightId, ...(acknowledgement ? { acknowledgement } : {}) },
+    { preflight_id: preflightId, ...consent(acknowledgement, override) },
     BatchJobAnswerSchema
   );
+}
+
+function consent(acknowledgement: string | null, override: string | null): Record<string, string> {
+  return {
+    ...(acknowledgement ? { acknowledgement } : {}),
+    ...(override ? { override } : {}),
+  };
 }
 
 /** Read one job as it stands. */
@@ -78,11 +87,12 @@ export function fetchLabelBatchJob(jobId: string): Promise<BatchJobAnswer> {
 /** Print one finished job's failed attempts again, from the same review. */
 export function retryLabelBatch(
   jobId: string,
-  acknowledgement: string | null
+  acknowledgement: string | null,
+  override: string | null = null
 ): Promise<BatchJobAnswer> {
   return gated(
     WS_RETRY_LABEL_BATCH,
-    { job_id: jobId, ...(acknowledgement ? { acknowledgement } : {}) },
+    { job_id: jobId, ...consent(acknowledgement, override) },
     BatchJobAnswerSchema
   );
 }
