@@ -747,6 +747,12 @@ export class GrowspaceLabelEditor extends LitElement {
     event.preventDefault();
     event.stopPropagation();
 
+    // preventDefault above suppresses the browser's native mousedown->focus
+    // for this button, so the keyboard nudge (#onKeyDown, bound on .layout)
+    // would otherwise never see the keydown bubble up from anywhere.
+    const target = event.currentTarget as HTMLElement;
+    target.focus({ preventScroll: true });
+
     const extend = event.shiftKey || event.metaKey || event.ctrlKey || this._multiSelect;
     if (extend) {
       session.toggleSelected(elementId);

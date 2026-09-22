@@ -831,6 +831,33 @@ describe('the keyboard', () => {
     expect(frameAt(session, 0).y_mm).toBe(before[0] + 2.5);
   });
 
+  test('focuses the clicked element, so the nudge that follows a click actually lands', async () => {
+    // preventDefault in #onPointerDown suppresses the browser's native
+    // mousedown->focus for this button; without an explicit .focus() call,
+    // a mouse selection would leave focus on <body> and every subsequent
+    // arrow key would go nowhere.
+    const { element, session } = await mount();
+    const target = element.renderRoot.querySelector(`[data-element="${IDS[0]}"]`)! as HTMLElement;
+
+    pointer(target, 'pointerdown', 0, 0);
+    await element.updateComplete;
+
+    expect(element.renderRoot.activeElement).toBe(target);
+    expect(session.state.selectedIds).toEqual([IDS[0]]);
+  });
+
+  test('focuses a resize handle the same way, since dragging one has the identical gap', async () => {
+    const { element, session } = await mount();
+    session.select(IDS[0]);
+    await element.updateComplete;
+
+    const handle = element.renderRoot.querySelector('.handle')! as HTMLElement;
+    pointer(handle, 'pointerdown', 0, 0);
+    await element.updateComplete;
+
+    expect(element.renderRoot.activeElement).toBe(handle);
+  });
+
   test('selects nothing on Escape', async () => {
     const { element, session } = await mount();
     session.selectMany([IDS[0], IDS[1]]);
