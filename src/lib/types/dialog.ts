@@ -1,12 +1,11 @@
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { VisionCheckupConfig } from '../../slices/camera';
-import type { EnvironmentDraft } from '../../dialogs/config-dialog-sm';
-import type { BufferedEnvironmentDraftKey } from '../../features/config/environment-persistence';
 import type {
   AcInfinityDevice,
   CirculationFanConfig,
   ExhaustFanConfig,
 } from '../../slices/growspace/schema';
+import type { TcTabId } from '../../features/tc/tc-dialog-sm';
 
 export type { VisionCheckupConfig };
 export type { CirculationFanConfig };
@@ -21,6 +20,21 @@ export interface VisionCheckupResult {
   issues_detected: string[];
   recommendations: string[];
   snapshot_paths: string[];
+}
+
+/**
+ * Portal identity carried in a dialog's open payload.
+ *
+ * One page-global `activeDialog$` feeds every card's dialog-host portal, so a
+ * payload that does not say which portal opened it renders in all of them. A
+ * dialog that must appear once captures the opening card's `store.instanceId`
+ * here, the way ADR-0027 captures the target growspace: bound at open time,
+ * never re-derived from ambient page state. Absent — or naming a portal that
+ * is not mounted — every portal renders, which is the pre-identity behaviour.
+ * See ADR-0055.
+ */
+export interface PortalScopedDialogState {
+  portalId?: string;
 }
 
 export interface AddPlantDialogState {
@@ -84,34 +98,6 @@ export interface VisionCheckupConfigEventDetail {
   visionCheckupConfig: VisionCheckupConfig;
 }
 
-/**
- * Sparse environment patch (ADR-0032).
- *
- * Only `selectedGrowspaceId` is guaranteed — it routes the command. Every other
- * key is present exactly when the user edited it, and a present key carries a
- * deliberate value, including an empty one. Consumers must branch on key
- * *presence* (`'key' in detail`), never on truthiness or array length, or
- * untouched fields get rewritten and deliberate clears get dropped.
- *
- * The humidity control flags are deliberately absent: they are immediate-persist
- * (`set_humidifier_control` / `set_dehumidifier_control`) and must never be
- * re-sent by the buffered Save.
- */
-type MoistureBandKey = 'soilMoistureMin' | 'soilMoistureMax';
-
-type SparseBufferedEnvironmentPatch = Partial<
-  Pick<EnvironmentDraft, Exclude<BufferedEnvironmentDraftKey, MoistureBandKey>>
->;
-
-type AtomicMoistureBandPatch =
-  | { soilMoistureMin?: never; soilMoistureMax?: never }
-  | Pick<EnvironmentDraft, MoistureBandKey>;
-
-export type EnvironmentConfigEventDetail = Pick<EnvironmentDraft, 'selectedGrowspaceId'> &
-  SparseBufferedEnvironmentPatch &
-  AtomicMoistureBandPatch &
-  Partial<Pick<EnvironmentDraft, 'exhaustFanConfig'>>;
-
 export interface ConfigDialogState {
   currentTab:
     | 'growspaces'
@@ -173,6 +159,11 @@ export interface IPMDialogState {
 export type QrTarget = 'web' | 'deeplink';
 
 export interface PrintLabelDialogState {
+  /**
+   * Where the request came from. The strain library prints through a Label
+   * Template when the integration serves one; everything else is Classic.
+   */
+  source?: 'strain_library';
   plantId?: string;
   strainName?: string;
   phenotype?: string;
@@ -209,9 +200,56 @@ export interface BatchCloneDialogState {
   plantIds: string[];
 }
 
-export interface IrrigationDialogState {
+export interface IrrigationDialogState extends PortalScopedDialogState {
   growspaceId?: string;
   initialTab?: string;
+  scrollToField?: string;
+}
+
+export type { TcTabId };
+
+/**
+ * What opening the Label Templates dialog carries with it.
+ *
+ * Only the portal, because the dialog is about the shipped Factory Templates
+ * and the printer profiles that can render them — neither of which belongs to
+ * a growspace. It stays portal-scoped so one card's menu opens one card's
+ * dialog (ADR-0055).
+ */
+export type LabelTemplatesDialogState = PortalScopedDialogState;
+
+/**
+ * What opening the Tissue Culture dialog carries with it.
+ *
+ * Every field is optional, so the payload has a legal empty form the way
+ * `IrrigationDialogState` does. That is a type-level convenience and not a
+ * licence: the one opener always sets `growspaceId` and `portalId`.
+ */
+export interface TcDialogState extends PortalScopedDialogState {
+  /**
+   * Target growspace, captured at open time (ADR-0027).
+   *
+   * Carried even though Tissue Culture is not growspace-scoped, and nothing in
+   * the dialog reads it: Graduation will need the growspace the menu was opened
+   * from, and re-deriving it from ambient selection at that point is the
+   * anti-pattern ADR-0027 names. **Nothing may filter TC data by it** — the
+   * dialog shows all cultures.
+   */
+  growspaceId?: string;
+  /**
+   * Which tab the dialog opens on. Unset means the worklist.
+   *
+   * A narrow union rather than `IrrigationDialogState`'s loose string: the tab
+   * set is fixed and small, and a typo in a loose string would fall back to the
+   * default tab in silence.
+   */
+  initialTab?: TcTabId;
+  /**
+   * A `data-scroll-target` value inside the initial tab, scrolled into view and
+   * pulsed on open — exactly `ConfigDialogState`'s semantics, deliberately
+   * reused. A scroll hint, not a selection and not a sub-view: a caller that
+   * wants a specific culture or medium marks that row and names it here.
+   */
   scrollToField?: string;
 }
 

@@ -60,6 +60,91 @@ describe('GrowspaceHeaderActionsUI – EC Ramp Curves menu item', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Label Templates menu item (workspace #224)
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceHeaderActionsUI – Label Templates menu item', () => {
+  const menu = (labelTemplatesAvailable: boolean) =>
+    fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui
+        .isMobile=${false}
+        .labelTemplatesAvailable=${labelTemplatesAvailable}
+      ></growspace-header-actions-ui>
+    `);
+
+  const actions = (el: GrowspaceHeaderActionsUI): string[] =>
+    Array.from(el.shadowRoot!.querySelectorAll('[data-action]')).map(
+      (item) => item.getAttribute('data-action') ?? ''
+    );
+
+  it('is absent against a backend with no published capability', async () => {
+    const el = await menu(false);
+
+    // Absent, not disabled. An old backend is not withholding a feature from
+    // this user; it has none, and the Classic print dialogs are unaffected.
+    expect(actions(el)).not.toContain('label-templates');
+    const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map((i) =>
+      i.textContent?.trim()
+    );
+    expect(labels).not.toContain('Label Templates');
+  });
+
+  it('appears once the complete capability has been negotiated', async () => {
+    const el = await menu(true);
+
+    expect(actions(el)).toContain('label-templates');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tissue Culture menu item (workspace #152 / ADR 0057)
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceHeaderActionsUI – Tissue Culture menu item', () => {
+  const menu = async (tcAvailable: boolean) => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui
+        .isMobile=${false}
+        .tcAvailable=${tcAvailable}
+      ></growspace-header-actions-ui>
+    `);
+    return el;
+  };
+
+  const actions = (el: GrowspaceHeaderActionsUI): string[] =>
+    Array.from(el.shadowRoot!.querySelectorAll('[data-action]')).map(
+      (item) => item.getAttribute('data-action') ?? ''
+    );
+
+  it('is absent while presence is unknown or absent', async () => {
+    const el = await menu(false);
+
+    // Absent, not disabled: an installation the card never found is not a
+    // feature the user is being denied.
+    expect(actions(el)).not.toContain('tc');
+    const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map((i) =>
+      i.textContent?.trim()
+    );
+    expect(labels).not.toContain('Tissue Culture');
+  });
+
+  it('appears in Setup, immediately after Strains, once TC has answered', async () => {
+    const el = await menu(true);
+    const order = actions(el);
+
+    expect(order).toContain('tc');
+    expect(order.indexOf('tc')).toBe(order.indexOf('strains') + 1);
+  });
+
+  it('is labelled Tissue Culture', async () => {
+    const el = await menu(true);
+    const item = el.shadowRoot!.querySelector('[data-action="tc"]');
+
+    expect(item?.textContent?.trim()).toContain('Tissue Culture');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // render – desktop vs mobile structure
 // ---------------------------------------------------------------------------
 

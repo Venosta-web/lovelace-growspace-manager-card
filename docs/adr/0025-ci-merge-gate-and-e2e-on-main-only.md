@@ -98,6 +98,14 @@ This supersedes the unenforced nightly/PR mechanics described above: expensive E
 main-push-only, plus deliberate manual dispatch. `scripts/ci-release-policy.test.mjs`
 locks down these branch and dependency conditions in the fast lint job.
 
+The public demo is stable release output and follows the same dependency graph. Pull
+requests into `main` build the assembled demo, exercise it in Chromium, and retain the
+site artifact for review without publishing GitHub Pages. After the stable publishing
+job succeeds, the Release workflow calls that reusable demo workflow and permits its
+deploy job to update Pages. The demo workflow therefore has no independent `main` push
+trigger that could race ahead of failed validation or stable publishing; manual dispatch
+remains available for deliberate recovery deployments.
+
 ## Amendment (2026-08-28) — one E2E Runtime Harness across local and GitHub runs
 
 Stable-main and deliberate manual E2E validation now invoke the same repository-owned

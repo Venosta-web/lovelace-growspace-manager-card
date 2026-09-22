@@ -14,6 +14,7 @@ import { BootstrapController } from '../controllers/bootstrap.controller';
 import '../features/ui/containers/growspace-toast.container';
 import '../features/shared/layouts/growspace-view-switcher';
 import '../features/shared/ui/error-boundary';
+import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';
@@ -25,6 +26,7 @@ import { StoreController } from '@nanostores/lit';
 import { startTransplant, completeTransplant, gridInteraction$ } from '../slices/grid-interaction';
 import * as uiSlice from '../slices/ui';
 import { handleKeyboardNavigation, deleteSelectedPlants } from '../lib/keyboard-navigation';
+import { LAZY_CHUNKS, LazyChunk, loadLazyChunk } from '../lib/lazy-chunk';
 
 @customElement('growspace-grid-card')
 export class GrowspaceGridCard extends LitElement implements LovelaceCard {
@@ -38,6 +40,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   private _bootstrapCtrl!: BootstrapController;
   private _dialogUnsubscribe?: () => void;
   @state() private _dialogHostReady = false;
+  @state() private _missingChunk: LazyChunk | null = null;
 
   get selectedDevice() {
     return this._viewController.value.grid.selectedDevice;
@@ -82,8 +85,18 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
     super.connectedCallback();
     this._dialogUnsubscribe ??= this.store.ui.$activeDialog.subscribe((active) => {
       if (active.type === 'NONE' || this._dialogHostReady) return;
-      void import('../features/ui/containers/growspace-dialog-host.container').then(() => {
-        if (this.isConnected) this._dialogHostReady = true;
+      void loadLazyChunk(
+        LAZY_CHUNKS.dialogHost,
+        () => import('../features/ui/containers/growspace-dialog-host.container')
+      ).then((dialogHost) => {
+        // The dialog cannot render itself missing, so the card says it instead,
+        // and closes the dialog the store believes it opened.
+        if (!dialogHost) {
+          this._missingChunk = LAZY_CHUNKS.dialogHost;
+          this.store.ui.closeDialog();
+        } else if (this.isConnected) {
+          this._dialogHostReady = true;
+        }
       });
     });
   }
@@ -106,7 +119,13 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-grid-card-editor.js');
+    const editor = await loadLazyChunk(
+      LAZY_CHUNKS.gridCardEditor,
+      () => import('./editors/growspace-grid-card-editor.js')
+    );
+    if (!editor) {
+      return lazyChunkErrorEditor(LAZY_CHUNKS.gridCardEditor) as unknown as LovelaceCardEditor;
+    }
     return document.createElement('growspace-grid-card-editor') as unknown as LovelaceCardEditor;
   }
 
@@ -221,6 +240,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
         .onError=${this._handleError}
       >
         <ha-card class=${isWide ? 'wide-growspace' : ''}>
+          <growspace-lazy-chunk-error .chunk=${this._missingChunk}></growspace-lazy-chunk-error>
           <div
             class="unified-growspace-card glass-surface glass-panel"
             role="region"

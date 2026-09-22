@@ -24,8 +24,10 @@ import type {
   ExhaustFanConfig,
   GrowLightConfig,
 } from '../slices/growspace/schema';
-import { expandAtomicGroups } from '../features/config/environment-persistence';
-import type { EnvironmentDraftKey } from '../features/config/environment-persistence';
+import {
+  expandAtomicGroups,
+  type EnvironmentDraftKey,
+} from '../features/config/environment-change';
 
 // ─── Tab ID ───────────────────────────────────────────────────────────────────
 

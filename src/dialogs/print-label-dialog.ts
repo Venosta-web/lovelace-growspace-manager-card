@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
@@ -15,22 +15,19 @@ import type {
   QrTarget,
 } from '../lib/types/dialog';
 import { printLabel } from '../slices/plant';
+import { localize } from '../localize/localize';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
-import { activeDevices$ } from '../slices/grid';
 import { getPrinters } from '../features/shared/ui/printer-status-strip';
-
-const DEFAULT_FIELDS: LabelFieldVisibility = {
-  name: true,
-  phenotype: true,
-  breeder: true,
-  lineage: true,
-  startDate: true,
-  stageAge: true,
-  plantId: true,
-  logo: true,
-  qr: true,
-};
+import {
+  buildQrTargetUrl,
+  DEFAULT_LABEL_FIELDS,
+  deriveLabelFieldValues,
+  describePlant,
+} from './print-label-logic';
+import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import type { LabelTemplateSupport } from '../slices/labels';
+import '../features/shared/ui/lazy-chunk-error';
 
 const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
   { id: '50x30', label: '50×30' },
@@ -41,6 +38,12 @@ const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
 ];
 
 type PrintState = 'idle' | 'printing' | 'done' | 'error';
+type ChunkState = 'idle' | 'loading' | 'ready' | 'missing';
+
+/** A value worth sending to the Classic service: `str` there, never empty or null. */
+function text(value: string | null | undefined): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
 
 @customElement('print-label-dialog')
 export class PrintLabelDialog extends LitElement {
@@ -52,9 +55,19 @@ export class PrintLabelDialog extends LitElement {
 
   @property({ type: Boolean }) public open = false;
   @property({ attribute: false }) public dialogState: PrintLabelDialogState | undefined;
+  /**
+   * Page-global Label Template capability, read from `labelTemplateSupport$`
+   * by the host. A strain-library or plant request prints through a Label
+   * Template when it is `available`, and never through the Classic service
+   * then; without it this is the Classic dialog, marked as the compatibility
+   * workflow.
+   */
+  @property({ attribute: false }) public support?: LabelTemplateSupport;
+
+  @state() private _templateChunk: ChunkState = 'idle';
 
   @state() private _selectedDeviceId = '';
-  @state() private _fields: LabelFieldVisibility = { ...DEFAULT_FIELDS };
+  @state() private _fields: LabelFieldVisibility = { ...DEFAULT_LABEL_FIELDS };
   @state() private _sizeId: LabelSizeId = '50x30';
   @state() private _density: PrintDensity = 'normal';
   @state() private _qrTarget: QrTarget = 'web';
@@ -66,6 +79,22 @@ export class PrintLabelDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
+      .template-path {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 0 4px;
+      }
+      .compatibility-notice {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0 0 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        border-radius: var(--border-radius-sm, 8px);
+        font-size: var(--font-size-sm);
+        line-height: 1.45;
+      }
       .two-col {
         display: grid;
         grid-template-columns: 1fr 1.4fr;
@@ -379,6 +408,120 @@ export class PrintLabelDialog extends LitElement {
     if (changedProps.has('open') && this.open) {
       this._resetForm();
     }
+    if (changedProps.has('support') || changedProps.has('open')) {
+      void this._loadTemplateChunk();
+    }
+  }
+
+  /** Whether this request is the strain library's, which templates can print. */
+  private get _fromStrainLibrary(): boolean {
+    return this.dialogState?.source === 'strain_library';
+  }
+
+  /**
+   * The plant this label is for, when it is one plant's label.
+   *
+   * It prints through a Label Template as a one-plant batch: the batch
+   * preflight and print routes already capture a plant, so nothing new is
+   * asked of the backend.
+   */
+  private get _plantId(): string | undefined {
+    return this._fromStrainLibrary ? undefined : this.dialogState?.plantId || undefined;
+  }
+
+  /** Whether a Label Template can print this request at all. */
+  private get _templatePrintable(): boolean {
+    return this._fromStrainLibrary || this._plantId !== undefined;
+  }
+
+  /** Fetch the template path only once the capability says it exists. */
+  private async _loadTemplateChunk(): Promise<void> {
+    if (!this.open || !this._templatePrintable) return;
+    if (this.support?.status !== 'available' || this._templateChunk !== 'idle') return;
+    this._templateChunk = 'loading';
+    const view = await loadLazyChunk(
+      LAZY_CHUNKS.labelTemplates,
+      () => import('../features/labels/label-templates')
+    );
+    this._templateChunk = view ? 'ready' : 'missing';
+  }
+
+  private get _language(): string {
+    return this.hass?.language ?? 'en';
+  }
+
+  /**
+   * A strain-library or plant request, while the capability is still being
+   * asked for or once it says templates exist. Never the Classic form: a
+   * request pressed before the answer arrived must not print the old way on
+   * an integration that serves the new one.
+   */
+  private _renderTemplatePath(): TemplateResult {
+    const ds = this.dialogState;
+    const support = this.support;
+    const language = this._language;
+    const plantId = this._plantId;
+    const subtitle = plantId
+      ? describePlant(plantId)
+      : ds?.phenotype && ds.phenotype !== 'default'
+        ? `${ds.strainName ?? ''} · ${ds.phenotype}`
+        : (ds?.strainName ?? '');
+    return html`
+      <gs-dialog
+        .open=${this.open}
+        heading="Print Label"
+        .subtitle=${subtitle}
+        .iconPath=${mdiPrinter}
+        stageColor="var(--gm-info-color)"
+        @close=${this._close}
+      >
+        <div class="template-path" data-path="template">
+          ${support?.status !== 'available' || this._templateChunk === 'loading'
+            ? html`<p role="status">${localize('labels.view_loading', '', '', language)}</p>`
+            : this._templateChunk === 'missing'
+              ? html`<growspace-lazy-chunk-error
+                  .chunk=${LAZY_CHUNKS.labelTemplates}
+                ></growspace-lazy-chunk-error>`
+              : this._templateChunk === 'ready' && plantId
+                ? html`<growspace-label-batch
+                    single
+                    .capability=${support.capability}
+                    .plantIds=${[plantId]}
+                    .describePlant=${describePlant}
+                    .language=${language}
+                  ></growspace-label-batch>`
+                : this._templateChunk === 'ready'
+                  ? html`<growspace-label-record-print
+                      .capability=${support.capability}
+                      .strain=${ds?.strainName ?? ''}
+                      .phenotype=${ds?.phenotype ?? null}
+                      .language=${language}
+                    ></growspace-label-record-print>`
+                  : html`<p role="status">${localize('labels.view_loading', '', '', language)}</p>`}
+        </div>
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close}>
+            ${localize('labels.batch_close', '', '', language)}
+          </button>
+        </div>
+      </gs-dialog>
+    `;
+  }
+
+  /** The Classic dialog, when a request templates could print reaches it: say why. */
+  private _renderCompatibilityNotice(): TemplateResult | typeof nothing {
+    if (!this._templatePrintable) return nothing;
+    const subject = this._plantId ? 'plant' : 'record';
+    const key =
+      this.support?.status === 'incompatible'
+        ? `labels.${subject}_compatibility_incompatible`
+        : `labels.${subject}_compatibility_classic`;
+    return html`
+      <div class="compatibility-notice" data-role="compatibility" role="note">
+        <strong>${localize('labels.record_compatibility_title', '', '', this._language)}</strong>
+        <span>${localize(key, '', '', this._language)}</span>
+      </div>
+    `;
   }
 
   private _resetForm() {
@@ -390,7 +533,7 @@ export class PrintLabelDialog extends LitElement {
     this._sizeId = ds?.defaultSizeId ?? '50x30';
     this._density = ds?.defaultDensity ?? 'normal';
     this._qrTarget = ds?.defaultQrTarget ?? 'web';
-    this._fields = { ...DEFAULT_FIELDS, ...(ds?.defaultFields ?? {}) };
+    this._fields = { ...DEFAULT_LABEL_FIELDS, ...(ds?.defaultFields ?? {}) };
 
     if (!this._selectedDeviceId && this.hass) {
       const printers = getPrinters(this.hass);
@@ -411,10 +554,23 @@ export class PrintLabelDialog extends LitElement {
     this._printState = 'printing';
     this._printProgress = 0;
 
+    const ds = this.dialogState;
+    // A strain-library label has no plant to read: the strain travels itself.
+    const strain = ds.plantId
+      ? {}
+      : {
+          strain: text(ds.strainName),
+          phenotype: text(ds.phenotype),
+          breeder: text(ds.breeder),
+          lineage: text(ds.lineage),
+          breederLogo: text(ds.breederLogo),
+        };
+
     try {
       for (let i = 0; i < this._copies; i++) {
         await printLabel({
-          plantId: this.dialogState.plantId,
+          plantId: ds.plantId,
+          ...strain,
           fields: this._fields,
           sizeId: this._sizeId,
           density: this._density,
@@ -432,60 +588,6 @@ export class PrintLabelDialog extends LitElement {
 
   private _close() {
     this.dispatchEvent(new CustomEvent('close'));
-  }
-
-  private _getPlant(plantId?: string) {
-    if (!plantId) return null;
-    const devices = activeDevices$.get();
-    for (const device of devices) {
-      const plant = device.plants.find(
-        (p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId
-      );
-      if (plant) return plant;
-    }
-    return null;
-  }
-
-  private _getFieldValues() {
-    const ds = this.dialogState;
-    const plant = this._getPlant(ds?.plantId);
-    const attrs = plant?.attributes;
-
-    const startDate = attrs?.veg_start
-      ? this._formatDate(attrs.veg_start)
-      : attrs?.flower_start
-        ? this._formatDate(attrs.flower_start)
-        : '';
-
-    const stageAge = attrs?.days_in_stage != null ? `Day ${attrs.days_in_stage}` : '';
-
-    return {
-      name: attrs?.strain ?? ds?.strainName ?? '',
-      phenotype: attrs?.phenotype ?? ds?.phenotype ?? '',
-      breeder: attrs?.breeder ?? ds?.breeder ?? '',
-      lineage: attrs?.lineage ?? ds?.lineage ?? '',
-      startDate,
-      stageAge,
-      plantId: ds?.plantId ?? '',
-      logo: attrs?.breeder_logo ?? ds?.breederLogo ?? '',
-    };
-  }
-
-  private _formatDate(dateStr?: string | null) {
-    if (!dateStr) return '';
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) {
-        return dateStr;
-      }
-      return date.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: '2-digit',
-      });
-    } catch (_e) {
-      return dateStr;
-    }
   }
 
   private _renderFooterMeta() {
@@ -519,17 +621,20 @@ export class PrintLabelDialog extends LitElement {
 
   protected render() {
     if (!this.open) return nothing;
+    if (
+      this._templatePrintable &&
+      (this.support?.status === 'unknown' || this.support?.status === 'available')
+    ) {
+      return this._renderTemplatePath();
+    }
 
     const ds = this.dialogState;
-    const values = this._getFieldValues();
+    const values = deriveLabelFieldValues(ds?.plantId, ds);
     const printers = this.hass ? getPrinters(this.hass) : [];
     const isPrinting = this._printState === 'printing';
     const sizeLabel = LABEL_SIZES.find((s) => s.id === this._sizeId)?.label ?? this._sizeId;
 
-    const qrValue =
-      this._qrTarget === 'deeplink'
-        ? `growspace://plant/${ds?.plantId ?? ''}`
-        : `https://growspace.app/plant/${ds?.plantId ?? ''}`;
+    const qrValue = buildQrTargetUrl(ds?.plantId, this._qrTarget);
 
     return html`
       <gs-dialog
@@ -540,6 +645,7 @@ export class PrintLabelDialog extends LitElement {
         stageColor="var(--gm-info-color)"
         @close=${this._close}
       >
+        ${this._renderCompatibilityNotice()}
         <div class="two-col">
           <!-- Settings (first in DOM so mobile stacks it above preview) -->
           <div class="settings-wrapper">
@@ -672,7 +778,10 @@ export class PrintLabelDialog extends LitElement {
                 .density=${this._density}
               ></label-preview>
             </div>
-            <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
+            <div class="preview-meta">
+              ${sizeLabel} ·
+              ${localize('labels.classic_preview_meta', '', '', this.hass?.language ?? 'en')}
+            </div>
             <printer-status-strip
               .hass=${this.hass}
               .selectedDeviceId=${this._selectedDeviceId}

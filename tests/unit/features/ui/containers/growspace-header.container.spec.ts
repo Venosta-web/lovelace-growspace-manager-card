@@ -90,6 +90,9 @@ const buildMockStore = () => {
       return ui_actions.toggleEnvGraph;
     },
     actions: { ui: ui_actions },
+    // Portal identity the header stamps onto the irrigation payload (#913 /
+    // ADR-0055), so two cards on a dashboard do not stack two dialogs.
+    instanceId: 'gs-store-header',
     handleDeviceChange: vi.fn(),
     history: {
       $historyCache: atom({}),
@@ -421,7 +424,10 @@ describe('GrowspaceHeaderContainer', () => {
     (element as any)._handleActionTriggered(
       new CustomEvent('action-triggered', { detail: { action: 'irrigation' } })
     );
-    expect(uiSlice.openIrrigationDialog).toHaveBeenCalledOnce();
+    expect(uiSlice.openIrrigationDialog).toHaveBeenCalledWith({
+      growspaceId: mockDevice.deviceId,
+      portalId: 'gs-store-header',
+    });
   });
 
   it('irrigation action does not call openIrrigationDialog when device has no deviceId', () => {

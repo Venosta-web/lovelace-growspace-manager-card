@@ -4,7 +4,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createInitialSM, transition, isEditorDirty } from './strain-editor-view-sm';
+import {
+  createInitialSM,
+  mergeImportedStrain,
+  transition,
+  isEditorDirty,
+} from './strain-editor-view-sm';
 import type { StrainEntry } from '../features/plants/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -319,6 +324,51 @@ describe('SeedfinderOpened / SeedfinderClosed', () => {
     let sm = createInitialSM();
     sm = transition(sm, { type: 'SeedfinderOpened' });
     expect(transition(sm, { type: 'SeedfinderClosed' }).sub.kind).toBe('idle');
+  });
+});
+
+// ─── mergeImportedStrain ──────────────────────────────────────────────────────
+
+describe('mergeImportedStrain', () => {
+  it("maps the source's `name` onto `strain` and drops it", () => {
+    const merged = mergeImportedStrain(aStrain(), { name: 'Zavage', breeder: 'T.H. Seeds' });
+
+    expect(merged.strain).toBe('Zavage');
+    expect(merged.breeder).toBe('T.H. Seeds');
+    expect(merged).not.toHaveProperty('name');
+  });
+
+  it('expands a single flowering_days figure into the stored range', () => {
+    const merged = mergeImportedStrain(aStrain(), { flowering_days: 63 });
+
+    expect(merged.flowering_days_min).toBe(63);
+    expect(merged.flowering_days_max).toBe(63);
+    expect(merged).not.toHaveProperty('flowering_days');
+  });
+
+  it('turns image URLs into a gallery with the first image as thumbnail', () => {
+    const merged = mergeImportedStrain(aStrain(), { images: ['a.jpg', 'b.jpg'] });
+
+    expect(merged.images).toEqual([
+      { path: 'a.jpg', is_thumbnail: true },
+      { path: 'b.jpg', is_thumbnail: false },
+    ]);
+    expect(merged.image).toBe('a.jpg');
+  });
+
+  it('falls back to a lone image when no gallery is imported', () => {
+    const merged = mergeImportedStrain(aStrain(), { image: 'only.jpg' });
+
+    expect(merged.image).toBe('only.jpg');
+    expect(merged.images).toBeUndefined();
+  });
+
+  it('keeps draft fields the import does not carry', () => {
+    const merged = mergeImportedStrain(aStrain({ sex: 'feminized' }), { type: 'Indica' });
+
+    expect(merged.sex).toBe('feminized');
+    expect(merged.phenotype).toBe('A');
+    expect(merged.type).toBe('Indica');
   });
 });
 

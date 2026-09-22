@@ -76,6 +76,18 @@ const ACCEPTED_EXCEPTIONS = [
       'Ink and rule on a PRINTED label. The preview mirrors what a label printer puts on white stock, so it does not follow the card theme — a token here would be actively wrong. ADR 0042 §6.',
   },
   {
+    file: 'src/features/labels/label-templates.ts',
+    hexes: ['#fff'],
+    reason:
+      'The stock a rendered label sits on. The raster above it is a monochrome bitmap meant for white paper, so a themed surface behind it would misrepresent what the printer produces — the same reason label-preview.ts keeps its ink. ADR 0042 §6.',
+  },
+  {
+    file: 'src/features/labels/editor/growspace-label-editor.ts',
+    hexes: ['#fff'],
+    reason:
+      'The stock a draft is edited on, and the grips placed on it. The editor draws frames over the backend raster and never draws ink, so the surface beneath is the same white paper `label-templates.ts` keeps — a themed one would misrepresent what the printer produces, and a themed handle would vanish against it. ADR 0042 §6.',
+  },
+  {
     file: 'src/features/shared/ui/camera-capture.ts',
     hexes: ['#000'],
     reason:
@@ -92,7 +104,17 @@ const ACCEPTED_EXCEPTIONS = [
 const isAccepted = (file, hex) =>
   ACCEPTED_EXCEPTIONS.some((e) => e.file === file && e.hexes.includes(hex));
 
-const HEX = /#[0-9A-Fa-f]{3,8}\b/g;
+/**
+ * A bare colour literal.
+ *
+ * The two guards keep JavaScript private names out of it. `#add`, `#added`
+ * and `#decade` are all valid hex digit runs, so a class member whose name
+ * happens to spell one was reported as drift in a file that had none — and
+ * the only fix on offer was to rename the method. A colour is never preceded
+ * by a dot or an identifier character, and never immediately followed by a
+ * call's parenthesis; a private name is one or the other.
+ */
+const HEX = /(?<![.\w])#[0-9A-Fa-f]{3,8}\b(?!\s*\()/g;
 /** three.js takes a resolved number, so every literal in the scene is `0xRRGGBB`. */
 const HEX_NUMERIC = /\b0x[0-9A-Fa-f]{6}\b/g;
 /** `var(--token, #hex)` — the fallback form, which is correct, not drift. */

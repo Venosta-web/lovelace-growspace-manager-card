@@ -32,6 +32,7 @@ import type { GrowspaceDevice, PlantEntity } from '../../types';
 import type {
   EnvironmentAttributes,
   IrrigationConfig,
+  IrrigationProgramState,
   IrrigationStrategy,
 } from '../../services/types';
 import { PlantUtils } from '../../utils/plant-utils';
@@ -190,6 +191,92 @@ export function patchDeviceStrategy(growspaceId: string, patch: Partial<Irrigati
           }
         : d
     )
+  );
+}
+
+/**
+ * Patch the [[Recipe Stamp]] a device carries — which Irrigation Recipe was
+ * applied, when, and whether its settings still match it.
+ *
+ * One helper rather than three writes because the three are one fact: the
+ * recorded stamp lives on `irrigationStrategy` while the drift verdict is
+ * derived per-growspace and sits beside it on the device, and an optimistic
+ * apply that moved one without the other would show a recipe applied and a
+ * stale drift badge at the same time. Omitting `drifted` leaves the current
+ * verdict untouched (the apply is still in flight and the answer is not known).
+ */
+export function patchDeviceRecipeStamp(
+  growspaceId: string,
+  stamp: {
+    appliedRecipeId?: string | null;
+    recipeAppliedAt?: string | null;
+    drifted?: boolean | null;
+  }
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) => {
+      if (i !== idx) return d;
+      const strategy = d.irrigationStrategy;
+      return {
+        ...d,
+        ...(strategy
+          ? {
+              irrigationStrategy: {
+                ...strategy,
+                ...('appliedRecipeId' in stamp ? { appliedRecipeId: stamp.appliedRecipeId } : {}),
+                ...('recipeAppliedAt' in stamp ? { recipeAppliedAt: stamp.recipeAppliedAt } : {}),
+              },
+            }
+          : {}),
+        ...('drifted' in stamp ? { appliedRecipeDrifted: stamp.drifted } : {}),
+      };
+    })
+  );
+}
+
+/**
+ * Patch the [[Irrigation Program]] a device is bound to.
+ *
+ * Its own helper rather than a branch of `patchDeviceRecipeStamp`, because the
+ * two facts are deliberately separate: assigning a program writes this one id
+ * and **no setpoint**, so an optimistic assign that also touched the stamp
+ * would show a growspace running values nothing had applied to it.
+ *
+ * `programState` moves with the binding when it is passed: unbinding clears the
+ * whole resolved position at once, which is what the Program tab reads. It is
+ * omitted while a bind is still in flight — which slot the growspace lands in
+ * is the backend's answer, arriving on the next sync.
+ */
+export function patchDeviceProgramBinding(
+  growspaceId: string,
+  binding: {
+    irrigationProgramId: string | null;
+    programState?: IrrigationProgramState | null;
+  }
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) => {
+      if (i !== idx) return d;
+      const strategy = d.irrigationStrategy;
+      return {
+        ...d,
+        ...(strategy
+          ? {
+              irrigationStrategy: {
+                ...strategy,
+                irrigationProgramId: binding.irrigationProgramId,
+              },
+            }
+          : {}),
+        ...('programState' in binding ? { irrigationProgram: binding.programState } : {}),
+      };
+    })
   );
 }
 

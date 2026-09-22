@@ -240,7 +240,7 @@ npm test -- tests/unit/dialogs/config-dialog-full-form-fill.spec.ts
 - ✅ add-growspace-submit
 - ✅ edit-growspace-submit
 - ✅ delete-growspace-submit
-- ✅ configure-environment-submit
+- ✅ environment-change-requested
 - ✅ Event payload structure validation
 
 ## Realistic Test Data

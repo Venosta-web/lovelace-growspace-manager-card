@@ -19,9 +19,12 @@ import {
   composeEcRampSave,
 } from '../../../../../src/features/irrigation/viewmodels/ec-ramp-tab.viewmodel';
 
+const GS = 'gs_this_tent';
+
 function curve(overrides: Partial<ECRampCurve> = {}): ECRampCurve {
   return {
     id: 'c1',
+    growspace_id: GS,
     name: 'Veg Ramp',
     stage: 'veg',
     points: [
@@ -32,10 +35,15 @@ function curve(overrides: Partial<ECRampCurve> = {}): ECRampCurve {
   } as ECRampCurve;
 }
 
-function build(sm: DialogSM, curves: ECRampCurvesResponse | null) {
+function build(
+  sm: DialogSM,
+  curves: ECRampCurvesResponse | null,
+  device: { deviceId: string } | undefined = { deviceId: GS }
+) {
   const $sm = atom<DialogSM>(sm);
   const $curves = atom<ECRampCurvesResponse | null>(curves);
-  return createEcRampTabViewModel($sm, $curves).get();
+  const $device = atom<{ deviceId: string } | undefined>(device);
+  return createEcRampTabViewModel($sm, $curves, $device).get();
 }
 
 describe('createEcRampTabViewModel', () => {
@@ -67,6 +75,25 @@ describe('createEcRampTabViewModel', () => {
     expect(vm.editing).toEqual({ draft, points: draft.points });
   });
 
+  it('lists only the curves owned by the dialog growspace (ADR-0046)', () => {
+    const curves = {
+      mine: curve({ id: 'mine', name: 'Mine' }),
+      theirs: curve({ id: 'theirs', name: 'Theirs', growspace_id: 'gs_other_tent' }),
+      // Stored before the binding existed: owned by nobody, listed nowhere.
+      unmigrated: curve({ id: 'unmigrated', name: 'Legacy', growspace_id: '' }),
+    };
+    expect(build(createInitialSM(), curves).curves.map((c) => c.id)).toEqual(['mine']);
+  });
+
+  it('lists nothing before the device is known', () => {
+    const vm = createEcRampTabViewModel(
+      atom<DialogSM>(createInitialSM()),
+      atom<ECRampCurvesResponse | null>({ c1: curve() }),
+      atom<{ deviceId: string } | undefined>(undefined)
+    ).get();
+    expect(vm.curves).toEqual([]);
+  });
+
   it('passes the SM validation error through', () => {
     let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
     sm = transition(sm, { type: 'SET_EC_RAMP_ERROR', error: 'Curve name is required' });
@@ -76,33 +103,37 @@ describe('createEcRampTabViewModel', () => {
 
 describe('composeEcRampSave', () => {
   it('rejects an empty name', () => {
-    expect(composeEcRampSave({ name: '  ', points: [{ day: 1, target_ec: 1 }] })).toEqual({
+    expect(composeEcRampSave({ name: '  ', points: [{ day: 1, target_ec: 1 }] }, GS)).toEqual({
       ok: false,
       error: 'Curve name is required',
     });
   });
 
   it('rejects when no valid points remain', () => {
-    expect(composeEcRampSave({ name: 'X', points: [{ day: 1, target_ec: 0 }] })).toEqual({
+    expect(composeEcRampSave({ name: 'X', points: [{ day: 1, target_ec: 0 }] }, GS)).toEqual({
       ok: false,
       error: 'At least one valid EC point is required',
     });
   });
 
   it('composes a sorted, trimmed payload and passes through curve_id', () => {
-    const result = composeEcRampSave({
-      id: 'c9',
-      name: '  Bloom  ',
-      stage: 'flower',
-      points: [
-        { day: 14, target_ec: 1.8 },
-        { day: 1, target_ec: 1.0 },
-        { day: 7, target_ec: -1 }, // filtered (target_ec <= 0)
-      ],
-    });
+    const result = composeEcRampSave(
+      {
+        id: 'c9',
+        name: '  Bloom  ',
+        stage: 'flower',
+        points: [
+          { day: 14, target_ec: 1.8 },
+          { day: 1, target_ec: 1.0 },
+          { day: 7, target_ec: -1 }, // filtered (target_ec <= 0)
+        ],
+      },
+      GS
+    );
     expect(result).toEqual({
       ok: true,
       payload: {
+        growspace_id: GS,
         curve_id: 'c9',
         name: 'Bloom',
         stage: 'flower',
@@ -115,11 +146,12 @@ describe('composeEcRampSave', () => {
   });
 
   it('defaults stage to flower and omits curve_id for a new curve', () => {
-    const result = composeEcRampSave({ name: 'New', points: [{ day: 1, target_ec: 1.0 }] });
+    const result = composeEcRampSave({ name: 'New', points: [{ day: 1, target_ec: 1.0 }] }, GS);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.payload.stage).toBe('flower');
       expect(result.payload.curve_id).toBeUndefined();
+      expect(result.payload.growspace_id).toBe(GS);
     }
   });
 });

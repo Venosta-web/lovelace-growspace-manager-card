@@ -56,6 +56,32 @@ describe('computeCropSteeringCycle', () => {
 
     expect(shots[shots.length - 1].time).toBe('14:30:00');
   });
+
+  it('ignores the Saturation Target crossing while P2 still runs', () => {
+    const shots = computeCropSteeringCycle(baseStrategy, 18, 9 * 60 + 20);
+
+    expect(shots[shots.length - 1].time).toBe('21:30:00');
+  });
+
+  it('closes the shot window at P1 completion when P2 is skipped', () => {
+    // Crossing 09:20 → the last shot before it is 08:30; nothing fires in the
+    // P2 maintenance window the buffer would otherwise have kept open to 22:00.
+    const shots = computeCropSteeringCycle(
+      { ...baseStrategy, skipP2AfterP1: true },
+      18,
+      9 * 60 + 20
+    );
+
+    expect(shots[shots.length - 1].time).toBe('08:30:00');
+  });
+
+  it('keeps the buffer cutoff when P2 is skipped but nothing has crossed yet', () => {
+    // No measured completion: the card has nothing to move the cutoff to, so the
+    // projection stays the one the P2 Stop Buffer draws.
+    const shots = computeCropSteeringCycle({ ...baseStrategy, skipP2AfterP1: true }, 18, null);
+
+    expect(shots[shots.length - 1].time).toBe('21:30:00');
+  });
 });
 
 describe('computePhases', () => {
@@ -120,6 +146,41 @@ describe('computePhases', () => {
 
     expect(result!.phases.find((p) => p.id === 'p1')!.end).toBe(1320);
     expect(result!.phases.find((p) => p.id === 'p2')).toMatchObject({ start: 1320, end: 1320 });
+  });
+
+  it('starts P3 where P1 completed and flags P2 skipped when P2 is skipped', () => {
+    const result = computePhases({ ...baseStrategy, skipP2AfterP1: true }, 18, null, 9 * 60 + 20);
+
+    expect(result!.phases.find((p) => p.id === 'p1')).toMatchObject({ start: 420, end: 560 });
+    expect(result!.phases.find((p) => p.id === 'p2')).toMatchObject({
+      start: 560,
+      end: 560,
+      skipped: true,
+      target: 'Skipped',
+    });
+    expect(result!.phases.find((p) => p.id === 'p3')).toMatchObject({ start: 560, end: 1440 });
+  });
+
+  it('leaves the day unchanged when P2 is skipped but no crossing is known', () => {
+    const skipping = computePhases({ ...baseStrategy, skipP2AfterP1: true }, 18, null);
+    const ordinary = computePhases(baseStrategy, 18, null);
+
+    expect(skipping!.phases.find((p) => p.id === 'p3')!.start).toBe(
+      ordinary!.phases.find((p) => p.id === 'p3')!.start
+    );
+    // Still flagged: the legend says P2 is skipped even before P1 completes.
+    expect(skipping!.phases.find((p) => p.id === 'p2')!.skipped).toBe(true);
+  });
+
+  it('leaves P2 unflagged and clock-bounded when the option is off', () => {
+    const result = computePhases(baseStrategy, 18, null, 9 * 60 + 20);
+
+    expect(result!.phases.find((p) => p.id === 'p2')).toMatchObject({
+      start: 560,
+      end: 1320,
+      target: 'Runoff target',
+    });
+    expect(result!.phases.find((p) => p.id === 'p2')!.skipped).toBeFalsy();
   });
 
   it('prefers detectedLightsOnTime over the configured lightsOnTime as the anchor', () => {

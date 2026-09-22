@@ -213,12 +213,14 @@ export async function removeNutrientStock(nutrientId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function saveECRampCurve(data: {
+  growspace_id: string;
   curve_id?: string;
   name: string;
   stage?: string;
   points: ECRampPoint[];
 }): Promise<void> {
   const backendData = {
+    growspace_id: data.growspace_id,
     curve_id: data.curve_id,
     name: data.name,
     stage: data.stage ?? 'flower',

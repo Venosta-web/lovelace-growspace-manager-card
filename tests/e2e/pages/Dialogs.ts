@@ -339,6 +339,37 @@ export class IrrigationDialog {
     return this.dialog.locator('.lights-on-readonly .ro-value');
   }
 
+  // ── Substrate & EC tab ───────────────────────────────────────────────────────
+
+  /**
+   * The Substrate Profile is nested in the card and flat on the wire: both of
+   * these controls emit one partial profile, which the Irrigation Command
+   * compiler turns into `substrate_media_type` / `substrate_liters_per_pot`
+   * (card ADR-0054). They persist immediately — no footer Save (ADR-0017).
+   */
+  async selectSubstrateMedia(mediaType: 'coco' | 'rockwool' | 'soil') {
+    await this.dialog.locator('select[data-field="substrate_media_type"]').selectOption(mediaType);
+  }
+
+  async fillLitersPerPot(liters: number) {
+    await this.dialog
+      .locator('md3-number-input[data-field="substrate_liters_per_pot"]')
+      .locator('input')
+      .fill(String(liters));
+    await this.dialog
+      .locator('md3-number-input[data-field="substrate_liters_per_pot"]')
+      .locator('input')
+      .blur();
+  }
+
+  sizingModeButton(mode: 'seconds' | 'volume'): Locator {
+    return this.dialog.locator(`button.seg-btn[data-sizing-mode="${mode}"]`);
+  }
+
+  async clickSizingMode(mode: 'seconds' | 'volume') {
+    await this.sizingModeButton(mode).click();
+  }
+
   async saveAll() {
     await this.dialog.locator('button.md3-button.primary.btn-save-all').click();
   }

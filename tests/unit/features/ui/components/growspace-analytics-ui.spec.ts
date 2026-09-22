@@ -235,7 +235,7 @@ describe('growspace-analytics-ui – _renderItem routing', () => {
     it('draws a single metric as a gradient-filled trace', async () => {
       const chart = await chartFor({ type: 'single', metrics: [MetricKey.TEMPERATURE] });
 
-      expect(chart.shadowRoot.textContent).not.toContain('No history data');
+      expect(chart.shadowRoot.textContent).not.toContain('history for');
       expect(chart.shadowRoot.querySelector('path[stroke-width="2"]')).not.toBeNull();
       expect(chart.shadowRoot.querySelector('path[fill^="url(#grad-"]')).not.toBeNull();
     });

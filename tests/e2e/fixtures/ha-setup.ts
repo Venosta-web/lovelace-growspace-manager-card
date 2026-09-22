@@ -32,6 +32,64 @@ export async function callHAService(
 }
 
 /**
+ * Call a Home Assistant WebSocket command through its public `/api/websocket`
+ * boundary. This is for E2E fixture setup and assertions whose integration
+ * contracts are WebSocket-only; card interactions still go through the UI.
+ */
+export async function callHAWebSocket<T = Record<string, unknown>>(
+  type: string,
+  data: Record<string, unknown> = {}
+): Promise<T> {
+  const baseURL = process.env.HA_BASE_URL || 'http://localhost:8123';
+  const token = process.env.HA_ACCESS_TOKEN;
+  if (!token) throw new Error('HA_ACCESS_TOKEN is required for WebSocket commands');
+
+  const url = new URL('/api/websocket', baseURL);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(url);
+    const commandId = 1;
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error(`WebSocket command ${type} timed out`));
+    }, 10_000);
+    const finish = (callback: () => void) => {
+      clearTimeout(timeout);
+      socket.close();
+      callback();
+    };
+
+    socket.addEventListener('message', (event) => {
+      const message = JSON.parse(String(event.data)) as Record<string, any>;
+      if (message.type === 'auth_required') {
+        socket.send(JSON.stringify({ type: 'auth', access_token: token }));
+        return;
+      }
+      if (message.type === 'auth_invalid') {
+        finish(() => reject(new Error('Home Assistant WebSocket authentication failed')));
+        return;
+      }
+      if (message.type === 'auth_ok') {
+        socket.send(JSON.stringify({ id: commandId, type, ...data }));
+        return;
+      }
+      if (message.id !== commandId) return;
+      if (!message.success) {
+        finish(() =>
+          reject(new Error(`WebSocket command ${type} failed: ${JSON.stringify(message.error)}`))
+        );
+        return;
+      }
+      finish(() => resolve((message.result ?? {}) as T));
+    });
+    socket.addEventListener('error', () =>
+      finish(() => reject(new Error(`WebSocket command ${type} could not connect`)))
+    );
+  });
+}
+
+/**
  * Wait for element to appear/disappear with timeout
  */
 export async function waitForElement(

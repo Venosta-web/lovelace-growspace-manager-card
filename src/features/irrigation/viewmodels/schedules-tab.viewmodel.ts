@@ -18,8 +18,10 @@
  * `tabs.steering.draft` (the cross-tab read for shot/phase computation — expected
  * per ADR-0019, the VM reads `$sm`; steering state is never duplicated). The
  * device atom supplies the schedule rows, `flowerWeek`, `irrigationConfig` (for
- * phase boundaries) and is passed through for the chart. The history atom supplies
- * the legend's "sensor not configured" flags.
+ * phase boundaries) and is passed through for the chart. The steering draft is
+ * passed through beside it, because the chart resolves its own strategy and would
+ * otherwise draw the persisted one while this VM already derived the draft (growspace_manager_workspace#130).
+ * The history atom supplies the legend's "sensor not configured" flags.
  *
  * Time-of-day (`now` / `isPast` / the now-line) is deliberately NOT derived here:
  * it is view geometry that depends on `Date.now()`, so it stays in the component's
@@ -72,6 +74,8 @@ export interface CropSteeringPhaseChipVM {
   target: string;
   /** Shot count appended to the P2 chip only (per the former inline render). */
   shotCount: number | null;
+  /** True on the P2 chip while [[Skip P2]] bypasses it — dims the chip. */
+  skipped: boolean;
 }
 
 /** The read-only crop-steering schedule panel projection. */
@@ -105,6 +109,13 @@ export interface SchedulesTabViewModel {
   cropSteering: CropSteeringScheduleVM | null;
   /** Passed straight through so the component can host `<crop-steering-day-chart>`. */
   device: GrowspaceDevice | undefined;
+  /**
+   * The unsaved steering draft, handed to the hosted chart as its strategy so the
+   * preview is derived from the same values this VM's `cropSteering` panel is.
+   * Without it the chart would read `device.irrigationStrategy` and keep drawing
+   * the last saved strategy while the legend beside it already showed the draft.
+   */
+  steeringDraft: Partial<IrrigationStrategy>;
 }
 
 /** Builds the time-block list for one schedule section (transcribed verbatim). */
@@ -128,26 +139,30 @@ function deriveCropSteeringPanel(
   history: CropSteeringHistory | undefined
 ): CropSteeringScheduleVM {
   const dayHours = device?.irrigationConfig?.resolvedDayHours ?? 12;
-  const shots: CropSteeringShot[] = computeCropSteeringCycle(
-    strategy as IrrigationStrategy,
-    dayHours
-  );
   // P1 and P2 are split by the measured Saturation Target crossing, not the clock.
   const vwcSamples: VwcSample[] = (history?.soil_moisture ?? []).flatMap((b) => {
     const atMs = Date.parse(b.timestamp);
     return b.value == null || Number.isNaN(atMs) ? [] : [{ atMs, vwc: b.value }];
   });
+  // The one crossing both halves of the projection are drawn from: it splits the
+  // phase windows, and under [[Skip P2]] it also closes the shot window.
+  const saturationReachedAt = resolveSaturationCrossing(
+    strategy as IrrigationStrategy,
+    dayHours,
+    vwcSamples,
+    Date.now(),
+    history ? Date.parse(history.lights_on) : null
+  );
+  const shots: CropSteeringShot[] = computeCropSteeringCycle(
+    strategy as IrrigationStrategy,
+    dayHours,
+    saturationReachedAt
+  );
   const phases = computePhases(
     strategy as IrrigationStrategy,
     dayHours,
     device?.irrigationConfig,
-    resolveSaturationCrossing(
-      strategy as IrrigationStrategy,
-      dayHours,
-      vwcSamples,
-      Date.now(),
-      history ? Date.parse(history.lights_on) : null
-    )
+    saturationReachedAt
   );
 
   if (!phases) {
@@ -191,6 +206,7 @@ function deriveCropSteeringPanel(
         color: p.color,
         target: p.target,
         shotCount: p.id === 'p1' || p.id === 'p2' ? shotsIn(p) : null,
+        skipped: p.skipped === true,
       })
     ),
     hasPoreEc: history?.pore_ec !== undefined,
@@ -247,6 +263,7 @@ export function createSchedulesTabViewModel(
         ? deriveCropSteeringPanel(device, steeringDraft, history.get(device?.deviceId ?? ''))
         : null,
       device,
+      steeringDraft,
     };
   });
 }

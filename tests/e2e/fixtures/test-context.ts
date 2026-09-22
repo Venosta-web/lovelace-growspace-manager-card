@@ -40,6 +40,7 @@ export function createTestContext(env: TestEnvironment): TestContext {
     acInfinityDashboardPath: env.TEST_AC_INFINITY_DASHBOARD_PATH || '/e2e-ac-infinity/0',
     visionGrowspaceId: env.TEST_VISION_GROWSPACE_ID || '',
     visionDashboardPath: env.TEST_VISION_DASHBOARD_PATH || '',
+    tcDashboardPath: env.TEST_TC_DASHBOARD_PATH || '',
     vegPlantId: env.TEST_VEG_PLANT_ID || '',
   };
 }

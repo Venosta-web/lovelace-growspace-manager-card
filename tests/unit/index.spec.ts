@@ -9,6 +9,7 @@ const EXPECTED_CARD_TYPES = [
   'growspace-subarea-card',
   'growspace-logbook-card',
   'growspace-carousel-card',
+  'growspace-tc-card',
 ];
 
 describe('index registration', () => {
@@ -18,7 +19,7 @@ describe('index registration', () => {
     await import('../../src/index');
   });
 
-  it('registers all 8 cards in window.customCards', () => {
+  it('registers every card in window.customCards', () => {
     const types = (window.customCards ?? []).map((c) => c.type);
     expect(types).toEqual(expect.arrayContaining(EXPECTED_CARD_TYPES));
     expect(types).toHaveLength(EXPECTED_CARD_TYPES.length);

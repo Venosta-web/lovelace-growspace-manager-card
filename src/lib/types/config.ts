@@ -21,6 +21,15 @@ export interface GrowspaceAnalyticsCardConfig extends GrowspaceManagerCardConfig
 
 export type GrowspaceViewMode = ViewMode;
 
+/**
+ * The tissue-culture card. It carries nothing but its type today — the view is
+ * not scoped to a growspace, and Growspace Manager TC is detected rather than
+ * configured.
+ */
+export interface GrowspaceTcCardConfig extends LovelaceCardConfig {
+  type: string;
+}
+
 export interface GrowspaceCarouselCardConfig extends LovelaceCardConfig {
   type: string;
   growspaces?: string[];

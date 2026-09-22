@@ -17,6 +17,8 @@ import { filterChips } from '../../../utils/chip-filter';
 import { envSnapshots$ } from '../../../slices/environment';
 import { deviceSnapshots$ } from '../../../slices/device-state';
 import { plants$ } from '../../../slices/plant';
+import { tcPresence$, type TcPresence } from '../../../slices/tc';
+import { labelTemplateSupport$, type LabelTemplateSupport } from '../../../slices/labels';
 import * as uiSlice from '../../../slices/ui';
 import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
@@ -52,6 +54,10 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _tankLevelsController!: StoreController<any>;
   private _deviceSnapshotsController!: StoreController<any>;
   private _comparisonsController!: StoreController<any>;
+  /** Page-global TC presence, owned by the TC slice — one probe per page. */
+  private _tcPresenceController!: StoreController<TcPresence>;
+  /** Page-global Label Template capability, owned by its slice — one probe per page. */
+  private _labelSupportController!: StoreController<LabelTemplateSupport>;
   private _dragController = new HeaderDragController(this);
   private _comparisonUnsub?: () => void;
   private _startingCompare = false;
@@ -105,6 +111,18 @@ export class GrowspaceHeaderContainer extends LitElement {
     }
     if (!this._deviceSnapshotsController) {
       this._deviceSnapshotsController = new StoreController(this, deviceSnapshots$);
+    }
+    // A subscription, not a `.get()`. The probe resolves on its own schedule
+    // and an idle dashboard has nothing else to re-render the header, so a bare
+    // read would leave the menu item missing until some unrelated entity
+    // happened to change state.
+    if (!this._tcPresenceController) {
+      this._tcPresenceController = new StoreController(this, tcPresence$);
+    }
+    // The Label Template capability probe resolves on the same terms, and the
+    // menu item it decides would otherwise stay missing for the same reason.
+    if (!this._labelSupportController) {
+      this._labelSupportController = new StoreController(this, labelTemplateSupport$);
     }
   }
 
@@ -249,7 +267,13 @@ export class GrowspaceHeaderContainer extends LitElement {
       return;
     }
     if (metric === 'crop_steering') {
-      uiSlice.toggleEnvGraph(metric, this.store.history, this.store.ui, this.device.deviceId);
+      uiSlice.toggleEnvGraph(
+        metric,
+        this.store.history,
+        this.store.ui,
+        this.device.deviceId,
+        this.store.instanceId
+      );
       return;
     }
     const comparison = this.store.comparisons?.groupFor(metric);
@@ -299,9 +323,21 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'strains':
         uiSlice.openStrainLibraryDialog();
         break;
+      case 'label-templates':
+        uiSlice.openLabelTemplatesDialog({ portalId: this.store.instanceId });
+        break;
+      case 'tc':
+        uiSlice.openTcDialog({
+          growspaceId: this.device?.deviceId || undefined,
+          portalId: this.store.instanceId,
+        });
+        break;
       case 'irrigation':
         if (this.device?.deviceId)
-          uiSlice.openIrrigationDialog({ growspaceId: this.device.deviceId });
+          uiSlice.openIrrigationDialog({
+            growspaceId: this.device.deviceId,
+            portalId: this.store.instanceId,
+          });
         break;
       case 'ai':
         uiSlice.openGrowMasterDialog(this.device?.deviceId || '');
@@ -337,6 +373,12 @@ export class GrowspaceHeaderContainer extends LitElement {
         );
         break;
       }
+      case 'irrigation-recipes':
+        uiSlice.openIrrigationRecipesDialog();
+        break;
+      case 'irrigation-programs':
+        uiSlice.openIrrigationProgramsDialog();
+        break;
       case 'nutrients':
         uiSlice.openNutrientsDialog();
         break;
@@ -486,6 +528,8 @@ export class GrowspaceHeaderContainer extends LitElement {
         .activeTask=${taskState.kind}
         .canArrange=${this._canArrange}
         .canCompare=${this._canCompare}
+        .tcAvailable=${this._tcPresenceController?.value.status === 'present'}
+        .labelTemplatesAvailable=${this._labelSupportController?.value.status === 'available'}
         .problemPlants=${this._problemPlants}
         .flowerFlipInfo=${this._flowerFlipInfo}
         .irrigationStrategy=${irrigationStrategy}

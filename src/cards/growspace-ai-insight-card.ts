@@ -37,6 +37,8 @@ import {
   analyzeAllGrowspaces,
   dismissInsight,
 } from '../slices/ai-insight';
+import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 
 @customElement('growspace-ai-insight-card')
 export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
@@ -190,7 +192,13 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-ai-insight-card-editor.js');
+    const editor = await loadLazyChunk(
+      LAZY_CHUNKS.aiInsightCardEditor,
+      () => import('./editors/growspace-ai-insight-card-editor.js')
+    );
+    if (!editor) {
+      return lazyChunkErrorEditor(LAZY_CHUNKS.aiInsightCardEditor) as unknown as LovelaceCardEditor;
+    }
     return document.createElement(
       'growspace-ai-insight-card-editor'
     ) as unknown as LovelaceCardEditor;

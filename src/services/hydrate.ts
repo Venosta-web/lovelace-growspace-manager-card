@@ -17,7 +17,13 @@ import {
   subareaEnvSnapshots$,
   envSnapshotEntityIds,
 } from '../slices/environment';
-import { setIrrigationConfig, setIrrigationStrategy, setTankLevels } from '../slices/irrigation';
+import {
+  setIrrigationConfig,
+  setIrrigationPrograms,
+  setIrrigationRecipes,
+  setIrrigationStrategy,
+  setTankLevels,
+} from '../slices/irrigation';
 import { subareas$, subareasGrowspaceId$ } from '../slices/subarea';
 
 /**
@@ -49,6 +55,21 @@ export function hydrate(
   setPlants(allPlants);
 
   const hydratedGrowspaceId = subareasGrowspaceId$.get();
+
+  // The Irrigation Recipe library is GLOBAL: every growspace payload carries the
+  // same list, so it is set once from the first device that has one rather than
+  // per device inside the loop below. An empty library is a real answer (no
+  // recipes saved yet); only a payload predating the feature is skipped.
+  const withRecipes = devices.find((d) => d.irrigationRecipes !== undefined);
+  if (withRecipes) setIrrigationRecipes(withRecipes.irrigationRecipes ?? []);
+
+  // The Irrigation Program library is global for the same reason and set the
+  // same way. Separate from the recipe fan-out above rather than folded into
+  // it: a backend can carry one library and not the other during the rolling
+  // upgrade window, and finding the first device with *either* would then set
+  // one of them from a payload that never had it.
+  const withPrograms = devices.find((d) => d.irrigationPrograms !== undefined);
+  if (withPrograms) setIrrigationPrograms(withPrograms.irrigationPrograms ?? []);
 
   devices.forEach((d) => {
     setDeviceSnapshot(d.deviceId, d, hassStates, registry);

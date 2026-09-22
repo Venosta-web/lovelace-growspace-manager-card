@@ -1,16 +1,32 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { page } from 'vitest/browser';
 import { GrowspaceSharedStore } from '../store/core/growspace-shared-store';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { BatchPrintLabelDialog } from './batch-print-label-dialog';
+import { describePlant } from './print-label-logic';
 import './batch-print-label-dialog';
 import { __resetUiSliceForTests, notification$ } from '../slices/ui';
 import { printLabel } from '../slices/plant';
+import { getPrinters } from '../features/shared/ui/printer-status-strip';
+import { setDevices } from '../slices/grid';
+import capabilityFixture from '../../tests/fixtures/contract/label_template_capability_v1.json';
+import {
+  buildQrTargetUrl,
+  DEFAULT_LABEL_FIELDS,
+  deriveLabelFieldValues,
+} from './print-label-logic';
 
 vi.mock('../slices/plant', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../slices/plant')>()),
   printLabel: vi.fn().mockResolvedValue(undefined),
 }));
+
+afterEach(() => {
+  setDevices([]);
+});
+
+const capability = capabilityFixture as never;
 
 // ---------------------------------------------------------------------------
 // GrowspaceStore.openBatchPrintLabelsDialog
@@ -111,48 +127,56 @@ function createElement(mockStore = makeMockStore(), hass = makeHass()) {
   return el;
 }
 
-describe('BatchPrintLabelDialog – _getPrinters', () => {
+function deferred() {
+  let fulfill!: () => void;
+  let fail!: (reason: Error) => void;
+  const promise = new Promise<void>((resolve, reject) => {
+    fulfill = resolve;
+    fail = reject;
+  });
+  return { promise, resolve: fulfill, reject: fail };
+}
+
+describe('BatchPrintLabelDialog – printer list', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('returns only image entities containing _last_label_made', () => {
-    const el = createElement();
-    const printers = (el as any)._getPrinters();
-    expect(printers).toHaveLength(2);
-    expect(printers.every((p: { value: string }) => p.value.startsWith('image.'))).toBe(true);
-    expect(printers.every((p: { value: string }) => p.value.includes('_last_label_made'))).toBe(
-      true
-    );
+  it('lists the printers the shared helper discovers, in its shape', async () => {
+    const hass = makeHass() as any;
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+
+    const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
+    expect(select.options).toEqual([
+      { label: 'Default / Auto', value: '' },
+      ...getPrinters(hass).map((printer) => ({ label: printer.name, value: printer.id })),
+    ]);
+    expect(select.options.slice(1).map((o: { label: string }) => o.label)).toEqual([
+      'Printer A',
+      'Printer B',
+    ]);
   });
 
-  it('strips " Last Label Made" suffix from friendly name', () => {
-    const el = createElement();
-    const printers = (el as any)._getPrinters();
-    const labels = printers.map((p: { label: string }) => p.label);
-    expect(labels).toContain('Printer A');
-    expect(labels).toContain('Printer B');
-  });
-
-  it('returns empty array when hass is not set', () => {
-    const el = document.createElement('batch-print-label-dialog') as BatchPrintLabelDialog;
-    (el as any).hass = null;
-    expect((el as any)._getPrinters()).toEqual([]);
-  });
-
-  it('returns empty array when no matching entities exist', () => {
+  it('offers only the default option when no printers exist', async () => {
     const hass = { states: { 'sensor.temp': { attributes: {} } } } as any;
-    const el = createElement(makeMockStore(), hass);
-    expect((el as any)._getPrinters()).toEqual([]);
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+
+    const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
+    expect(select.options).toEqual([{ label: 'Default / Auto', value: '' }]);
   });
 
-  it('uses entity ID when friendly name is missing', () => {
-    const hass = {
-      states: {
-        'image.no_name_last_label_made': { attributes: {} },
-      },
-    } as any;
-    const el = createElement(makeMockStore(), hass);
-    const printers = (el as any)._getPrinters();
-    expect(printers[0].label).toBe('image.no_name_last_label_made');
+  it('selects no printer on open when hass is not set', () => {
+    const el = document.createElement('batch-print-label-dialog') as BatchPrintLabelDialog;
+    (el as any).hass = undefined;
+    (el as any)._selectedDeviceId = '';
+
+    (el as any)._resetForm();
+
+    expect((el as any)._selectedDeviceId).toBe('');
   });
 });
 
@@ -261,14 +285,12 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(printLabel).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        plantId: 'plant-1',
-        deviceId: 'image.printer_a_last_label_made',
-        preview: true,
-      })
-    );
+    expect(printLabel).toHaveBeenNthCalledWith(1, {
+      plantId: 'plant-1',
+      deviceId: 'image.printer_a_last_label_made',
+      preview: true,
+      baseUrl: window.location.origin + window.location.pathname,
+    });
   });
 
   it('continues batch even when warm-up fails', async () => {
@@ -366,22 +388,211 @@ describe('BatchPrintLabelDialog – _submit', () => {
     expect(batchCall[0].deviceId).toBeUndefined();
   });
 
-  it('passes sizeId and density to each batch printLabel call', async () => {
+  it('passes the previewed fields, QR target, size and density to every batch label', async () => {
     const mockStore = makeMockStore();
-    const el = createElement(mockStore);
-    (el as any).dialogState = { plantIds: ['p1', 'p2'] };
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['p1', 'p2'] }}
+      ></batch-print-label-dialog>
+    `);
+    (el as any).store = mockStore;
     (el as any)._sizeId = '40x30';
     (el as any)._density = 'high';
+    (el as any)._copies = 2;
+    await el.updateComplete;
+
+    const breederSwitch = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+    ).find((row) => row.getAttribute('aria-label') === 'Breeder')!;
+    breederSwitch.click();
+    const qrSelect = el.shadowRoot!.querySelector('.qr-target-card md3-select')!;
+    qrSelect.dispatchEvent(new CustomEvent('change', { detail: 'deeplink' }));
+    await el.updateComplete;
+
+    const preview = el.shadowRoot!.querySelector('label-preview') as any;
+    const previewContract = {
+      fields: preview.fields,
+      sizeId: preview.sizeId,
+      density: preview.density,
+      qrValue: preview.qrValue,
+    };
 
     await (el as any)._submit();
 
-    // calls[0] is warm-up (preview:true), calls[1] and [2] are batch
-    const batchCall1 = vi.mocked(printLabel).mock.calls[1][0];
-    const batchCall2 = vi.mocked(printLabel).mock.calls[2][0];
-    expect(batchCall1.sizeId).toBe('40x30');
-    expect(batchCall1.density).toBe('high');
-    expect(batchCall2.sizeId).toBe('40x30');
-    expect(batchCall2.density).toBe('high');
+    const batchCalls = vi
+      .mocked(printLabel)
+      .mock.calls.slice(1)
+      .map(([params]) => params);
+    expect(batchCalls).toHaveLength(4);
+    expect(batchCalls.map((call) => call.plantId)).toEqual(['p1', 'p2', 'p1', 'p2']);
+    for (const call of batchCalls) {
+      expect(call.fields).toEqual(previewContract.fields);
+      expect(call.fields).toEqual({ ...DEFAULT_LABEL_FIELDS, breeder: false });
+      expect(call.sizeId).toBe(previewContract.sizeId);
+      expect(call.density).toBe(previewContract.density);
+      expect(call.qrTarget).toBe('deeplink');
+      expect(buildQrTargetUrl('p1', 'deeplink')).toBe(previewContract.qrValue);
+    }
+  });
+
+  it('keeps the submitted choices stable while the warm-up is pending', async () => {
+    let finishWarmUp!: () => void;
+    const warmUpPending = new Promise<void>((resolve) => {
+      finishWarmUp = resolve;
+    });
+    vi.mocked(printLabel).mockImplementationOnce(() => warmUpPending);
+    const el = createElement();
+    (el as any).dialogState = { plantIds: ['p1', 'p2'] };
+    (el as any)._copies = 2;
+    (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true };
+    (el as any)._qrTarget = 'deeplink';
+
+    const submission = (el as any)._submit();
+    (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: true, qr: false };
+    (el as any)._qrTarget = 'web';
+    finishWarmUp();
+    await submission;
+
+    const batchCalls = vi
+      .mocked(printLabel)
+      .mock.calls.slice(1)
+      .map(([params]) => params);
+    expect(batchCalls).toHaveLength(4);
+    for (const call of batchCalls) {
+      expect(call.fields).toEqual({ ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true });
+      expect(call.qrTarget).toBe('deeplink');
+    }
+  });
+
+  it('keeps the mounted preview and progress synchronized with every pending print', async () => {
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 2,
+        plants: [
+          {
+            entity_id: 'sensor.plant_1',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_1', strain: 'OG Kush' },
+          },
+          {
+            entity_id: 'sensor.plant_2',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_2', strain: 'Blue Dream' },
+          },
+        ] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ] as any);
+
+    const pending: ReturnType<typeof deferred>[] = [];
+    vi.mocked(printLabel).mockImplementation((request) => {
+      if (request.preview) return Promise.resolve();
+      const call = deferred();
+      pending.push(call);
+      return call.promise;
+    });
+
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .hass=${makeHass()}
+        .dialogState=${{ plantIds: ['plant_1', 'plant_2'] }}
+      ></batch-print-label-dialog>
+    `);
+    (el as any).store = makeMockStore();
+    (el as any)._copies = 2;
+    (el as any)._sizeId = '40x30';
+    (el as any)._density = 'high';
+    (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true };
+    (el as any)._qrTarget = 'deeplink';
+    (el as any)._selectedDeviceId = 'image.printer_b_last_label_made';
+    await el.updateComplete;
+
+    const close = vi.fn();
+    el.addEventListener('close', close);
+    const submission = (el as any)._submit() as Promise<void>;
+    const expectedPlants = ['plant_1', 'plant_2', 'plant_1', 'plant_2'];
+    const expectedProgress = [0, 25, 50, 75];
+
+    for (let index = 0; index < expectedPlants.length; index++) {
+      await vi.waitFor(() => expect(pending).toHaveLength(index + 1));
+      await el.updateComplete;
+
+      const plantId = expectedPlants[index];
+      const request = vi.mocked(printLabel).mock.calls[index + 1][0];
+      const preview = el.shadowRoot!.querySelector('label-preview') as any;
+      const navigation = el.shadowRoot!.querySelectorAll(
+        '.preview-nav button'
+      ) as NodeListOf<HTMLButtonElement>;
+
+      expect(request).toMatchObject({
+        plantId,
+        fields: { ...DEFAULT_LABEL_FIELDS, breeder: false, qr: true },
+        deviceId: 'image.printer_b_last_label_made',
+        sizeId: '40x30',
+        density: 'high',
+        qrTarget: 'deeplink',
+        preview: false,
+      });
+      expect(preview.values).toEqual(deriveLabelFieldValues(plantId));
+      expect(preview.fields).toEqual(request.fields);
+      expect(preview.qrValue).toBe(buildQrTargetUrl(plantId, 'deeplink'));
+      expect(preview.sizeId).toBe(request.sizeId);
+      expect(preview.density).toBe(request.density);
+      expect((el as any)._progress).toBe(expectedProgress[index]);
+      expect(Array.from(navigation).every((button) => button.disabled)).toBe(true);
+
+      if (index === 0) {
+        el.dialogState = { plantIds: ['replacement'] };
+        (el as any)._copies = 9;
+        (el as any)._sizeId = '50x80';
+        (el as any)._density = 'low';
+        (el as any)._fields = { ...DEFAULT_LABEL_FIELDS, breeder: true, qr: false };
+        (el as any)._qrTarget = 'web';
+        (el as any)._selectedDeviceId = 'image.printer_a_last_label_made';
+        pending[index].resolve();
+
+        await vi.waitFor(() => expect(pending).toHaveLength(2));
+        await el.updateComplete;
+        const secondPreview = el.shadowRoot!.querySelector('label-preview') as any;
+        const selectedSize = el.shadowRoot!.querySelector('.size-chip.active');
+        const selectedDensity = el.shadowRoot!.querySelector('.density-seg .active');
+        const copies = el.shadowRoot!.querySelector('.copies-input') as HTMLInputElement;
+        const printer = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
+        const breeder = Array.from(
+          el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+        ).find((row) => row.getAttribute('aria-label') === 'Breeder');
+        const qrTarget = el.shadowRoot!.querySelector('.qr-target-card md3-select') as any;
+        expect(secondPreview.values).toEqual(deriveLabelFieldValues('plant_2'));
+        expect((el as any)._previewIndex).toBe(1);
+        expect(selectedSize?.textContent?.trim()).toBe('40×30');
+        expect(selectedDensity?.textContent?.trim()).toBe('Dark');
+        expect(copies.value).toBe('2');
+        expect(printer.value).toBe('image.printer_b_last_label_made');
+        expect(breeder?.getAttribute('aria-checked')).toBe('false');
+        expect(qrTarget.value).toBe('deeplink');
+        continue;
+      }
+
+      if (index === 1) pending[index].reject(new Error('paper jam'));
+      else pending[index].resolve();
+    }
+
+    await submission;
+    await el.updateComplete;
+
+    expect((el as any)._progress).toBe(100);
+    expect(close).toHaveBeenCalledOnce();
+    expect(notification$.get()).toEqual({ message: 'Printed with 1 error(s)', type: 'error' });
   });
 
   it('warm-up call does not include sizeId or density', async () => {
@@ -418,6 +629,90 @@ describe('BatchPrintLabelDialog – willUpdate', () => {
     (el as any).willUpdate(changedProps);
     expect(resetFormSpy).not.toHaveBeenCalled();
   });
+
+  it('resets preview position on reopen and clamps it when the selection shrinks', () => {
+    const el = createElement();
+    (el as any)._previewIndex = 2;
+    el.dialogState = { plantIds: ['p1'] };
+    (el as any).willUpdate(new Map([['dialogState', { plantIds: ['p1', 'p2', 'p3'] }]]));
+    expect((el as any)._previewIndex).toBe(0);
+
+    (el as any)._previewIndex = 2;
+    el.open = true;
+    (el as any).willUpdate(new Map([['open', false]]));
+    expect((el as any)._previewIndex).toBe(0);
+  });
+});
+
+describe('BatchPrintLabelDialog – template path', () => {
+  it('reviews and prints through the template path when the capability is available', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['p1', 'p2'] }}
+        .support=${{ status: 'available', capability }}
+      ></batch-print-label-dialog>
+    `);
+
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('growspace-label-batch')).not.toBeNull()
+    );
+    const view = el.shadowRoot!.querySelector('growspace-label-batch') as any;
+    expect(view.plantIds).toEqual(['p1', 'p2']);
+    expect(view.capability).toBe(capability);
+    expect(el.shadowRoot!.querySelector('label-preview')).toBeNull();
+  });
+
+  it('names a plant by where it stands, so two of one strain differ', () => {
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        plants: [
+          {
+            entity_id: 'sensor.plant_1',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_1', strain: 'OG Kush', position: '(1,2)' },
+          },
+          {
+            entity_id: 'sensor.plant_3',
+            state: 'healthy',
+            attributes: {
+              plant_id: 'plant_3',
+              strain: 'OG Kush',
+              position: '(1,2)',
+              friendly_name: 'Mother Room OG Kush (1,2)',
+            },
+          },
+          {
+            entity_id: 'sensor.plant_2',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_2', strain: 'OG Kush' },
+          },
+        ],
+      },
+    ] as any);
+
+    expect(describePlant('plant_1')).toBe('OG Kush (1,2)');
+    expect(describePlant('plant_2')).toBe('OG Kush');
+    expect(describePlant('plant_3')).toBe('Mother Room OG Kush (1,2)');
+    expect(describePlant('gone')).toBe('gone');
+  });
+
+  it.each([{ status: 'classic', reason: 'none' }, { status: 'unknown' }, undefined])(
+    'stays the Classic dialog when the capability is %o',
+    async (support) => {
+      const el = await fixture<BatchPrintLabelDialog>(html`
+        <batch-print-label-dialog
+          .open=${true}
+          .dialogState=${{ plantIds: ['p1'] }}
+          .support=${support}
+        ></batch-print-label-dialog>
+      `);
+      expect(el.shadowRoot!.querySelector('[data-path="template"]')).toBeNull();
+      expect(el.shadowRoot!.querySelector('label-preview')).not.toBeNull();
+    }
+  );
 });
 
 describe('BatchPrintLabelDialog – render', () => {
@@ -443,6 +738,278 @@ describe('BatchPrintLabelDialog – render', () => {
     );
   });
 
+  it('previews the first selected plant with the shared label presentation', async () => {
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 1,
+        plants: [
+          {
+            entity_id: 'sensor.plant_1',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_1', strain: 'OG Kush', days_in_stage: 5 },
+          },
+        ] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ] as any);
+
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1', 'plant_2'] }}
+      ></batch-print-label-dialog>
+    `);
+    const preview = el.shadowRoot!.querySelector('label-preview') as any;
+
+    expect(preview).not.toBeNull();
+    expect(preview.values).toEqual(deriveLabelFieldValues('plant_1'));
+    expect(preview.values.name).toBe('OG Kush');
+    expect(preview.fields).toEqual(DEFAULT_LABEL_FIELDS);
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_1', 'web'));
+    expect(preview.sizeId).toBe('50x30');
+    expect(preview.density).toBe('normal');
+  });
+
+  it('renders nine accessible field switches and updates the preview immediately', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1'] }}
+      ></batch-print-label-dialog>
+    `);
+    const switches = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+    );
+    const strain = switches.find((row) => row.getAttribute('aria-label') === 'Strain name')!;
+    const breeder = switches.find((row) => row.getAttribute('aria-label') === 'Breeder')!;
+
+    expect(switches).toHaveLength(9);
+    expect(switches.every((row) => row.getAttribute('role') === 'switch')).toBe(true);
+    expect(strain.getAttribute('aria-checked')).toBe('true');
+    expect(strain.getAttribute('aria-disabled')).toBe('true');
+    strain.click();
+    breeder.click();
+    await el.updateComplete;
+
+    const preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(preview.fields.name).toBe(true);
+    expect(preview.fields.breeder).toBe(false);
+    expect(breeder.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('shows QR controls only for QR labels and updates the current plant URL', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1', 'plant_2'] }}
+      ></batch-print-label-dialog>
+    `);
+    const qrSwitch = Array.from(
+      el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.field-toggle-row')
+    ).find((row) => row.getAttribute('aria-label') === 'QR code')!;
+    const qrSelect = el.shadowRoot!.querySelector('.qr-target-card md3-select')!;
+
+    qrSelect.dispatchEvent(new CustomEvent('change', { detail: 'deeplink' }));
+    await el.updateComplete;
+    let preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_1', 'deeplink'));
+    expect(el.shadowRoot!.querySelector('.qr-url-hint')?.textContent).toContain(
+      buildQrTargetUrl('plant_1', 'deeplink')
+    );
+
+    const next = el.shadowRoot!.querySelector<HTMLButtonElement>(
+      '.preview-nav button[aria-label="Next plant"]'
+    )!;
+    next.click();
+    await el.updateComplete;
+    preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_2', 'deeplink'));
+    expect(el.shadowRoot!.querySelector('.qr-url-hint')?.textContent).toContain(
+      buildQrTargetUrl('plant_2', 'deeplink')
+    );
+
+    qrSwitch.click();
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('.qr-target-card')).toBeNull();
+    expect(preview.fields.qr).toBe(false);
+  });
+
+  it('steps through every selected plant without changing the print settings', async () => {
+    setDevices([
+      {
+        deviceId: 'dev1',
+        name: 'Growspace 1',
+        type: 'normal' as any,
+        rows: 1,
+        plantsPerRow: 3,
+        plants: [
+          {
+            entity_id: 'sensor.plant_1',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_1', strain: 'OG Kush' },
+          },
+          {
+            entity_id: 'sensor.plant_2',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_2', strain: 'Blue Dream' },
+          },
+          {
+            entity_id: 'sensor.plant_3',
+            state: 'healthy',
+            attributes: { plant_id: 'plant_3', strain: 'Northern Lights' },
+          },
+        ] as any,
+        grid: {},
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
+        stats: {} as any,
+        irrigationConfig: {} as any,
+      },
+    ] as any);
+
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1', 'plant_2', 'plant_3'] }}
+      ></batch-print-label-dialog>
+    `);
+    (el as any)._sizeId = '40x30';
+    (el as any)._density = 'high';
+    await el.updateComplete;
+
+    const nav = el.shadowRoot!.querySelector('.preview-nav')!;
+    const buttons = nav.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
+    expect(nav.querySelector('.preview-position')?.textContent).toContain('1 of 3');
+    expect(buttons[0].disabled).toBe(true);
+    expect(buttons[1].disabled).toBe(false);
+
+    buttons[1].click();
+    await el.updateComplete;
+    const preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(nav.querySelector('.preview-position')?.textContent).toContain('2 of 3');
+    expect(preview.values.name).toBe('Blue Dream');
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_2', 'web'));
+
+    const sizeChips = el.shadowRoot!.querySelectorAll(
+      '.size-chip'
+    ) as NodeListOf<HTMLButtonElement>;
+    const densityButtons = el.shadowRoot!.querySelectorAll(
+      '.density-seg button'
+    ) as NodeListOf<HTMLButtonElement>;
+    sizeChips[2].click();
+    densityButtons[0].click();
+    await el.updateComplete;
+    expect(preview.sizeId).toBe('50x50');
+    expect(preview.density).toBe('low');
+
+    buttons[1].click();
+    await el.updateComplete;
+    expect(nav.querySelector('.preview-position')?.textContent).toContain('3 of 3');
+    expect(buttons[1].disabled).toBe(true);
+    expect(preview.values.name).toBe('Northern Lights');
+    expect(preview.qrValue).toBe(buildQrTargetUrl('plant_3', 'web'));
+    expect(preview.sizeId).toBe('50x50');
+    expect(preview.density).toBe('low');
+
+    buttons[0].click();
+    await el.updateComplete;
+    expect(nav.querySelector('.preview-position')?.textContent).toContain('2 of 3');
+    expect((el as any)._sizeId).toBe('50x50');
+    expect((el as any)._density).toBe('low');
+  });
+
+  it('keeps a single-plant preview simple without navigation controls', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1'] }}
+      ></batch-print-label-dialog>
+    `);
+
+    expect(el.shadowRoot!.querySelector('.preview-nav')).toBeNull();
+    expect((el as any)._previewIndex).toBe(0);
+  });
+
+  it('prints selected plants in their original order for every copy', async () => {
+    const mockStore = makeMockStore();
+    const el = createElement(mockStore);
+    (el as any).dialogState = { plantIds: ['third', 'first', 'second'] };
+    (el as any)._copies = 2;
+    (el as any)._previewIndex = 2;
+    vi.mocked(printLabel).mockClear();
+
+    await (el as any)._submit();
+
+    const printedPlantIds = vi
+      .mocked(printLabel)
+      .mock.calls.slice(1)
+      .map(([params]) => params.plantId);
+    expect(printedPlantIds).toEqual(['third', 'first', 'second', 'third', 'first', 'second']);
+  });
+
+  it('updates the rendered preview when size and density change', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['plant_1'] }}
+      ></batch-print-label-dialog>
+    `);
+    const sizeChips = el.shadowRoot!.querySelectorAll(
+      '.size-chip'
+    ) as NodeListOf<HTMLButtonElement>;
+    const densityButtons = el.shadowRoot!.querySelectorAll(
+      '.density-seg button'
+    ) as NodeListOf<HTMLButtonElement>;
+
+    sizeChips[3].click();
+    densityButtons[2].click();
+    await el.updateComplete;
+
+    const preview = el.shadowRoot!.querySelector('label-preview') as any;
+    expect(preview.sizeId).toBe('50x80');
+    expect(preview.density).toBe('high');
+    expect(el.shadowRoot!.querySelector('.preview-meta')?.textContent).toContain('50×80');
+  });
+
+  it('lays preview beside settings on desktop and above them on mobile', async () => {
+    try {
+      await page.viewport(1280, 720);
+      const desktopEl = await fixture<BatchPrintLabelDialog>(html`
+        <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+      `);
+      const desktopLayout = desktopEl.shadowRoot!.querySelector('.two-col') as HTMLElement;
+      const desktopPreview = desktopLayout.children[0] as HTMLElement;
+      const desktopSettings = desktopLayout.children[1] as HTMLElement;
+      expect(getComputedStyle(desktopLayout).display).toBe('grid');
+      expect(desktopPreview.getBoundingClientRect().right).toBeLessThanOrEqual(
+        desktopSettings.getBoundingClientRect().left
+      );
+
+      await page.viewport(390, 844);
+      const mobileEl = await fixture<BatchPrintLabelDialog>(html`
+        <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+      `);
+      const mobileLayout = mobileEl.shadowRoot!.querySelector('.two-col') as HTMLElement;
+      const mobilePreview = mobileLayout.children[0] as HTMLElement;
+      const mobileSettings = mobileLayout.children[1] as HTMLElement;
+      expect(getComputedStyle(mobileLayout).display).toBe('flex');
+      expect(getComputedStyle(mobileLayout).flexDirection).toBe('column');
+      expect(mobilePreview.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        mobileSettings.getBoundingClientRect().top
+      );
+    } finally {
+      await page.viewport(1280, 720);
+    }
+  });
+
   it('renders submission progress bar', async () => {
     const el = await fixture<BatchPrintLabelDialog>(html`
       <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
@@ -466,7 +1033,7 @@ describe('BatchPrintLabelDialog – render', () => {
     `);
     await el.updateComplete;
 
-    const select = el.shadowRoot!.querySelector('md3-select') as any;
+    const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]')!;
     select.dispatchEvent(new CustomEvent('change', { detail: 'image.printer_b_last_label_made' }));
     expect((el as any)._selectedDeviceId).toBe('image.printer_b_last_label_made');
 
@@ -491,7 +1058,7 @@ describe('BatchPrintLabelDialog – render', () => {
       <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
     `);
     await el.updateComplete;
-    expect(el.shadowRoot!.querySelector('.form-section')?.textContent).not.toContain(
+    expect(el.shadowRoot!.querySelector('.settings-wrapper')?.textContent).not.toContain(
       'No Niimbot printers discovered'
     );
   });

@@ -38,21 +38,30 @@ jobs:
           test -n "$release_tag" && test "$release_tag" != "null"
           echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch GSM contract fixtures
+      - name: Fetch GSM and TC contract fixtures
         env:
           RELEASE_TAG: ${{ steps.gsm-release.outputs.tag }}
-        run: |
-          fixture_path="tests/fixtures/contract/growspace_payload.json"
-          base_url="https://raw.githubusercontent.com/Venosta-web/growspace_manager"
-          curl --fail-with-body --location --retry 3 \
-            --output "$RUNNER_TEMP/gsm-main.json" \
-            "$base_url/main/$fixture_path"
-          curl --fail-with-body --location --retry 3 \
-            --output "$RUNNER_TEMP/gsm-release.json" \
-            "$base_url/$RELEASE_TAG/$fixture_path"
+        run: node scripts/fetch-contract-fixtures.mjs
 
       - name: Diff fixture and schema key sets
         env:
-          GSM_MAIN_FIXTURE: ${{ runner.temp }}/gsm-main.json
-          GSM_RELEASE_FIXTURE: ${{ runner.temp }}/gsm-release.json
+          GSM_MAIN_GROWSPACE_FIXTURE: ${{ runner.temp }}/gsm-main-growspace.json
+          GSM_RELEASE_GROWSPACE_FIXTURE: ${{ runner.temp }}/gsm-release-growspace.json
+          GSM_PRERELEASE_VISION_STATUS_FIXTURE: ${{ runner.temp }}/gsm-prerelease-vision_status_response.json
+          GSM_RELEASE_VISION_STATUS_FIXTURE: ${{ runner.temp }}/gsm-release-vision_status_response.json
+          GSM_PRERELEASE_VISION_HISTORY_FIXTURE: ${{ runner.temp }}/gsm-prerelease-vision_history_response.json
+          GSM_RELEASE_VISION_HISTORY_FIXTURE: ${{ runner.temp }}/gsm-release-vision_history_response.json
+          GSM_PRERELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-prerelease-trigger_vision_checkup_response.json
+          GSM_RELEASE_VISION_TRIGGER_FIXTURE: ${{ runner.temp }}/gsm-release-trigger_vision_checkup_response.json
+          GSM_PRERELEASE_LABEL_CAPABILITY_FIXTURE: ${{ runner.temp }}/gsm-prerelease-label_template_capability_v1.json
+          GSM_RELEASE_LABEL_CAPABILITY_FIXTURE: ${{ runner.temp }}/gsm-release-label_template_capability_v1.json
+          GSM_PRERELEASE_LABEL_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-prerelease-label_factory_template_preview_v1.json
+          GSM_RELEASE_LABEL_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-release-label_factory_template_preview_v1.json
+          GSM_PRERELEASE_LABEL_REFUSAL_FIXTURE: ${{ runner.temp }}/gsm-prerelease-label_factory_template_preview_refused_v1.json
+          GSM_RELEASE_LABEL_REFUSAL_FIXTURE: ${{ runner.temp }}/gsm-release-label_factory_template_preview_refused_v1.json
+          TC_MAIN_MANIFEST_FIXTURE: ${{ runner.temp }}/tc-main-manifest.json
+          TC_MAIN_CULTURE_MEDIA_FIXTURE: ${{ runner.temp }}/tc-main-culture-media.json
+          TC_MAIN_CULTURE_LINES_FIXTURE: ${{ runner.temp }}/tc-main-culture-lines.json
+          TC_MAIN_PAIRINGS_FIXTURE: ${{ runner.temp }}/tc-main-pairings.json
+          TC_MAIN_MAINTENANCE_FIXTURE: ${{ runner.temp }}/tc-main-maintenance.json
         run: npm run test:contract-fixture

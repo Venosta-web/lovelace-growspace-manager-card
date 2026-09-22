@@ -1,19 +1,21 @@
 /**
  * GrowspaceDialogHost – watering submit handler, IPM apply handler,
- * log-pollination handler, _handleEnvironmentConfig handler, and
+ * log-pollination handler, _handleEnvironmentChange handler, and
  * _initControllers idempotency guard.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
 import {
-  configureEnvironment as mockConfigureEnvironment,
   removeEnvironment as mockRemoveEnvironment,
   updateGrowspace as mockUpdateGrowspace,
 } from '../../../slices/growspace';
+import { applyEnvironmentChange as mockApplyEnvironmentChange } from '../../config/environment-change';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { saveNotificationSettings as mockSaveNotificationSettings } from '../../../slices/notification';
-import { notification$, activeDialog$ } from '../../../slices/ui';
+import { notification$, activeDialog$, pendingDeepLinkPlantId$ } from '../../../slices/ui';
+import { tcPresence$ } from '../../../slices/tc';
+import { mountedDialogPortals$ } from '../../../slices/ui/dialog-portals';
 import './growspace-dialog-host.container';
 import { GrowspaceDialogHost } from './growspace-dialog-host.container';
 import { portalVariables } from '../../../styles/variables';
@@ -44,10 +46,13 @@ vi.mock('../../../slices/plant', () => ({
 
 vi.mock('../../../slices/growspace', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../slices/growspace')>()),
-  configureEnvironment: vi.fn().mockResolvedValue(undefined),
-  configureExhaustFan: vi.fn().mockResolvedValue(undefined),
   removeEnvironment: vi.fn().mockResolvedValue(undefined),
   updateGrowspace: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../config/environment-change', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../config/environment-change')>()),
+  applyEnvironmentChange: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../slices/genetics', () => ({
@@ -477,10 +482,99 @@ describe('GrowspaceDialogHost – _initControllers idempotency', () => {
 });
 
 // ---------------------------------------------------------------------------
-// render() — multi-instance portal guard
+// render() — portal identity (#913 / ADR-0055)
 // ---------------------------------------------------------------------------
 
-describe('GrowspaceDialogHost – render() multi-instance portal guard', () => {
+describe('GrowspaceDialogHost – render() portal identity', () => {
+  // Two carousel cards on one dashboard: both portals see the same page-global
+  // devices, so the device-ownership guard below cannot tell them apart. Only
+  // the portal the opener named renders.
+  function makePortal(instanceId: string, payload: Record<string, unknown>) {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      instanceId,
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'IRRIGATION', payload },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+    };
+    (el as any)._initControllers();
+    return el;
+  }
+
+  async function renderedDialog(el: GrowspaceDialogHost) {
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render((el as any).render(), container);
+    return container.querySelector('irrigation-dialog');
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mountedDialogPortals$.set([]);
+  });
+
+  afterEach(() => {
+    mountedDialogPortals$.set([]);
+  });
+
+  it('renders the dialog in the portal the payload names', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+    const opening = makePortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    expect(await renderedDialog(opening)).not.toBeNull();
+  });
+
+  it('renders nothing in the sibling portal the payload does not name', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+    const sibling = makePortal('portal-b', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    expect(await renderedDialog(sibling)).toBeNull();
+  });
+
+  it('renders in every portal when the payload names none', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+    const a = makePortal('portal-a', { growspaceId: 'gs-1' });
+    const b = makePortal('portal-b', { growspaceId: 'gs-1' });
+
+    expect(await renderedDialog(a)).not.toBeNull();
+    expect(await renderedDialog(b)).not.toBeNull();
+  });
+
+  // An opener in a card that mounts no portal of its own — the analytics card's
+  // crop-steering chip — names a portal that does not exist. Failing open there
+  // is deliberate: the dialog must still open somewhere.
+  it('renders when the payload names a portal that is not mounted', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    const a = makePortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-nowhere' });
+
+    expect(await renderedDialog(a)).not.toBeNull();
+  });
+
+  it('registers its store id while connected and withdraws it on disconnect', () => {
+    const el = makePortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    document.body.appendChild(el);
+    expect(mountedDialogPortals$.get()).toContain('portal-a');
+
+    el.remove();
+    expect(mountedDialogPortals$.get()).not.toContain('portal-a');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// render() — device-ownership guard
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – render() device-ownership guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -539,36 +633,10 @@ describe('GrowspaceDialogHost – render() multi-instance portal guard', () => {
 });
 
 // ---------------------------------------------------------------------------
-// _handleEnvironmentConfig
+// _handleEnvironmentChange
 // ---------------------------------------------------------------------------
 
-describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
-  const minimalValidDetail = {
-    selectedGrowspaceId: 'gs-1',
-    temperatureSensors: ['sensor.temp'],
-    humiditySensors: ['sensor.humid'],
-  };
-
-  const fanConfig = {
-    enabled: true,
-    regulation_mode: 'vpd' as const,
-    min_speed: 10,
-    max_speed: 90,
-    vpd_target: 1.1,
-    vpd_tolerance: 0.2,
-    humidity_target: 60,
-    humidity_tolerance: 5,
-    temperature_target: 25,
-    temperature_tolerance: 2,
-    critical_temp_low: null,
-    critical_temp_high: null,
-    critical_temp_hysteresis: 1,
-    wind_enabled: false,
-    wind_period_seconds: 60,
-    wind_amplitude_pct: 10,
-    stage_vpd_enabled: false,
-  };
-
+describe('GrowspaceDialogHost – _handleEnvironmentChange', () => {
   function makeEnvStore() {
     return {
       ui: { $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) } },
@@ -594,43 +662,15 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     (el as any).store = store;
   });
 
-  it('calls environment.configure with the mapped payload', async () => {
-    await (el as any)._handleEnvironmentConfig(minimalValidDetail);
+  it('forwards one request to the Environment Change interface', async () => {
+    const request = {
+      kind: 'tank-config-change' as const,
+      growspaceId: 'gs-1',
+      irrigationTanks: [],
+    };
+    await (el as any)._handleEnvironmentChange(request);
 
-    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
-      expect.objectContaining({ selectedGrowspaceId: 'gs-1' })
-    );
-  });
-
-  it('passes circulationFanConfig to configure when present', async () => {
-    await (el as any)._handleEnvironmentConfig({
-      ...minimalValidDetail,
-      circulationFanConfig: fanConfig,
-    });
-
-    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
-      expect.objectContaining({ circulationFanConfig: fanConfig })
-    );
-  });
-
-  it('does not pass circulationFanConfig to configure when absent', async () => {
-    await (el as any)._handleEnvironmentConfig(minimalValidDetail);
-
-    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
-      expect.not.objectContaining({ circulationFanConfig: expect.anything() })
-    );
-  });
-
-  it('shows a toast and returns early when mandatory sensors are missing', async () => {
-    await (el as any)._handleEnvironmentConfig({
-      selectedGrowspaceId: 'gs-1',
-      temperatureSensors: [],
-      humiditySensors: [],
-    });
-
-    expect(notification$.get()?.type).toBe('error');
-    expect(notification$.get()?.message).toContain('mandatory');
-    expect(mockConfigureEnvironment).not.toHaveBeenCalled();
+    expect(mockApplyEnvironmentChange).toHaveBeenCalledWith(request, expect.any(Object));
   });
 });
 
@@ -810,5 +850,130 @@ describe('GrowspaceDialogHost – edit-growspace-submit handler', () => {
     expect(mockUpdateGrowspace).toHaveBeenCalledWith(
       expect.objectContaining({ notificationService: '' })
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// render() — the Tissue Culture dialog (workspace #155)
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – render() the TC dialog', () => {
+  function makeTcPortal(instanceId: string, payload: Record<string, unknown>) {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      instanceId,
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'TC', payload },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+    };
+    (el as any)._initControllers();
+    return el;
+  }
+
+  async function renderedTcDialog(el: GrowspaceDialogHost) {
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render((el as any).render(), container);
+    return container.querySelector('tc-dialog');
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mountedDialogPortals$.set([]);
+    tcPresence$.set({
+      status: 'present',
+      manifest: {
+        contract_version: 1,
+        integration_version: '0.1.0',
+        features: ['culture_lines', 'maintenance', 'culture_media', 'pairings'],
+        collections: {},
+      },
+    });
+  });
+
+  afterEach(() => {
+    mountedDialogPortals$.set([]);
+    tcPresence$.set({ status: 'unknown' });
+  });
+
+  it('renders exactly once, in the portal the payload names', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+    const opening = makeTcPortal('portal-b', { growspaceId: 'gs-1', portalId: 'portal-b' });
+    const sibling = makeTcPortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-b' });
+
+    expect(await renderedTcDialog(opening)).not.toBeNull();
+    expect(await renderedTcDialog(sibling)).toBeNull();
+  });
+
+  it('fails open in every portal when the payload names none', async () => {
+    mountedDialogPortals$.set(['portal-a', 'portal-b']);
+
+    expect(await renderedTcDialog(makeTcPortal('portal-a', {}))).not.toBeNull();
+    expect(await renderedTcDialog(makeTcPortal('portal-b', {}))).not.toBeNull();
+  });
+
+  it('reads the manifest off tcPresence$, never off the payload', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    const el = makeTcPortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    const dialog = (await renderedTcDialog(el)) as unknown as {
+      manifest?: { features: string[] };
+    };
+    expect(dialog.manifest?.features).toContain('pairings');
+  });
+
+  it('leaves the growspace out of everything but the payload it was captured in', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    const el = makeTcPortal('portal-a', { growspaceId: 'gs-1', portalId: 'portal-a' });
+
+    // TC is not growspace-scoped: `growspaceId` is carried for Graduation
+    // (ADR-0027) and nothing hands it to the dialog to filter by.
+    const dialog = (await renderedTcDialog(el)) as unknown as Record<string, unknown>;
+    expect(dialog.growspaceId).toBeUndefined();
+    expect(dialog.device).toBeUndefined();
+  });
+
+  it('hands the requested tab and scroll target through as properties', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    const el = makeTcPortal('portal-a', {
+      portalId: 'portal-a',
+      initialTab: 'media',
+      scrollToField: 'medium-1',
+    });
+
+    const dialog = (await renderedTcDialog(el)) as unknown as {
+      initialTab?: string;
+      scrollToField?: string;
+    };
+    expect(dialog.initialTab).toBe('media');
+    expect(dialog.scrollToField).toBe('medium-1');
+  });
+
+  it('opens the plant overview in place rather than reloading the page', async () => {
+    mountedDialogPortals$.set(['portal-a']);
+    pendingDeepLinkPlantId$.set(null);
+    const el = makeTcPortal('portal-a', { portalId: 'portal-a' });
+    const closed: string[] = [];
+    (el as any)._closeDialogIfActive = (type: string) => closed.push(type);
+
+    (el as any)._showPlantFromTc(
+      new CustomEvent('plant-view-requested', { detail: { plantId: 'plant / 1' } })
+    );
+
+    // No page load: the dialog closes and the deep link is resolved in place.
+    // With no hydrated devices in this suite that resolution parks the id,
+    // which is `handleDeepLink`'s own documented behaviour and proof it ran.
+    expect(closed).toEqual(['TC']);
+    expect(pendingDeepLinkPlantId$.get()).toBe('plant / 1');
+    pendingDeepLinkPlantId$.set(null);
   });
 });

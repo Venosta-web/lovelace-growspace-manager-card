@@ -5,12 +5,18 @@
  *   - computeIrrigationMode: mode derivation from strategy.enabled
  *   - computePhaseWindows: P0–P3 phase derivation from strategy
  *   - setIrrigationConfig / setIrrigationStrategy / setTankLevels: bootstrap writes
- *   - toggleIrrigationMode: optimistic toggle + service call + rollback
+ *   - toggleIrrigationMode: which flag the gesture derives from the stored one
  *   - addIrrigationTime / removeIrrigationTime: optimistic schedule edits + rollback
  *   - addDrainTime / removeDrainTime: optimistic drain edits + rollback
- *   - updateIrrigationStrategy: optimistic strategy update + rollback
- *   - saveIrrigationSettings: optimistic settings patch + rollback
  *   - logDrainReading / configureDrainMonitoring / runIrrigationCycle: fire-and-forget calls
+ *   - saveIrrigationRecipe / updateIrrigationRecipe / removeIrrigationRecipe /
+ *     applyIrrigationRecipe: the Irrigation Recipe library
+ *
+ * The configuration mutators — settings, strategy, the manual phase override
+ * and the Steering Mode stamp — are covered by `irrigation-command.test.ts`,
+ * which owns their wire payloads and their optimistic transaction because the
+ * [[Irrigation Command]] module owns those. What stays here is what this slice
+ * still decides for itself.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -34,20 +40,28 @@ import {
   addDrainTime,
   removeDrainTime,
   updateIrrigationStrategy,
-  applySteeringMode,
-  saveIrrigationSettings,
   logDrainReading,
   configureDrainMonitoring,
   setEcTargetRanges,
   runIrrigationCycle,
   fetchCropSteeringHistory,
   getIrrigationAnalytics,
+  irrigationRecipes$,
+  setIrrigationRecipes,
+  saveIrrigationRecipe,
+  updateIrrigationRecipe,
+  removeIrrigationRecipe,
+  applyIrrigationRecipe,
+  irrigationPrograms$,
+  setIrrigationPrograms,
+  saveIrrigationProgram,
+  removeIrrigationProgram,
+  assignIrrigationProgram,
+  setProgramAutoAdvance,
 } from './index';
 import { CropSteeringHistorySchema } from '../../schemas/api-schema';
 import {
   IrrigationModeSchema,
-  SetIrrigationStrategyPayloadSchema,
-  SaveIrrigationSettingsPayloadSchema,
   AddIrrigationTimePayloadSchema,
   RemoveIrrigationTimePayloadSchema,
   AddDrainTimePayloadSchema,
@@ -57,6 +71,10 @@ import {
   RunIrrigationCyclePayloadSchema,
   PhaseWindowSchema,
   PhaseWindowsSchema,
+  SaveIrrigationRecipePayloadSchema,
+  ApplyIrrigationRecipePayloadSchema,
+  SaveIrrigationProgramPayloadSchema,
+  AssignIrrigationProgramPayloadSchema,
 } from './schema';
 
 vi.mock('../../services/hass-call', () => ({
@@ -96,6 +114,8 @@ beforeEach(() => {
   irrigationStrategies$.set(new Map());
   tankLevels$.set(new Map());
   cropSteeringHistory$.set(new Map());
+  irrigationRecipes$.set([]);
+  irrigationPrograms$.set([]);
   devices$.set([]);
   vi.clearAllMocks();
   vi.mocked(hassCall.callService).mockResolvedValue(undefined);
@@ -264,27 +284,6 @@ describe('toggleIrrigationMode', () => {
     setIrrigationStrategy('gs1', makeStrategy({ enabled: true }));
 
     await toggleIrrigationMode('gs1');
-
-    expect(irrigationStrategies$.get().get('gs1')?.enabled).toBe(false);
-  });
-
-  it('calls set_irrigation_strategy service with the updated enabled flag', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ enabled: false }));
-
-    await toggleIrrigationMode('gs1');
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({ growspace_id: 'gs1', enabled: true })
-    );
-  });
-
-  it('rolls back optimistic update when service call fails', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ enabled: false }));
-    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('backend error'));
-
-    await expect(toggleIrrigationMode('gs1')).rejects.toThrow();
 
     expect(irrigationStrategies$.get().get('gs1')?.enabled).toBe(false);
   });
@@ -589,167 +588,8 @@ describe('removeDrainTime', () => {
 // ---------------------------------------------------------------------------
 
 describe('updateIrrigationStrategy', () => {
-  it('patches strategy fields immediately (optimistic)', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ lightsOnTime: '06:00' }));
-
-    await updateIrrigationStrategy('gs1', { lightsOnTime: '07:00' });
-
-    expect(irrigationStrategies$.get().get('gs1')?.lightsOnTime).toBe('07:00');
-  });
-
-  it('calls set_irrigation_strategy service with serialized payload', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', { lightsOnTime: '07:00', p0DurationMinutes: 90 });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        lights_on_time: '07:00',
-        p0_duration_minutes: 90,
-      })
-    );
-  });
-
-  it('calls set_irrigation_strategy service with all fields mapped to payload', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', {
-      enabled: true,
-      lightsOnTime: '07:30',
-      p0DurationMinutes: 45,
-      p2StopBeforeLightsOffMinutes: 180,
-      targetVwcPercent: 62.5,
-      maintenanceDrybackPercent: 4.5,
-      shotDurationSeconds: 40,
-      shotIntervalMinutes: 25,
-      autoLightTracking: true,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        enabled: true,
-        lights_on_time: '07:30',
-        p0_duration_minutes: 45,
-        p2_stop_before_lights_off_minutes: 180,
-        target_vwc_percent: 62.5,
-        maintenance_dryback_percent: 4.5,
-        shot_duration_seconds: 40,
-        shot_interval_minutes: 25,
-        auto_light_tracking: true,
-      })
-    );
-  });
-
-  it('serializes per-phase shot and sizing-mode fields to the payload', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', {
-      p1ShotDurationSeconds: 12,
-      p1ShotIntervalMinutes: 20,
-      p2ShotDurationSeconds: 18,
-      p2ShotIntervalMinutes: 30,
-      p1ShotVolumePercent: 3.5,
-      p2ShotVolumePercent: 5,
-      shotSizingMode: 'volume',
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        p1_shot_duration_seconds: 12,
-        p1_shot_interval_minutes: 20,
-        p2_shot_duration_seconds: 18,
-        p2_shot_interval_minutes: 30,
-        p1_shot_volume_percent: 3.5,
-        p2_shot_volume_percent: 5,
-        shot_sizing_mode: 'volume',
-      })
-    );
-  });
-
-  it('serializes Adaptive Shot Control fields to the payload', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', {
-      dynamicShotEnabled: false,
-      dynamicAggressiveness: 1.5,
-      dynamicRecovery: 0.2,
-      dynamicShotSizeFloor: 0.4,
-      dynamicIntervalCeiling: 2.0,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        dynamic_shot_enabled: false,
-        dynamic_aggressiveness: 1.5,
-        dynamic_recovery: 0.2,
-        dynamic_shot_size_floor: 0.4,
-        dynamic_interval_ceiling: 2.0,
-      })
-    );
-  });
-
-  it('serializes substrate profile to flat keys and band/modulation fields', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', {
-      substrateProfile: { mediaType: 'rockwool', litersPerPot: 6.5 },
-      poreEcTargetMin: 2.5,
-      poreEcTargetMax: 4.0,
-      ecModulationEnabled: true,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        substrate_media_type: 'rockwool',
-        substrate_liters_per_pot: 6.5,
-        pore_ec_target_min: 2.5,
-        pore_ec_target_max: 4.0,
-        ec_modulation_enabled: true,
-      })
-    );
-  });
-
-  it('rolls back strategy on failure', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ lightsOnTime: '06:00' }));
-    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
-
-    await expect(updateIrrigationStrategy('gs1', { lightsOnTime: '07:00' })).rejects.toThrow();
-
-    expect(irrigationStrategies$.get().get('gs1')?.lightsOnTime).toBe('06:00');
-  });
-
-  it('calls set_irrigation_strategy service without lightsOnTime', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await updateIrrigationStrategy('gs1', { enabled: false });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_strategy',
-      {
-        growspace_id: 'gs1',
-        enabled: false,
-      }
-    );
-  });
-
   it('handles update when growspace has no strategy (uses fallback)', async () => {
-    // irrigationStrategies$ starts empty, so _getStrategy will return the default fallback
+    // irrigationStrategies$ starts empty, so the read model supplies its defaults
     await updateIrrigationStrategy('new_gs', { enabled: true, lightsOnTime: '08:00' });
 
     const strategy = irrigationStrategies$.get().get('new_gs');
@@ -763,175 +603,6 @@ describe('updateIrrigationStrategy', () => {
       shotDurationSeconds: 30,
       shotIntervalMinutes: 15,
     });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// applySteeringMode
-// ---------------------------------------------------------------------------
-
-describe('applySteeringMode', () => {
-  it('calls the apply_steering_mode WS command with the chosen mode', async () => {
-    setIrrigationStrategy('gs1', makeStrategy());
-
-    await applySteeringMode('gs1', 'generative');
-
-    expect(hassCall.hassCall).toHaveBeenCalledWith(
-      'growspace_manager/apply_steering_mode',
-      { growspace_id: 'gs1', steering_mode: 'generative' },
-      expect.anything()
-    );
-  });
-
-  it('reflects the selected mode optimistically', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ declaredSteeringMode: null }));
-
-    await applySteeringMode('gs1', 'vegetative');
-
-    expect(irrigationStrategies$.get().get('gs1')?.declaredSteeringMode).toBe('vegetative');
-  });
-
-  it('rolls back the declared mode on failure', async () => {
-    setIrrigationStrategy('gs1', makeStrategy({ declaredSteeringMode: 'balanced' }));
-    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('fail'));
-
-    await expect(applySteeringMode('gs1', 'generative')).rejects.toThrow();
-
-    expect(irrigationStrategies$.get().get('gs1')?.declaredSteeringMode).toBe('balanced');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// saveIrrigationSettings
-// ---------------------------------------------------------------------------
-
-describe('saveIrrigationSettings', () => {
-  it('patches irrigationPumpEntity immediately (optimistic)', async () => {
-    setIrrigationConfig(
-      'gs1',
-      makeConfig({ irrigationPumpEntity: 'switch.old_pump', pumpFlowRateMlPerSec: 10 })
-    );
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.new_pump',
-      drainPumpEntity: '',
-      irrigationDuration: 90,
-      drainDuration: 45,
-    });
-
-    expect(irrigationConfigs$.get().get('gs1')?.irrigationPumpEntity).toBe('switch.new_pump');
-    expect(irrigationConfigs$.get().get('gs1')?.pumpFlowRateMlPerSec).toBe(10);
-  });
-
-  it('calls set_irrigation_settings service with serialized payload', async () => {
-    setIrrigationConfig('gs1', makeConfig());
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.pump',
-      pumpFlowRateMlPerSec: 12.5,
-      drainPumpEntity: 'switch.drain',
-      irrigationDuration: 60,
-      drainDuration: 30,
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_settings',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        irrigation_pump_entity: 'switch.pump',
-        pump_flow_rate_ml_per_sec: 12.5,
-        drain_pump_entity: 'switch.drain',
-        irrigation_duration: 60,
-        drain_duration: 30,
-      })
-    );
-  });
-
-  it('calls set_irrigation_settings service with all options included in payload', async () => {
-    setIrrigationConfig('gs1', makeConfig());
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.pump',
-      pumpFlowRateMlPerSec: 12.5,
-      drainPumpEntity: 'switch.drain',
-      irrigationDuration: 60,
-      drainDuration: 30,
-      soilTriggerPercent: 55,
-      dailyVolumeCapLiters: 12.5,
-      maxCyclesPerDay: 8,
-      skipDuringDark: true,
-      pauseOnLowTank: true,
-      logToLogbook: true,
-      autoAdvanceP1ToP2: true,
-      autoAdvanceP2ToP3: true,
-      haltOnRunoffEcThreshold: 4.2,
-      activeSteeringPhase: 'p3',
-    });
-
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_irrigation_settings',
-      expect.objectContaining({
-        growspace_id: 'gs1',
-        irrigation_pump_entity: 'switch.pump',
-        pump_flow_rate_ml_per_sec: 12.5,
-        drain_pump_entity: 'switch.drain',
-        irrigation_duration: 60,
-        drain_duration: 30,
-        soil_trigger_percent: 55,
-        daily_volume_cap_liters: 12.5,
-        max_cycles_per_day: 8,
-        skip_during_dark: true,
-        pause_on_low_tank: true,
-        log_to_logbook: true,
-        auto_advance_p1_to_p2: true,
-        auto_advance_p2_to_p3: true,
-        halt_on_runoff_ec_threshold: 4.2,
-        active_steering_phase: 'p3',
-      })
-    );
-  });
-
-  it('rolls back settings on failure', async () => {
-    setIrrigationConfig('gs1', makeConfig({ irrigationPumpEntity: 'switch.old' }));
-    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
-
-    await expect(
-      saveIrrigationSettings('gs1', {
-        irrigationPumpEntity: 'switch.new',
-        drainPumpEntity: '',
-        irrigationDuration: 60,
-        drainDuration: 30,
-      })
-    ).rejects.toThrow();
-
-    expect(irrigationConfigs$.get().get('gs1')?.irrigationPumpEntity).toBe('switch.old');
-  });
-
-  it('cross-slice bridge: also patches devices$.irrigationConfig pump entity optimistically', async () => {
-    setDevices([
-      createGrowspaceDevice({
-        deviceId: 'gs1',
-        name: 'G1',
-        irrigationConfig: {
-          irrigationTimes: [],
-          drainTimes: [],
-          irrigationPumpEntity: 'switch.old',
-        },
-      }),
-    ]);
-    setIrrigationConfig('gs1', makeConfig({ irrigationPumpEntity: 'switch.old' }));
-
-    await saveIrrigationSettings('gs1', {
-      irrigationPumpEntity: 'switch.new',
-      drainPumpEntity: 'switch.drain',
-      irrigationDuration: 60,
-      drainDuration: 30,
-    });
-
-    const device = devices$.get().find((d) => d.deviceId === 'gs1');
-    expect(device?.irrigationConfig.irrigationPumpEntity).toBe('switch.new');
   });
 });
 
@@ -1071,67 +742,6 @@ describe('Zod Schema Validations', () => {
 
     it('rejects invalid modes', () => {
       expect(IrrigationModeSchema.safeParse('invalid_mode').success).toBe(false);
-    });
-  });
-
-  describe('SetIrrigationStrategyPayloadSchema', () => {
-    it('validates a valid payload with optional fields', () => {
-      const payload = {
-        growspace_id: 'gs1',
-        enabled: true,
-        lights_on_time: '06:00',
-        p0_duration_minutes: 60,
-        p2_stop_before_lights_off_minutes: 120,
-        target_vwc_percent: 65,
-        maintenance_dryback_percent: 3,
-        shot_duration_seconds: 30,
-        shot_interval_minutes: 15,
-        auto_light_tracking: false,
-      };
-      expect(SetIrrigationStrategyPayloadSchema.parse(payload)).toEqual(payload);
-    });
-
-    it('rejects payload with invalid types', () => {
-      const payload = {
-        growspace_id: 'gs1',
-        enabled: 'not-a-boolean',
-      };
-      expect(SetIrrigationStrategyPayloadSchema.safeParse(payload).success).toBe(false);
-    });
-  });
-
-  describe('SaveIrrigationSettingsPayloadSchema', () => {
-    it('validates a valid settings payload', () => {
-      const payload = {
-        growspace_id: 'gs1',
-        irrigation_pump_entity: 'switch.pump',
-        drain_pump_entity: 'switch.drain',
-        irrigation_duration: 60,
-        drain_duration: 30,
-        soil_trigger_percent: 45,
-        daily_volume_cap_liters: 10,
-        max_cycles_per_day: 5,
-        skip_during_dark: true,
-        pause_on_low_tank: true,
-        log_to_logbook: true,
-        auto_advance_p1_to_p2: true,
-        auto_advance_p2_to_p3: true,
-        halt_on_runoff_ec_threshold: 3.5,
-        active_steering_phase: 'p2',
-      };
-      expect(SaveIrrigationSettingsPayloadSchema.parse(payload)).toEqual(payload);
-    });
-
-    it('rejects invalid phase enum', () => {
-      const payload = {
-        growspace_id: 'gs1',
-        irrigation_pump_entity: 'switch.pump',
-        drain_pump_entity: 'switch.drain',
-        irrigation_duration: 60,
-        drain_duration: 30,
-        active_steering_phase: 'invalid-phase',
-      };
-      expect(SaveIrrigationSettingsPayloadSchema.safeParse(payload).success).toBe(false);
     });
   });
 
@@ -1336,5 +946,675 @@ describe('getIrrigationAnalytics', () => {
     const result = await getIrrigationAnalytics('gs1');
 
     expect(result).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Irrigation Recipes
+// ---------------------------------------------------------------------------
+
+const WIRE_RECIPE = {
+  id: 'r1',
+  name: 'Flower week 3',
+  kind: 'crop_steering' as const,
+  provenance: {
+    media_type: 'rockwool' as const,
+    liters_per_pot: 7.5,
+    pump_flow_rate_ml_per_sec: 13.5,
+    stage: 'flower',
+    week: 3,
+  },
+  crop_steering: null,
+  schedule: null,
+  created_at: '2026-08-04T09:00:00+00:00',
+};
+
+describe('saveIrrigationRecipe', () => {
+  it('sends the growspace, the name and the half being captured', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Flower week 3',
+      kind: 'crop_steering',
+    });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/save_irrigation_recipe',
+      { growspace_id: 'gs1', name: 'Flower week 3', kind: 'crop_steering' },
+      expect.anything()
+    );
+  });
+
+  it('sends recipe_id only when overwriting an existing recipe', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Flower week 3',
+      kind: 'crop_steering',
+      recipeId: 'r1',
+    });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/save_irrigation_recipe',
+      expect.objectContaining({ recipe_id: 'r1' }),
+      expect.anything()
+    );
+  });
+
+  it('merges the saved recipe into the library, name-ordered', async () => {
+    setIrrigationRecipes([
+      {
+        id: 'z',
+        name: 'Zulu',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'coco',
+          litersPerPot: 5,
+          pumpFlowRateMlPerSec: 11,
+          stage: 'veg',
+          week: 2,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-01T00:00:00+00:00',
+      },
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Flower week 3',
+      kind: 'crop_steering',
+    });
+
+    expect(irrigationRecipes$.get().map((r) => r.id)).toEqual(['r1', 'z']);
+    expect(irrigationRecipes$.get()[0].provenance).toEqual({
+      mediaType: 'rockwool',
+      litersPerPot: 7.5,
+      pumpFlowRateMlPerSec: 13.5,
+      stage: 'flower',
+      week: 3,
+    });
+  });
+
+  it('replaces rather than duplicates when the same recipe is saved again', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Flower week 3',
+      kind: 'crop_steering',
+    });
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ ...WIRE_RECIPE, name: 'Renamed' });
+    await saveIrrigationRecipe({
+      growspaceId: 'gs1',
+      name: 'Renamed',
+      kind: 'crop_steering',
+      recipeId: 'r1',
+    });
+
+    expect(irrigationRecipes$.get().map((r) => r.name)).toEqual(['Renamed']);
+  });
+
+  it('leaves the library untouched when the backend refuses the capture', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(
+      new Error('no pump flow rate is configured')
+    );
+
+    await expect(
+      saveIrrigationRecipe({ growspaceId: 'gs1', name: 'Nope', kind: 'crop_steering' })
+    ).rejects.toThrow('no pump flow rate is configured');
+    expect(irrigationRecipes$.get()).toEqual([]);
+  });
+});
+
+describe('applyIrrigationRecipe', () => {
+  const REPLY = {
+    growspace_id: 'gs1',
+    applied_recipe_id: 'r1',
+    recipe_applied_at: '2026-08-10T07:15:00+00:00',
+    warning: null,
+  };
+
+  it('calls the apply_irrigation_recipe WS command with the growspace and recipe', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(REPLY);
+
+    await applyIrrigationRecipe('gs1', 'r1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/apply_irrigation_recipe',
+      { growspace_id: 'gs1', recipe_id: 'r1' },
+      expect.anything()
+    );
+  });
+
+  it('records the stamp on the device and clears the drift verdict', async () => {
+    setDevices([
+      createGrowspaceDevice({ deviceId: 'gs1', name: 'G1', irrigationStrategy: makeStrategy() }),
+    ]);
+    setIrrigationStrategy('gs1', makeStrategy());
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(REPLY);
+
+    await applyIrrigationRecipe('gs1', 'r1');
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationStrategy?.appliedRecipeId).toBe('r1');
+    expect(device?.irrigationStrategy?.recipeAppliedAt).toBe('2026-08-10T07:15:00+00:00');
+    expect(device?.appliedRecipeDrifted).toBe(false);
+  });
+
+  it('returns the backend notice so a cross-media apply can be surfaced', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      ...REPLY,
+      warning:
+        "Irrigation recipe 'Flower week 3' was authored in rockwool and applied to a coco growspace.",
+    });
+
+    const result = await applyIrrigationRecipe('gs1', 'r1');
+
+    expect(result.warning).toContain('rockwool');
+  });
+
+  it('rolls the stamp back when the apply is refused', async () => {
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationStrategy: makeStrategy({ appliedRecipeId: 'previous' }),
+      }),
+    ]);
+    setIrrigationStrategy('gs1', makeStrategy({ appliedRecipeId: 'previous' }));
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('kind mismatch'));
+
+    await expect(applyIrrigationRecipe('gs1', 'r1')).rejects.toThrow();
+
+    expect(irrigationStrategies$.get().get('gs1')?.appliedRecipeId).toBe('previous');
+    expect(devices$.get()[0].irrigationStrategy?.appliedRecipeId).toBe('previous');
+  });
+});
+
+describe('Irrigation Recipe payload schemas', () => {
+  it('validates the save payload, with recipe_id only when overwriting', () => {
+    const create = { growspace_id: 'gs1', name: 'Flower week 3', kind: 'crop_steering' as const };
+    expect(SaveIrrigationRecipePayloadSchema.parse(create)).toEqual(create);
+
+    const overwrite = { ...create, recipe_id: 'r1' };
+    expect(SaveIrrigationRecipePayloadSchema.parse(overwrite)).toEqual(overwrite);
+  });
+
+  it('rejects a save payload carrying a key the backend does not accept', () => {
+    expect(
+      SaveIrrigationRecipePayloadSchema.safeParse({
+        growspace_id: 'gs1',
+        name: 'Flower week 3',
+        kind: 'crop_steering',
+        recipeId: 'r1',
+      }).success
+    ).toBe(false);
+  });
+
+  it('rejects a kind that is neither half a recipe can carry', () => {
+    expect(
+      SaveIrrigationRecipePayloadSchema.safeParse({
+        growspace_id: 'gs1',
+        name: 'Both',
+        kind: 'both',
+      }).success
+    ).toBe(false);
+  });
+
+  it('validates the apply payload', () => {
+    const payload = { growspace_id: 'gs1', recipe_id: 'r1' };
+    expect(ApplyIrrigationRecipePayloadSchema.parse(payload)).toEqual(payload);
+    expect(ApplyIrrigationRecipePayloadSchema.safeParse({ growspace_id: 'gs1' }).success).toBe(
+      false
+    );
+  });
+});
+
+describe('updateIrrigationRecipe', () => {
+  it('sends only what changed — a rename carries no values', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      ...WIRE_RECIPE,
+      name: 'Flower week 4',
+    });
+
+    await updateIrrigationRecipe({ recipeId: 'r1', name: 'Flower week 4' });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_irrigation_recipe',
+      { recipe_id: 'r1', name: 'Flower week 4' },
+      expect.anything()
+    );
+  });
+
+  it('sends the half wire-shaped, sparsely', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_RECIPE);
+
+    await updateIrrigationRecipe({
+      recipeId: 'r1',
+      cropSteering: { p1_shot_volume_percent: 7.5 },
+    });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_irrigation_recipe',
+      { recipe_id: 'r1', crop_steering: { p1_shot_volume_percent: 7.5 } },
+      expect.anything()
+    );
+  });
+
+  it('replaces the edited recipe in the library, keeping the name order', async () => {
+    setIrrigationRecipes([
+      {
+        id: 'r1',
+        name: 'Flower week 3',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'rockwool',
+          litersPerPot: 7.5,
+          pumpFlowRateMlPerSec: 13.5,
+          stage: 'flower',
+          week: 3,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-04T09:00:00+00:00',
+      },
+      {
+        id: 'z',
+        name: 'Alpha',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'coco',
+          litersPerPot: 5,
+          pumpFlowRateMlPerSec: 11,
+          stage: 'veg',
+          week: 2,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-01T00:00:00+00:00',
+      },
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      ...WIRE_RECIPE,
+      name: 'Zulu week 4',
+    });
+
+    const edited = await updateIrrigationRecipe({ recipeId: 'r1', name: 'Zulu week 4' });
+
+    expect(edited.name).toBe('Zulu week 4');
+    expect(irrigationRecipes$.get().map((r) => r.name)).toEqual(['Alpha', 'Zulu week 4']);
+    expect(irrigationRecipes$.get()).toHaveLength(2);
+  });
+
+  it('carries the edited half back into the library', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      ...WIRE_RECIPE,
+      crop_steering: {
+        lights_on_time: '06:00:00',
+        p0_duration_minutes: 60,
+        p2_stop_before_lights_off_minutes: 120,
+        target_vwc_percent: 55,
+        maintenance_dryback_percent: 2,
+        p1_shot_volume_percent: 7.5,
+        p1_shot_interval_minutes: 15,
+        p2_shot_volume_percent: 3,
+        p2_shot_interval_minutes: 20,
+        auto_light_tracking: false,
+        dynamic_shot_enabled: true,
+        dynamic_aggressiveness: 1,
+        dynamic_recovery: 0.1,
+        dynamic_shot_size_floor: 0.5,
+        dynamic_interval_ceiling: 1.5,
+        pore_ec_target_min: null,
+        pore_ec_target_max: null,
+        ec_modulation_enabled: false,
+      },
+    });
+
+    const edited = await updateIrrigationRecipe({
+      recipeId: 'r1',
+      cropSteering: { p1_shot_volume_percent: 7.5 },
+    });
+
+    expect(edited.cropSteering?.p1_shot_volume_percent).toBe(7.5);
+  });
+
+  it('leaves the library alone when the command is refused', async () => {
+    setIrrigationRecipes([]);
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('not part of'));
+
+    await expect(updateIrrigationRecipe({ recipeId: 'r1', name: 'x' })).rejects.toThrow(
+      'not part of'
+    );
+    expect(irrigationRecipes$.get()).toEqual([]);
+  });
+});
+
+describe('removeIrrigationRecipe', () => {
+  it('sends the recipe id and drops it from the library', async () => {
+    setIrrigationRecipes([
+      {
+        id: 'r1',
+        name: 'Flower week 3',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'coco',
+          litersPerPot: 5,
+          pumpFlowRateMlPerSec: 11,
+          stage: 'flower',
+          week: 3,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-04T09:00:00+00:00',
+      },
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(undefined);
+
+    await removeIrrigationRecipe('r1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/remove_irrigation_recipe',
+      { recipe_id: 'r1' },
+      expect.anything()
+    );
+    expect(irrigationRecipes$.get()).toEqual([]);
+  });
+
+  it('keeps the recipe when the command fails', async () => {
+    setIrrigationRecipes([
+      {
+        id: 'r1',
+        name: 'Flower week 3',
+        kind: 'crop_steering',
+        provenance: {
+          mediaType: 'coco',
+          litersPerPot: 5,
+          pumpFlowRateMlPerSec: 11,
+          stage: 'flower',
+          week: 3,
+        },
+        cropSteering: null,
+        schedule: null,
+        createdAt: '2026-08-04T09:00:00+00:00',
+      },
+    ]);
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('boom'));
+
+    await expect(removeIrrigationRecipe('r1')).rejects.toThrow('boom');
+    expect(irrigationRecipes$.get()).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Irrigation Programs
+// ---------------------------------------------------------------------------
+
+const WIRE_PROGRAM = {
+  id: 'p1',
+  name: 'Full run — coco',
+  slots: [
+    { stage: 'veg', week: 1, recipe_id: 'r-veg' },
+    { stage: 'flower', week: 3, recipe_id: 'r-flower' },
+  ],
+  created_at: '2026-08-06T09:00:00+00:00',
+};
+
+describe('saveIrrigationProgram', () => {
+  it('sends the whole plan, wire-shaped, because the save replaces the slot list', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_PROGRAM);
+
+    await saveIrrigationProgram({
+      name: 'Full run — coco',
+      slots: [
+        { stage: 'veg', week: 1, recipeId: 'r-veg' },
+        { stage: 'flower', week: 3, recipeId: 'r-flower' },
+      ],
+    });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/save_irrigation_program',
+      {
+        name: 'Full run — coco',
+        slots: [
+          { stage: 'veg', week: 1, recipe_id: 'r-veg' },
+          { stage: 'flower', week: 3, recipe_id: 'r-flower' },
+        ],
+      },
+      expect.anything()
+    );
+  });
+
+  it('sends program_id only when overwriting an existing plan', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_PROGRAM);
+
+    await saveIrrigationProgram({ name: 'Full run — coco', slots: [], programId: 'p1' });
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/save_irrigation_program',
+      expect.objectContaining({ program_id: 'p1' }),
+      expect.anything()
+    );
+  });
+
+  it('merges the saved program into the library, name-ordered', async () => {
+    setIrrigationPrograms([
+      { id: 'z', name: 'Zulu', slots: [], createdAt: '2026-08-01T00:00:00+00:00' },
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_PROGRAM);
+
+    await saveIrrigationProgram({ name: 'Full run — coco', slots: [] });
+
+    expect(irrigationPrograms$.get().map((p) => p.name)).toEqual(['Full run — coco', 'Zulu']);
+    // Slots arrive camelised and in the run order the backend put them in.
+    expect(irrigationPrograms$.get()[0].slots).toEqual([
+      { stage: 'veg', week: 1, recipeId: 'r-veg' },
+      { stage: 'flower', week: 3, recipeId: 'r-flower' },
+    ]);
+  });
+
+  it('writes nothing to any growspace — a plan holds recipes by reference', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+    setDevices([
+      createGrowspaceDevice({ deviceId: 'gs1', name: 'G1', irrigationStrategy: makeStrategy() }),
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(WIRE_PROGRAM);
+
+    await saveIrrigationProgram({ name: 'Full run — coco', slots: [] });
+
+    expect(hassCall.callService).not.toHaveBeenCalled();
+    expect(devices$.get()[0].irrigationStrategy).toEqual(makeStrategy());
+  });
+});
+
+describe('removeIrrigationProgram', () => {
+  it('sends the program id and drops it from the library', async () => {
+    setIrrigationPrograms([
+      { id: 'p1', name: 'Full run', slots: [], createdAt: '2026-08-06T09:00:00+00:00' },
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(undefined);
+
+    await removeIrrigationProgram('p1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/remove_irrigation_program',
+      { program_id: 'p1' },
+      expect.anything()
+    );
+    expect(irrigationPrograms$.get()).toEqual([]);
+  });
+
+  it('keeps the program when the command fails', async () => {
+    setIrrigationPrograms([
+      { id: 'p1', name: 'Full run', slots: [], createdAt: '2026-08-06T09:00:00+00:00' },
+    ]);
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('boom'));
+
+    await expect(removeIrrigationProgram('p1')).rejects.toThrow('boom');
+    expect(irrigationPrograms$.get()).toHaveLength(1);
+  });
+});
+
+describe('assignIrrigationProgram', () => {
+  it('calls the assign command with the growspace and the program', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      growspace_id: 'gs1',
+      irrigation_program_id: 'p1',
+    });
+
+    await assignIrrigationProgram('gs1', 'p1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/assign_irrigation_program',
+      { growspace_id: 'gs1', program_id: 'p1' },
+      expect.anything()
+    );
+  });
+
+  it('moves the binding and nothing else — assigning writes no setpoint', async () => {
+    const before = makeStrategy({ targetVwcPercent: 65, appliedRecipeId: 'r-old' });
+    setIrrigationStrategy('gs1', before);
+    setDevices([
+      createGrowspaceDevice({ deviceId: 'gs1', name: 'G1', irrigationStrategy: before }),
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      growspace_id: 'gs1',
+      irrigation_program_id: 'p1',
+    });
+
+    await assignIrrigationProgram('gs1', 'p1');
+
+    const after = devices$.get()[0].irrigationStrategy;
+    expect(after?.irrigationProgramId).toBe('p1');
+    // Everything the growspace was actually running is untouched.
+    expect({ ...after, irrigationProgramId: undefined }).toEqual({
+      ...before,
+      irrigationProgramId: undefined,
+    });
+  });
+
+  it('unbinding clears the resolved position too — there is no plan to have one', async () => {
+    setIrrigationStrategy('gs1', makeStrategy({ irrigationProgramId: 'p1' }));
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationStrategy: makeStrategy({ irrigationProgramId: 'p1' }),
+        irrigationProgram: {
+          programId: 'p1',
+          name: 'Full run',
+          stage: 'flower',
+          week: 3,
+          slot: null,
+          recipe: null,
+          autoAdvance: false,
+          progression: { state: 'held', hold: 'no_slot', detail: 'nothing changes' },
+        },
+      }),
+    ]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      growspace_id: 'gs1',
+      irrigation_program_id: null,
+    });
+
+    await assignIrrigationProgram('gs1', null);
+
+    expect(devices$.get()[0].irrigationProgram).toBeNull();
+    expect(devices$.get()[0].irrigationStrategy?.irrigationProgramId).toBeNull();
+  });
+
+  it('rolls the binding back when the assign is refused', async () => {
+    setIrrigationStrategy('gs1', makeStrategy({ irrigationProgramId: 'previous' }));
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationStrategy: makeStrategy({ irrigationProgramId: 'previous' }),
+      }),
+    ]);
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('no such program'));
+
+    await expect(assignIrrigationProgram('gs1', 'p1')).rejects.toThrow();
+
+    expect(irrigationStrategies$.get().get('gs1')?.irrigationProgramId).toBe('previous');
+    expect(devices$.get()[0].irrigationStrategy?.irrigationProgramId).toBe('previous');
+  });
+});
+
+describe('setProgramAutoAdvance', () => {
+  it('sends one field beside the growspace id — not the whole settings form', async () => {
+    setIrrigationConfig('gs1', makeConfig());
+
+    await setProgramAutoAdvance('gs1', true);
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_irrigation_settings',
+      { growspace_id: 'gs1', program_auto_advance: true }
+    );
+  });
+
+  it('reflects the new value on the config and the device at once', async () => {
+    setIrrigationConfig('gs1', makeConfig());
+    setDevices([
+      createGrowspaceDevice({ deviceId: 'gs1', name: 'G1', irrigationConfig: makeConfig() }),
+    ]);
+
+    await setProgramAutoAdvance('gs1', true);
+
+    expect(irrigationConfigs$.get().get('gs1')?.programAutoAdvance).toBe(true);
+    expect(devices$.get()[0].irrigationConfig?.programAutoAdvance).toBe(true);
+  });
+
+  it('rolls back to the previous opt-in when the write is refused', async () => {
+    setIrrigationConfig('gs1', makeConfig({ programAutoAdvance: false }));
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationConfig: makeConfig({ programAutoAdvance: false }),
+      }),
+    ]);
+    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('boom'));
+
+    await expect(setProgramAutoAdvance('gs1', true)).rejects.toThrow();
+
+    expect(irrigationConfigs$.get().get('gs1')?.programAutoAdvance).toBe(false);
+    expect(devices$.get()[0].irrigationConfig?.programAutoAdvance).toBe(false);
+  });
+});
+
+describe('Irrigation Program payload schemas', () => {
+  it('validates the save payload, with program_id only when overwriting', () => {
+    const create = {
+      name: 'Full run',
+      slots: [{ stage: 'flower', week: 3, recipe_id: 'r1' }],
+    };
+    expect(SaveIrrigationProgramPayloadSchema.parse(create)).toEqual(create);
+    expect(SaveIrrigationProgramPayloadSchema.parse({ ...create, program_id: 'p1' })).toEqual({
+      ...create,
+      program_id: 'p1',
+    });
+  });
+
+  it('refuses a slot key the backend does not know', () => {
+    expect(() =>
+      SaveIrrigationProgramPayloadSchema.parse({
+        name: 'Full run',
+        slots: [{ stage: 'flower', week: 3, recipe_id: 'r1', note: 'nope' }],
+      })
+    ).toThrow();
+  });
+
+  it('accepts a null program id — that is how a growspace is unbound', () => {
+    expect(
+      AssignIrrigationProgramPayloadSchema.parse({ growspace_id: 'gs1', program_id: null })
+    ).toEqual({ growspace_id: 'gs1', program_id: null });
   });
 });

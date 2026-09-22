@@ -3,8 +3,9 @@
 A premium, feature-rich **Home Assistant Lovelace custom card** designed for the modern grower. Manage multiple growspaces, track complex plant lifecycles, and leverage AI to optimize your environment—all from a sleek, glassmorphism-inspired interface.
 
 ![Growspace Manager Card](assets/screenshots/overview.png)
-_Unified view: plant grid with per-stage imagery and day counters, environmental
-sparklines, and the live crop-steering phase._
+_Unified view: the growspace's own equipment across the header, environmental
+sparklines beneath it, the live crop-steering phase, and a plant grid with
+per-stage imagery and day counters._
 
 [**Try the live demo →**](https://Venosta-web.github.io/lovelace-growspace-manager-card/demo/)
 
@@ -34,7 +35,7 @@ This card is the frontend companion to the **Growspace Manager Backend** integra
 ### 🧠 Intelligence & Automation
 
 - **Grow Master AI**: Integrated AI assistant that analyzes your sensor data to provide context-aware gardening advice and stress diagnosis.
-- **Smart Irrigation**: Manage complex irrigation schedules and strategies (e.g., "Crop Steering") directly from the UI.
+- **Smart Irrigation**: Manage complex irrigation schedules and strategies (e.g., "Crop Steering") directly from the UI, save a proven setup as a reusable Recipe, and plan a whole run with the standalone Recipe library editor.
 - **Strain Recommendations**: Get data-driven strain suggestions based on your specific environmental conditions.
 - **Integrated Pest Management (IPM)**: Track and manage pest treatments with customizable presets for foliar sprays, root drenches, and beneficial insects.
 
@@ -49,6 +50,22 @@ This card is the frontend companion to the **Growspace Manager Backend** integra
 - **Real-time Analytics**: Toggleable chips for Temperature, Humidity, VPD, and CO2 with historical sparklines.
 - **Light Cycle History**: Visual timeline of light ON/OFF states over the last 24 hours.
 - **Calculated Metrics**: Automatic VPD calculation and "Lung Room" monitoring.
+
+### 🏷️ Label Printing
+
+- **Direct-Manipulation Template Editor**: Design and publish your own Niimbot label layouts, with drafts protected against concurrent editing.
+- **Batch Printing**: Preview, print, and retry labels across a whole selection of plants, backed by preflight checks on the batch itself.
+- **Calibration & Recovery**: Calibrate a printer and recover from print diagnostics without leaving the card.
+- **Print Anyway**: Explicit override to print past a printer profile that hasn't yet proven itself.
+
+### 📷 Growspace Vision
+
+- **Evidence Checkups**: Review AI camera evidence history for a plant, with comparison sparklines against its own recorded baseline over time.
+
+### 🧫 Tissue Culture (optional)
+
+- **Companion Integration**: When the [Growspace Manager TC](https://github.com/Venosta-web/growspace_manager_tc) integration is installed, its view is detected and lazy-loaded automatically — no extra configuration.
+- **Full Bench Management**: Worklist, culture board, Culture Medium library with version history, curated Pairings, and graduating a culture into a tracked plant.
 
 ### 🎨 Modern UX
 
@@ -110,6 +127,8 @@ plant grid stacks into a single column.
 ## Installation
 
 ### Using HACS (Recommended)
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Venosta-web&repository=lovelace-growspace-manager-card&category=lovelace)
 
 1. Add this repository to HACS under **Custom Repositories** with category `Frontend`.
 2. Install `lovelace-growspace-manager-card`.

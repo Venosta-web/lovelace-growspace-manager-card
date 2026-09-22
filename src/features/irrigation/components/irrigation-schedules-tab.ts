@@ -12,7 +12,9 @@
  * Time-of-day view geometry (the now-line position, `isPast` shading) is computed
  * here in `render()` from `Date.now()` — it is presentation, not state, so it
  * stays out of the pure ViewModel. The shared `<crop-steering-day-chart>` is
- * hosted unchanged with the `device` passed through the VM.
+ * hosted with the `device` passed through the VM, and with the VM's unsaved
+ * `steeringDraft` as its `strategyOverride` so the chart previews the same draft
+ * the panel around it already reads (growspace_manager_workspace#130).
  *
  * Tab Intents (the Dialog Shell owns their translation to SM events):
  *   - `schedules-begin-add`        detail: { type, time, duration }
@@ -319,6 +321,13 @@ export class IrrigationSchedulesTab extends LitElement {
         color: rgba(255, 255, 255, 0.9);
         font-weight: 500;
       }
+      /* [[Skip P2]]: the phase is configured and bypassed, so its chip stays in
+         the legend and reads as disabled rather than disappearing. */
+      .cs-leg-chip.skipped {
+        opacity: 0.45;
+        text-decoration: line-through;
+        text-decoration-color: rgba(255, 255, 255, 0.4);
+      }
       .cs-leg-dot {
         width: 8px;
         height: 8px;
@@ -440,7 +449,10 @@ export class IrrigationSchedulesTab extends LitElement {
 
         <div class="cs-timeline">
           <!-- Phase strip + shot track + substrate model: all owned by the shared chart -->
-          <crop-steering-day-chart .device=${this.vm.device}></crop-steering-day-chart>
+          <crop-steering-day-chart
+            .device=${this.vm.device}
+            .strategyOverride=${this.vm.steeringDraft}
+          ></crop-steering-day-chart>
 
           <!-- Legend: flags missing sensors only — the readout above already
                supplies the color-to-trace mapping for configured metrics -->
@@ -463,7 +475,13 @@ export class IrrigationSchedulesTab extends LitElement {
           <div class="cs-legend">
             ${cs.phases.map(
               (p) => html`
-                <span class="cs-leg-chip">
+                <span
+                  class="cs-leg-chip ${p.skipped ? 'skipped' : ''}"
+                  data-phase=${p.id}
+                  title=${p.skipped
+                    ? 'P2 is skipped: irrigation goes straight from P1 to P3. Its settings are kept.'
+                    : nothing}
+                >
                   <span class="cs-leg-dot" style="background:${p.color};"></span>
                   <strong>${p.label}</strong> ${p.name}${p.shotCount !== null
                     ? html` · ${p.shotCount} shots`

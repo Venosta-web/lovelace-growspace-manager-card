@@ -261,7 +261,12 @@ export async function runPublishing({
     }
   }
 
+  // The tag is reported because something downstream has to know what was
+  // published: the post-publish HACS update check replays the update from the
+  // previous release to this one, and a run that published nothing must not
+  // re-check a pair that was already checked. semantic-release answers `false`
+  // when there was no releasable commit.
   const outcome = release ? 'published' : 'no-release';
   writeOutput(`${outcome}\n`);
-  return { outcome, channel };
+  return { outcome, channel, tag: release ? (release.nextRelease?.gitTag ?? null) : null };
 }

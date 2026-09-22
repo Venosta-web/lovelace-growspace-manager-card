@@ -28,7 +28,7 @@ test.describe('Irrigation dialog', () => {
   test('adds and removes an irrigation time (round-trip)', async ({ page }) => {
     test.setTimeout(45000);
 
-    await growspaceCard.clickMenuItem(/irrigation/i);
+    await growspaceCard.clickMenuAction('irrigation');
     const dialog = new IrrigationDialog(page);
     await dialog.waitForOpen();
 
@@ -39,7 +39,7 @@ test.describe('Irrigation dialog', () => {
     // closed the dialog for us.
     await dialog.close();
     await growspaceCard.waitForCardReady();
-    await growspaceCard.clickMenuItem(/irrigation/i);
+    await growspaceCard.clickMenuAction('irrigation');
     await dialog.waitForOpen();
 
     await expect(dialog.hasIrrigationTime(SENTINEL_TIME)).toBeVisible();

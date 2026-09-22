@@ -880,7 +880,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
     (element as any).envTemperatureSensors = ['sensor.temp'];
     (element as any).envHumiditySensors = ['sensor.hum'];
     const envSpy = vi.fn();
-    element.addEventListener('configure-environment-submit', envSpy);
+    element.addEventListener('environment-change-requested', envSpy);
     (element as any)._submitGrowspaceAndEnv();
     expect(envSpy).toHaveBeenCalled();
   });

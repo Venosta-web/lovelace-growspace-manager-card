@@ -24,14 +24,23 @@ import {
   type Snapshot,
   type GetSnapshotsResponse,
   type CaptureSnapshotResponse,
+  type VisionCaptureResult,
+  type VisionCheckup,
   type VisionCheckupConfig,
   type VisionCheckupResult,
+  type VisionHistoryItem,
+  type VisionStatus,
   type GetVisionHistoryResponse,
+  type GetVisionHistoryV2Response,
+  type ResolvedMedia,
   type TriggerVisionCheckupResponse,
   type UpdateVisionCheckupConfigResponse,
   GetSnapshotsResponseSchema,
   CaptureSnapshotResponseSchema,
   GetVisionHistoryResponseSchema,
+  GetVisionHistoryV2ResponseSchema,
+  ResolvedMediaSchema,
+  VisionStatusSchema,
   TriggerVisionCheckupResponseSchema,
   UpdateVisionCheckupConfigResponseSchema,
 } from './schema';
@@ -41,9 +50,15 @@ export type {
   Snapshot,
   GetSnapshotsResponse,
   CaptureSnapshotResponse,
+  VisionCaptureResult,
+  VisionCheckup,
   VisionCheckupConfig,
   VisionCheckupResult,
+  VisionHistoryItem,
+  VisionStatus,
   GetVisionHistoryResponse,
+  GetVisionHistoryV2Response,
+  ResolvedMedia,
   TriggerVisionCheckupResponse,
   UpdateVisionCheckupConfigResponse,
 };
@@ -54,6 +69,8 @@ export type {
 
 export const snapshots$ = atom<Snapshot[]>([]);
 export const visionHistory$ = atom<VisionCheckupResult[]>([]);
+export const visionHistoryV2$ = atom<VisionHistoryItem[]>([]);
+export const visionStatus$ = atom<VisionStatus | null>(null);
 
 // ---------------------------------------------------------------------------
 // Bootstrap writes (called by SyncService when fresh data arrives)
@@ -131,6 +148,45 @@ export async function getVisionHistory(
   );
   visionHistory$.set(response.history);
   return response;
+}
+
+/** Fetch the cached Growspace Vision service status. */
+export async function getVisionStatus(): Promise<VisionStatus> {
+  const response = await hassCall('growspace_manager/get_vision_status', {}, VisionStatusSchema);
+  visionStatus$.set(response);
+  return response;
+}
+
+/** Fetch versioned capture evidence without mutating the legacy dialog atom. */
+export async function getVisionHistoryV2(
+  growspaceId: string,
+  limit: number = 10
+): Promise<GetVisionHistoryV2Response> {
+  const response = await hassCall(
+    'growspace_manager/get_vision_history_v2',
+    { growspace_id: growspaceId, limit },
+    GetVisionHistoryV2ResponseSchema
+  );
+  visionHistoryV2$.set(response.history);
+  return response;
+}
+
+/**
+ * Resolve one capture's `media-source://` identifier to a signed URL.
+ *
+ * `evidence_v1` deliberately puts no image path on the wire, so a frame is only
+ * viewable through Home Assistant's own `media_source/resolve_media`. The URL it
+ * returns is signed and expiring: cache it for the render, never persist it.
+ *
+ * @param mediaContentId - The capture's `image.media_content_id`
+ */
+export async function resolveVisionImage(mediaContentId: string): Promise<string> {
+  const response = await hassCall(
+    'media_source/resolve_media',
+    { media_content_id: mediaContentId },
+    ResolvedMediaSchema
+  );
+  return response.url;
 }
 
 /**

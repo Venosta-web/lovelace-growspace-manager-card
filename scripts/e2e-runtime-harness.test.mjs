@@ -151,12 +151,14 @@ async function managedFixture() {
   const rootDirectory = await mkdtemp(path.join(tmpdir(), 'growspace-managed-harness-'));
   const integrationDirectory = path.join(rootDirectory, 'integration');
   const workspaceDirectory = path.join(rootDirectory, 'workspace');
+  const tcDirectory = path.join(rootDirectory, 'tc');
   const artifactDirectory = path.join(rootDirectory, '.artifacts', 'e2e-managed');
   const executionLog = path.join(rootDirectory, 'managed-execution.jsonl');
   const binDirectory = path.join(rootDirectory, 'bin');
   const paths = [
     path.join(integrationDirectory, 'custom_components', 'growspace_manager'),
     path.join(workspaceDirectory, 'ha-dev', 'packages'),
+    path.join(tcDirectory, 'custom_components', 'growspace_manager_tc'),
     path.join(rootDirectory, 'tests', 'e2e', 'ha-config'),
     path.join(rootDirectory, 'tests', 'e2e', 'fixtures'),
     path.join(rootDirectory, 'brand'),
@@ -170,6 +172,7 @@ async function managedFixture() {
       path.join(integrationDirectory, 'custom_components', 'growspace_manager', 'manifest.json'),
       '{}',
     ],
+    [path.join(tcDirectory, 'custom_components', 'growspace_manager_tc', 'manifest.json'), '{}'],
     [
       path.join(workspaceDirectory, 'ha-dev', 'packages', 'e2e_simulated_sensors.yaml'),
       'homeassistant:',
@@ -282,6 +285,7 @@ if (command === 'npm' && args[0] === 'run' && args[1] === 'build') {
     artifactDirectory,
     executionLog,
     integrationDirectory,
+    tcDirectory,
     rootDirectory,
     workspaceDirectory,
     environment(overrides = {}) {
@@ -314,6 +318,7 @@ test('managed runs own the full lifecycle and clean successful diagnostics', asy
     managedOptions: {
       integrationDirectory: runtime.integrationDirectory,
       workspaceDirectory: runtime.workspaceDirectory,
+      tcDirectory: runtime.tcDirectory,
     },
   });
 
@@ -339,6 +344,11 @@ test('managed runs own the full lifecycle and clean successful diagnostics', asy
   const dockerRun = executions.find((execution) => execution.phase === 'docker-run');
   assert.match(dockerRun.args[dockerRun.args.indexOf('--name') + 1], /^growspace-card-e2e-/);
   assert.equal(dockerRun.args[dockerRun.args.indexOf('--publish') + 1], '127.0.0.1::8123');
+  const tcMountIndex = dockerRun.args.findIndex((argument) =>
+    argument.includes('growspace_manager_tc:')
+  );
+  assert.ok(tcMountIndex > 0);
+  assert.equal(dockerRun.args[tcMountIndex - 1], '--volume');
   const playwright = executions.find((execution) => execution.phase === 'playwright');
   assert.equal(playwright.baseUrl, 'http://127.0.0.1:49123');
   assert.equal(playwright.preflight, E2E_PREFLIGHT_COMPLETE);
@@ -360,6 +370,7 @@ test('managed failures preserve evidence, clean up, and keep the primary status'
     managedOptions: {
       integrationDirectory: runtime.integrationDirectory,
       workspaceDirectory: runtime.workspaceDirectory,
+      tcDirectory: runtime.tcDirectory,
     },
   });
 
@@ -394,6 +405,7 @@ test('managed cleanup failures fail an otherwise successful run', async (t) => {
     managedOptions: {
       integrationDirectory: runtime.integrationDirectory,
       workspaceDirectory: runtime.workspaceDirectory,
+      tcDirectory: runtime.tcDirectory,
     },
   });
 
@@ -417,6 +429,29 @@ test('managed runs validate checkout inputs before invoking Docker', async (t) =
     managedOptions: {
       integrationDirectory: runtime.integrationDirectory,
       workspaceDirectory: runtime.workspaceDirectory,
+      tcDirectory: runtime.tcDirectory,
+    },
+  });
+
+  assert.equal(status, 1);
+  await assert.rejects(readFile(runtime.executionLog), { code: 'ENOENT' });
+});
+
+test('managed runs require the TC checkout before invoking Docker', async (t) => {
+  const runtime = await managedFixture();
+  t.after(() => rm(runtime.rootDirectory, { recursive: true, force: true }));
+  await rm(
+    path.join(runtime.tcDirectory, 'custom_components', 'growspace_manager_tc', 'manifest.json')
+  );
+
+  const status = await runE2ERuntimeHarness({
+    mode: 'managed',
+    rootDirectory: runtime.rootDirectory,
+    environment: runtime.environment(),
+    managedOptions: {
+      integrationDirectory: runtime.integrationDirectory,
+      workspaceDirectory: runtime.workspaceDirectory,
+      tcDirectory: runtime.tcDirectory,
     },
   });
 

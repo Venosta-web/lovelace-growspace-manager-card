@@ -4,6 +4,8 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 import type { GrowspaceCarouselCardConfig } from '../lib/types/config';
 import '../growspace-manager-card';
 import { reducedMotion } from '../styles/reduced-motion.styles';
+import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 
 @customElement('growspace-carousel-card')
 export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
@@ -38,7 +40,13 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-carousel-card-editor.js');
+    const editor = await loadLazyChunk(
+      LAZY_CHUNKS.carouselCardEditor,
+      () => import('./editors/growspace-carousel-card-editor.js')
+    );
+    if (!editor) {
+      return lazyChunkErrorEditor(LAZY_CHUNKS.carouselCardEditor) as unknown as LovelaceCardEditor;
+    }
     return document.createElement('growspace-carousel-card-editor') as LovelaceCardEditor;
   }
 

@@ -4,7 +4,7 @@
  * The pure derivation behind the Config Dialog's Tanks tab — the list of
  * configured irrigation tanks plus the inline add/edit form. This tab is a
  * **hybrid**: the tank *list* lives in `environmentDraft.irrigationTanks` (so a
- * saved tab rides the [[Environment Save Composer]] like the env-cluster tabs),
+ * saved tab rides the [[Environment Change]] like the env-cluster tabs),
  * while the inline-edit *draft* is its own `tabs.tanks.sub` SM sub-state
  * (`idle | adding | editing`, like the Notifications tab). The VM projects both:
  * the formatted rows from the env draft, and the open editor from the sub-state.
