@@ -6,6 +6,7 @@ import type { LabelFieldVisibility } from '../lib/types/dialog';
 import { setDevices } from '../slices/grid';
 import { printLabel } from '../slices/plant';
 import { buildQrTargetUrl, deriveLabelFieldValues } from './print-label-logic';
+import capabilityFixture from '../../tests/fixtures/contract/label_template_capability_v1.json';
 
 // The dialog now calls the Plant slice `printLabel` mutator directly.
 vi.mock('../slices/plant', () => ({
@@ -735,5 +736,107 @@ describe('PrintLabelDialog – DOM interactions', () => {
     await el.updateComplete;
 
     expect((el as any)._selectedDeviceId).toBe('image.printer_b_last_label_made');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The strain library across integration versions (hub #242)
+// ---------------------------------------------------------------------------
+
+describe('PrintLabelDialog – strain library, new card against each backend', () => {
+  const strainRequest = {
+    source: 'strain_library' as const,
+    strainName: 'Blue Dream',
+    phenotype: '#1',
+    lineage: 'Blueberry x Haze',
+    breeder: 'DJ Short',
+    breederLogo: '',
+  };
+  const capability = capabilityFixture as never;
+
+  async function open(support: unknown, dialogState: unknown = strainRequest) {
+    return fixture<PrintLabelDialog>(html`
+      <print-label-dialog
+        .open=${true}
+        .hass=${makeHass()}
+        .store=${makeMockStore()}
+        .dialogState=${dialogState}
+        .support=${support}
+      ></print-label-dialog>
+    `);
+  }
+
+  it('prints through a Label Template against a backend with the complete capability', async () => {
+    const el = await open({ status: 'available', capability });
+
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('growspace-label-record-print')).not.toBeNull()
+    );
+    const view = el.shadowRoot!.querySelector('growspace-label-record-print') as any;
+    expect(view.capability).toBe(capability);
+    expect(view.strain).toBe('Blue Dream');
+    expect(view.phenotype).toBe('#1');
+    // No Classic form to press, and nothing sent to the Classic service.
+    expect(el.shadowRoot!.querySelector('label-preview')).toBeNull();
+    expect(el.shadowRoot!.querySelector('.btn-print')).toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-role="compatibility"]')).toBeNull();
+    expect(printLabel).not.toHaveBeenCalled();
+  });
+
+  it('waits for the capability rather than offering the Classic form meanwhile', async () => {
+    const el = await open({ status: 'unknown' });
+
+    expect(el.shadowRoot!.querySelector('[data-path="template"] [role="status"]')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('label-preview')).toBeNull();
+    expect(el.shadowRoot!.querySelector('.btn-print')).toBeNull();
+
+    el.support = { status: 'available', capability };
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('growspace-label-record-print')).not.toBeNull()
+    );
+    expect(printLabel).not.toHaveBeenCalled();
+  });
+
+  it('keeps the Classic dialog against an older backend, labelled as the compatibility workflow', async () => {
+    const el = await open({ status: 'classic', reason: 'unknown command' });
+
+    const notice = el.shadowRoot!.querySelector('[data-role="compatibility"]')!;
+    expect(notice.textContent).toContain('Compatibility workflow');
+    expect(notice.textContent).toContain('does not offer label templates');
+    expect(el.shadowRoot!.querySelector('label-preview')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('growspace-label-record-print')).toBeNull();
+  });
+
+  it('sends the strain itself to the Classic service, since there is no plant to read', async () => {
+    const el = await open({ status: 'classic', reason: 'unknown command' });
+    await (el as any)._submit();
+
+    expect(printLabel).toHaveBeenCalledTimes(1);
+    const sent = vi.mocked(printLabel).mock.calls[0][0];
+    expect(sent).toMatchObject({
+      strain: 'Blue Dream',
+      phenotype: '#1',
+      lineage: 'Blueberry x Haze',
+      breeder: 'DJ Short',
+    });
+    // The Classic schema takes a string or nothing: an empty logo is nothing.
+    expect(sent).not.toHaveProperty('plantId', expect.anything());
+    expect(sent.breederLogo).toBeUndefined();
+  });
+
+  it('says why when the backend publishes a capability this card cannot use', async () => {
+    const el = await open({ status: 'incompatible', reason: 'contract.major' });
+
+    const notice = el.shadowRoot!.querySelector('[data-role="compatibility"]')!;
+    expect(notice.textContent).toContain('this card cannot use');
+    expect(el.shadowRoot!.querySelector('label-preview')).not.toBeNull();
+  });
+
+  it('leaves a plant label Classic and unlabelled whatever the backend offers', async () => {
+    const el = await open({ status: 'available', capability }, { plantId: 'p1' });
+
+    expect(el.shadowRoot!.querySelector('label-preview')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-path="template"]')).toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-role="compatibility"]')).toBeNull();
   });
 });

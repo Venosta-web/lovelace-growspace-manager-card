@@ -1764,6 +1764,7 @@ export class GrowspaceDialogHost extends LitElement {
       <print-label-dialog
         .open=${true}
         .dialogState=${active.payload}
+        .support=${this._labelSupportController.value}
         @close=${() => this._closeDialogIfActive('PRINT_LABEL')}
         @data-changed=${() => this._handleDataChanged()}
       ></print-label-dialog>

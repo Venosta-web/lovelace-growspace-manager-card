@@ -39,6 +39,8 @@ import './template-library';
 // The batch review lives in this chunk too: the batch dialog loads it only
 // once the capability says the template path exists.
 import './batch/growspace-label-batch';
+// And the strain library's single print, loaded the same way by its dialog.
+import './record/growspace-label-record-print';
 import { getHass } from '../../services/hass-call';
 import { TemplateDraftSchema } from '../../slices/labels/draft-schema';
 import type { RecoveryDraft } from '../../slices/labels/management';

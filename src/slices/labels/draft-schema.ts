@@ -234,6 +234,25 @@ export const LibrarySnapshotSchema = z.object({
       head_revision: z.number().int(),
     })
   ),
+  /**
+   * What each Label Size prints by default, for anyone who prints: the
+   * administrator's override where it resolves, else the size's Factory
+   * Template. `null` for a size nothing resolves on; empty while the store is
+   * unreadable.
+   */
+  effective_defaults: z.record(
+    z.string(),
+    z
+      .object({
+        ref: z.object({ kind: z.string(), id: z.string() }),
+        label_size_id: z.string(),
+        layout_digest: z.string(),
+        revision: z.number().int(),
+        name: z.string(),
+        via: z.string(),
+      })
+      .nullable()
+  ),
   /** This administrator's own, and empty for anyone else — the same answer as none. */
   drafts: z.array(
     TemplateDraftSchema.extend({

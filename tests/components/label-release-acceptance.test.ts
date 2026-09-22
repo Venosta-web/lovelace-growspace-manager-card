@@ -37,6 +37,7 @@ import { GrowspaceLabelEditor } from '../../src/features/labels/editor/growspace
 import { GrowspaceLabelPrintPanel } from '../../src/features/labels/editor/growspace-label-print-panel';
 import { GrowspaceLabelBatch } from '../../src/features/labels/batch/growspace-label-batch';
 import { GrowspaceLabelTemplates } from '../../src/features/labels/label-templates';
+import { GrowspaceLabelRecordPrint } from '../../src/features/labels/record/growspace-label-record-print';
 import { DraftSession } from '../../src/features/labels/editor/draft-session';
 import {
   detectLabelTemplateSupport,
@@ -100,6 +101,7 @@ for (const [name, element] of [
   ['growspace-label-print-panel', GrowspaceLabelPrintPanel],
   ['growspace-label-batch', GrowspaceLabelBatch],
   ['growspace-label-templates', GrowspaceLabelTemplates],
+  ['growspace-label-record-print', GrowspaceLabelRecordPrint],
 ] as const) {
   if (!customElements.get(name)) customElements.define(name, element);
 }
@@ -259,6 +261,57 @@ async function batchReview(): Promise<LitElement> {
   return view;
 }
 
+/** The strain library's print, mounted for one saved strain. */
+async function strainPrint(): Promise<GrowspaceLabelRecordPrint> {
+  mocks.hass.current = {
+    user: { is_admin: false },
+    states: { [PRINTER]: { attributes: { friendly_name: 'B1 Last Label Made' } } },
+  };
+  const view = await fixture<GrowspaceLabelRecordPrint>(
+    '<growspace-label-record-print></growspace-label-record-print>'
+  );
+  theme(view);
+  view.capability = structuredClone(CAPABILITY);
+  view.strain = 'Blue Dream';
+  view.phenotype = '#1';
+  await settle(view);
+  return view;
+}
+
+/** The strain library's print, previewed and blocked: every reason, and what to do. */
+async function strainPrintBlocked(): Promise<LitElement> {
+  const view = await strainPrint();
+  const blocked = structuredClone(recordPreviewFixture) as Record<string, unknown> & {
+    decision: { allowed: boolean; blocked_by: string[] };
+  };
+  blocked.decision = {
+    ...blocked.decision,
+    allowed: false,
+    blocked_by: ['profile_not_product_verified', 'local_calibration_missing'],
+  };
+  blocked.recovery = 'calibrate';
+  mocks.recordPreview.mockResolvedValue(blocked);
+  $<HTMLButtonElement>(view, '[data-action="preview"]')!.click();
+  await vi.waitFor(() => expect($(view, '[data-role="blockers"]')).not.toBeNull());
+  await settle(view);
+  return view;
+}
+
+/** The strain library's print, refused by the integration: the recovery offered. */
+async function strainPrintRefused(): Promise<LitElement> {
+  const view = await strainPrint();
+  mocks.recordPreview.mockResolvedValue(recordPreviewFixture);
+  mocks.print.mockResolvedValue(refusedFixture);
+  $<HTMLButtonElement>(view, '[data-action="preview"]')!.click();
+  await vi.waitFor(() =>
+    expect($<HTMLButtonElement>(view, '[data-action="print"]')?.disabled).toBe(false)
+  );
+  $<HTMLButtonElement>(view, '[data-action="print"]')!.click();
+  await vi.waitFor(() => expect($(view, '[data-role="refusal"]')).not.toBeNull());
+  await settle(view);
+  return view;
+}
+
 /** The template view a user chooses and previews a layout from. */
 async function templates(): Promise<LitElement> {
   mocks.hassCall.mockResolvedValueOnce(structuredClone(capabilityFixture));
@@ -280,6 +333,8 @@ const SURFACES: [string, () => Promise<LitElement>][] = [
   ['calibration, taking readings', calibrating],
   ['batch preflight, under review', batchReview],
   ['the template view', templates],
+  ['strain-library print, blocked with its recovery', strainPrintBlocked],
+  ['strain-library print, refused by the integration', strainPrintRefused],
 ];
 
 beforeEach(() => {
