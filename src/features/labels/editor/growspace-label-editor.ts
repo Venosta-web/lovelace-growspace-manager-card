@@ -233,16 +233,38 @@ export class GrowspaceLabelEditor extends LitElement {
         opacity: 0.5;
       }
 
+      /* Darkened toward the theme's own text colour rather than toward black:
+         --primary-color reads 2.6:1 on this panel's light-theme background
+         undarkened, but the theme's text colour is already correct per theme
+         (dark-on-light, light-on-dark), so mixing toward it holds 4.5:1 on a
+         light background without dimming the raw token's own contrast on a
+         dark one, where it already passes. */
       button[aria-pressed='true'] {
-        border-color: var(--primary-color, #4caf50);
-        color: var(--primary-color, #4caf50);
+        border-color: color-mix(
+          in srgb,
+          var(--primary-color, #4caf50) 55%,
+          var(--primary-text-color, #212121)
+        );
+        color: color-mix(
+          in srgb,
+          var(--primary-color, #4caf50) 55%,
+          var(--primary-text-color, #212121)
+        );
         text-decoration: underline;
         text-underline-offset: 3px;
       }
 
       button.primary:not([disabled]) {
-        border-color: var(--primary-color, #4caf50);
-        color: var(--primary-color, #4caf50);
+        border-color: color-mix(
+          in srgb,
+          var(--primary-color, #4caf50) 55%,
+          var(--primary-text-color, #212121)
+        );
+        color: color-mix(
+          in srgb,
+          var(--primary-color, #4caf50) 55%,
+          var(--primary-text-color, #212121)
+        );
       }
 
       button svg {
@@ -459,7 +481,14 @@ export class GrowspaceLabelEditor extends LitElement {
         border-radius: var(--border-radius-md, 8px);
         padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
         margin: 0 var(--spacing-md, 16px);
-        color: var(--error-color, #f44336);
+        /* Same treatment as button[aria-pressed='true'] above: 3.68:1
+           undarkened on a light background, mixed toward the theme's own
+           text colour to hold 4.5:1 there and stay clear of it on dark. */
+        color: color-mix(
+          in srgb,
+          var(--error-color, #f44336) 55%,
+          var(--primary-text-color, #212121)
+        );
       }
 
       .refusal button {
@@ -551,7 +580,13 @@ export class GrowspaceLabelEditor extends LitElement {
         content: 'ℹ ';
       }
       .severity[data-severity='error'] {
-        color: var(--error-color);
+        /* Same treatment as .refusal above: 3.53:1 undarkened on a light
+           background. */
+        color: color-mix(
+          in srgb,
+          var(--error-color, #f44336) 55%,
+          var(--primary-text-color, #212121)
+        );
       }
 
       /* Visible to a screen reader, invisible to everyone else. Never
