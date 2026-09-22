@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
@@ -24,6 +24,9 @@ import {
   DEFAULT_LABEL_FIELDS,
   deriveLabelFieldValues,
 } from './print-label-logic';
+import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
+import type { LabelTemplateSupport } from '../slices/labels';
+import '../features/shared/ui/lazy-chunk-error';
 
 const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
   { id: '50x30', label: '50×30' },
@@ -34,6 +37,12 @@ const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
 ];
 
 type PrintState = 'idle' | 'printing' | 'done' | 'error';
+type ChunkState = 'idle' | 'loading' | 'ready' | 'missing';
+
+/** A value worth sending to the Classic service: `str` there, never empty or null. */
+function text(value: string | null | undefined): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
 
 @customElement('print-label-dialog')
 export class PrintLabelDialog extends LitElement {
@@ -45,6 +54,16 @@ export class PrintLabelDialog extends LitElement {
 
   @property({ type: Boolean }) public open = false;
   @property({ attribute: false }) public dialogState: PrintLabelDialogState | undefined;
+  /**
+   * Page-global Label Template capability, read from `labelTemplateSupport$`
+   * by the host. A strain-library request prints through a Label Template
+   * when it is `available`, and never through the Classic service then;
+   * without it this is the Classic dialog, marked as the compatibility
+   * workflow. Plant requests are Classic either way.
+   */
+  @property({ attribute: false }) public support?: LabelTemplateSupport;
+
+  @state() private _templateChunk: ChunkState = 'idle';
 
   @state() private _selectedDeviceId = '';
   @state() private _fields: LabelFieldVisibility = { ...DEFAULT_LABEL_FIELDS };
@@ -59,6 +78,22 @@ export class PrintLabelDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
+      .template-path {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 0 4px;
+      }
+      .compatibility-notice {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0 0 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        border-radius: var(--border-radius-sm, 8px);
+        font-size: var(--font-size-sm);
+        line-height: 1.45;
+      }
       .two-col {
         display: grid;
         grid-template-columns: 1fr 1.4fr;
@@ -372,6 +407,93 @@ export class PrintLabelDialog extends LitElement {
     if (changedProps.has('open') && this.open) {
       this._resetForm();
     }
+    if (changedProps.has('support') || changedProps.has('open')) {
+      void this._loadTemplateChunk();
+    }
+  }
+
+  /** Whether this request is the strain library's, which templates can print. */
+  private get _fromStrainLibrary(): boolean {
+    return this.dialogState?.source === 'strain_library';
+  }
+
+  /** Fetch the template path only once the capability says it exists. */
+  private async _loadTemplateChunk(): Promise<void> {
+    if (!this.open || !this._fromStrainLibrary) return;
+    if (this.support?.status !== 'available' || this._templateChunk !== 'idle') return;
+    this._templateChunk = 'loading';
+    const view = await loadLazyChunk(
+      LAZY_CHUNKS.labelTemplates,
+      () => import('../features/labels/label-templates')
+    );
+    this._templateChunk = view ? 'ready' : 'missing';
+  }
+
+  private get _language(): string {
+    return this.hass?.language ?? 'en';
+  }
+
+  /**
+   * The strain library's request, while the capability is still being asked
+   * for or once it says templates exist. Never the Classic form: a request
+   * pressed before the answer arrived must not print the old way on an
+   * integration that serves the new one.
+   */
+  private _renderTemplatePath(): TemplateResult {
+    const ds = this.dialogState;
+    const support = this.support;
+    const language = this._language;
+    const subtitle =
+      ds?.phenotype && ds.phenotype !== 'default'
+        ? `${ds.strainName ?? ''} · ${ds.phenotype}`
+        : (ds?.strainName ?? '');
+    return html`
+      <gs-dialog
+        .open=${this.open}
+        heading="Print Label"
+        .subtitle=${subtitle}
+        .iconPath=${mdiPrinter}
+        stageColor="var(--gm-info-color)"
+        @close=${this._close}
+      >
+        <div class="template-path" data-path="template">
+          ${support?.status !== 'available' || this._templateChunk === 'loading'
+            ? html`<p role="status">${localize('labels.view_loading', '', '', language)}</p>`
+            : this._templateChunk === 'missing'
+              ? html`<growspace-lazy-chunk-error
+                  .chunk=${LAZY_CHUNKS.labelTemplates}
+                ></growspace-lazy-chunk-error>`
+              : this._templateChunk === 'ready'
+                ? html`<growspace-label-record-print
+                    .capability=${support.capability}
+                    .strain=${ds?.strainName ?? ''}
+                    .phenotype=${ds?.phenotype ?? null}
+                    .language=${language}
+                  ></growspace-label-record-print>`
+                : html`<p role="status">${localize('labels.view_loading', '', '', language)}</p>`}
+        </div>
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close}>
+            ${localize('labels.batch_close', '', '', language)}
+          </button>
+        </div>
+      </gs-dialog>
+    `;
+  }
+
+  /** The Classic dialog, when a strain-library request reaches it: say why. */
+  private _renderCompatibilityNotice(): TemplateResult | typeof nothing {
+    if (!this._fromStrainLibrary) return nothing;
+    const key =
+      this.support?.status === 'incompatible'
+        ? 'labels.record_compatibility_incompatible'
+        : 'labels.record_compatibility_classic';
+    return html`
+      <div class="compatibility-notice" data-role="compatibility" role="note">
+        <strong>${localize('labels.record_compatibility_title', '', '', this._language)}</strong>
+        <span>${localize(key, '', '', this._language)}</span>
+      </div>
+    `;
   }
 
   private _resetForm() {
@@ -404,10 +526,23 @@ export class PrintLabelDialog extends LitElement {
     this._printState = 'printing';
     this._printProgress = 0;
 
+    const ds = this.dialogState;
+    // A strain-library label has no plant to read: the strain travels itself.
+    const strain = ds.plantId
+      ? {}
+      : {
+          strain: text(ds.strainName),
+          phenotype: text(ds.phenotype),
+          breeder: text(ds.breeder),
+          lineage: text(ds.lineage),
+          breederLogo: text(ds.breederLogo),
+        };
+
     try {
       for (let i = 0; i < this._copies; i++) {
         await printLabel({
-          plantId: this.dialogState.plantId,
+          plantId: ds.plantId,
+          ...strain,
           fields: this._fields,
           sizeId: this._sizeId,
           density: this._density,
@@ -458,6 +593,12 @@ export class PrintLabelDialog extends LitElement {
 
   protected render() {
     if (!this.open) return nothing;
+    if (
+      this._fromStrainLibrary &&
+      (this.support?.status === 'unknown' || this.support?.status === 'available')
+    ) {
+      return this._renderTemplatePath();
+    }
 
     const ds = this.dialogState;
     const values = deriveLabelFieldValues(ds?.plantId, ds);
@@ -476,6 +617,7 @@ export class PrintLabelDialog extends LitElement {
         stageColor="var(--gm-info-color)"
         @close=${this._close}
       >
+        ${this._renderCompatibilityNotice()}
         <div class="two-col">
           <!-- Settings (first in DOM so mobile stacks it above preview) -->
           <div class="settings-wrapper">

@@ -282,6 +282,7 @@ export class StrainEditorView extends LitElement {
     this.dispatchEvent(
       new CustomEvent('open-print-label', {
         detail: {
+          source: 'strain_library',
           strainName: s.strain,
           phenotype: s.phenotype,
           lineage: s.lineage,

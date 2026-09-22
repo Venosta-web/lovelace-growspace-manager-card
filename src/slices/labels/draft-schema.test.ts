@@ -80,6 +80,10 @@ describe('the recorded draft payloads', () => {
     if (parsed.outcome !== 'ok') return;
     expect(parsed.library.store.readable).toBe(true);
     expect(parsed.library.generation).not.toBeNull();
+    expect(parsed.library.effective_defaults['growspace.stock.50x30.v1']?.ref).toEqual({
+      kind: 'factory',
+      id: 'growspace.factory.50x30',
+    });
   });
 });
 

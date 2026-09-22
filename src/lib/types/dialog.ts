@@ -159,6 +159,11 @@ export interface IPMDialogState {
 export type QrTarget = 'web' | 'deeplink';
 
 export interface PrintLabelDialogState {
+  /**
+   * Where the request came from. The strain library prints through a Label
+   * Template when the integration serves one; everything else is Classic.
+   */
+  source?: 'strain_library';
   plantId?: string;
   strainName?: string;
   phenotype?: string;
