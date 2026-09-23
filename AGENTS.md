@@ -129,5 +129,11 @@ chunks. It gates nothing — see `docs/adr/0053` — so a red `Release` run afte
 publish means the shipped release's chunk graph is broken, not that the publish
 failed.
 
+Publishing is also followed by a prune of the GitHub releases (never the tags) of every
+prerelease older than the newest 20. HACS reads one page of 30 releases and installs the
+first stable on it, so without the prune a new user with `show_beta` off has nothing to
+install — see `docs/adr/0059`. Never trigger a workflow on `release` events: releases are
+published with `GITHUB_TOKEN`, which starts no workflow.
+
 Before opening or updating a PR, inspect `.github/workflows/pr-title.yml` and format the
 title as a Conventional Commit (`type(optional-scope): description`) using an allowed type.

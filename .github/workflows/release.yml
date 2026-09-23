@@ -101,6 +101,14 @@ jobs:
     with:
       tag: ${{ needs.prerelease.outputs.tag || needs.stable-release.outputs.tag }}
 
+  # Post-publish and a gate on neither channel, for the same reasons as the
+  # update check. Every publish pushes an older prerelease further down the
+  # listing HACS reads, so every publish is when the window is restored.
+  release-window:
+    needs: [prerelease, stable-release]
+    if: always() && (needs.prerelease.outputs.tag || needs.stable-release.outputs.tag)
+    uses: ./.github/workflows/release-window.yml
+
   # The public demo is release output. Calling its reusable workflow here keeps
   # Pages behind the same validation and stable-publishing transaction instead
   # of racing it as an independent main-push workflow.
