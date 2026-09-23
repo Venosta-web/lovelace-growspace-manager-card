@@ -121,6 +121,19 @@ beforeEach(() => {
   ]);
 });
 
+test('measurement problems follow the small type token without changing their default size', async () => {
+  const panel = await fixture<GrowspaceLabelPrintPanel>(
+    '<growspace-label-print-panel></growspace-label-print-panel>'
+  );
+  const problem = document.createElement('p');
+  problem.className = 'problem';
+  panel.renderRoot.append(problem);
+
+  expect(getComputedStyle(problem).fontSize).toBe('13px');
+  panel.style.setProperty('--font-size-sm', '16px');
+  expect(getComputedStyle(problem).fontSize).toBe('15px');
+});
+
 describe('printer and profile', () => {
   test('selects the first printer and the profile for this stock', async () => {
     const { panel, session } = await mount();
