@@ -14,7 +14,6 @@ import { fetchNutrientPresets, fetchIPMPresets, fetchNutrientInventory } from '.
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
 
-import './growspace-env-chart';
 import type { GrowspaceDialogHost } from './features/ui/containers/growspace-dialog-host.container';
 import './features/ui/components/growspace-edit-mode-banner-ui';
 import './features/ui/containers/growspace-header.container';

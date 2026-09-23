@@ -1,4 +1,6 @@
 import { atom } from 'nanostores';
+import { tcPresence$, type TcPresence } from './presence';
+export { tcPresence$, type TcPresence } from './presence';
 import { hassCall } from '../../services/hass-call';
 import type { StrainEntry } from '../../types';
 import {
@@ -129,13 +131,6 @@ export const TC_FEATURE_MAINTENANCE = 'maintenance';
  * way, and a card that guessed otherwise would render an empty shell to users
  * who never installed the integration.
  */
-export type TcPresence =
-  | { status: 'unknown' }
-  | { status: 'present'; manifest: TcManifest }
-  | { status: 'absent'; reason: string };
-
-export const tcPresence$ = atom<TcPresence>({ status: 'unknown' });
-
 let probe: Promise<TcPresence> | null = null;
 
 /**

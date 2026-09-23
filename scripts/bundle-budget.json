@@ -5,8 +5,7 @@
       "id": "entry",
       "label": "Entry",
       "match": "growspace-manager-card.js",
-      "maxGzipBytes": 250000,
-      "stage2": { "maxGzipBytes": 170000, "by": "#970" }
+      "maxGzipBytes": 195000
     },
     {
       "id": "three",
@@ -31,6 +30,11 @@
       "date": "2026-09-23",
       "rules": ["three", "lazy"],
       "change": "Stage 2 of #971, activated by #969. Every dialog is now its own lazy chunk, so the catch-all drops from 200,000 to its Stage 2 target of 60,000, and both Stage 2 targets are retired as met (three's already equalled its limit). No dialog needs a rule of its own. The irrigation dialog was expected to, but it is the largest at 45,626 bytes gzip. Measured on 8f1b4002 plus #969: irrigation-dialog 45,626, strain-library-dialog 39,706, label-templates 37,841, config-dialog 37,552, dialog host 9,231 bytes gzip."
+    },
+    {
+      "date": "2026-09-23",
+      "rules": ["entry"],
+      "change": "#970 lowers the measured production entry from 244,100 to 193,300 bytes gzip after removing luxon, moving TC/label probes and optional graphs behind lazy chunks. The 170,000-byte target remains out of reach without a larger change to eagerly used chart/header code or the Zod classic schema style: Zod classic itself imports JSON-schema conversion and its mini flavor has a different schema API. Set the enforceable entry limit to 195,000 bytes from this build, and retire the unmet Stage 2 target."
     }
   ]
 }

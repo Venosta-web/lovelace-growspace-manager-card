@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
 import { setHass } from '../services/hass-call';
-import { detectTc, type TcPresence } from '../slices/tc';
+import type { TcPresence } from '../slices/tc/presence';
 import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
 import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 import '../features/shared/ui/lazy-chunk-error';
@@ -132,6 +132,7 @@ export class GrowspaceTcCard extends LitElement implements LovelaceCard {
   }
 
   private async _detect(): Promise<void> {
+    const { detectTc } = await import('../slices/tc');
     const presence = await detectTc();
     if (presence.status === 'present') {
       // Fetched here, after the answer — this import is the only reference to

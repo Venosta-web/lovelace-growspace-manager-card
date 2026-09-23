@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing, type PropertyValues, type TemplateResult } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { mdiFullscreen, mdiFullscreenExit } from '@mdi/js';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -8,11 +8,10 @@ import type { MetricDescriptor } from '../../../slices/metric-descriptors';
 import { localizeWithParams } from '../../../localize/localize';
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
-import '../../../growspace-env-chart';
 import { MetricKey, metricComboFor } from '../../environment/constants';
-import '../../environment/components/tank-water-chart';
 import '../../environment/components/crop-steering-day-chart';
-import '../../environment/components/metric-combo-chart';
+import { LAZY_CHUNKS, loadLazyChunk, type LazyChunk } from '../../../lib/lazy-chunk';
+import '../../shared/ui/lazy-chunk-error';
 
 export type AnalyticsItem = {
   /**
@@ -27,6 +26,48 @@ export type AnalyticsItem = {
 
 @customElement('growspace-analytics-ui')
 export class GrowspaceAnalyticsUI extends LitElement {
+  @state() private _missingCharts = new Set<string>();
+  private _loadingCharts = new Set<string>();
+
+  protected willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (!changed.has('items')) return;
+    for (const item of this.items) {
+      const chunk = this._chartChunk(item);
+      if (chunk) void this._loadChart(chunk);
+    }
+  }
+
+  private _chartChunk(item: AnalyticsItem): LazyChunk | null {
+    if (item.type === 'combo') return LAZY_CHUNKS.metricComboChart;
+    if (item.metrics[0] === MetricKey.WATER || item.metrics[0] === MetricKey.IRRIGATION_TANK_LEVEL)
+      return LAZY_CHUNKS.tankWaterChart;
+    if (item.metrics[0] === MetricKey.STEERING_PHASE) return null;
+    return LAZY_CHUNKS.envChart;
+  }
+
+  private async _loadChart(chunk: LazyChunk): Promise<void> {
+    if (
+      this._loadingCharts.has(chunk.name) ||
+      customElements.get(
+        chunk.name === LAZY_CHUNKS.envChart.name ? 'growspace-env-chart' : chunk.name
+      )
+    )
+      return;
+    this._loadingCharts.add(chunk.name);
+    const loaded = await loadLazyChunk<unknown>(chunk, () => {
+      switch (chunk.name) {
+        case LAZY_CHUNKS.tankWaterChart.name:
+          return import('../../environment/components/tank-water-chart');
+        case LAZY_CHUNKS.metricComboChart.name:
+          return import('../../environment/components/metric-combo-chart');
+        default:
+          return import('../../environment/components/env-chart');
+      }
+    });
+    this._loadingCharts.delete(chunk.name);
+    if (!loaded) this._missingCharts = new Set(this._missingCharts).add(chunk.name);
+  }
   @property({ attribute: false }) items: AnalyticsItem[] = [];
   @property({ type: Boolean }) isLoading = false;
   @property({ attribute: false }) range: HistoryTimeRange = '24h';
@@ -311,6 +352,10 @@ export class GrowspaceAnalyticsUI extends LitElement {
   }
 
   private _renderItem(item: AnalyticsItem): TemplateResult {
+    const chunk = this._chartChunk(item);
+    if (chunk && this._missingCharts.has(chunk.name)) {
+      return html`<growspace-lazy-chunk-error .chunk=${chunk}></growspace-lazy-chunk-error>`;
+    }
     if (item.type === 'combo') {
       // No unlink handlers, because a combo emits none: the pairing is the
       // card's claim, not a grouping the grower can dismantle. `toggle-graph`
