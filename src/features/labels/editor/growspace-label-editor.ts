@@ -99,6 +99,7 @@ import './growspace-label-print-panel';
 import type { GrowspaceLabelInspector } from './growspace-label-inspector';
 import type { GrowspaceLabelPrintPanel } from './growspace-label-print-panel';
 import { collectDiagnostics, copyKeys, countBySeverity, type DiagnosticEntry } from './diagnostics';
+import { onToolbarFocusIn, onToolbarKeyDown, syncRovingTabindex } from './roving-toolbar';
 
 /** The eight handles, in the order a reader goes round a rectangle. */
 const HANDLES: ResizeHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
@@ -672,6 +673,14 @@ export class GrowspaceLabelEditor extends LitElement {
 
   protected willUpdate(changed: Map<string | number | symbol, unknown>): void {
     if (changed.has('session')) this.#attach();
+  }
+
+  protected updated(): void {
+    // Every render, because a render is what disables the button holding a
+    // toolbar's one Tab stop, and the stop has to move before anyone tabs in.
+    for (const toolbar of this.renderRoot.querySelectorAll<HTMLElement>('[role="toolbar"]')) {
+      syncRovingTabindex(toolbar);
+    }
   }
 
   #attach(): void {
@@ -1639,7 +1648,13 @@ export class GrowspaceLabelEditor extends LitElement {
   #renderToolbar(model: SessionState): TemplateResult {
     const selection = model.selectedIds.length;
     return html`
-      <div class="toolbar" role="toolbar" aria-label=${this._t('editor_toolbar')}>
+      <div
+        class="toolbar"
+        role="toolbar"
+        aria-label=${this._t('editor_toolbar')}
+        @keydown=${onToolbarKeyDown}
+        @focusin=${onToolbarFocusIn}
+      >
         ${this.#icon(
           'undo',
           'editor_undo',
@@ -1701,7 +1716,13 @@ export class GrowspaceLabelEditor extends LitElement {
           ${this._t('editor_discard_short')}
         </button>
       </div>
-      <div class="toolbar" role="toolbar" aria-label=${this._t('editor_arrange')}>
+      <div
+        class="toolbar"
+        role="toolbar"
+        aria-label=${this._t('editor_arrange')}
+        @keydown=${onToolbarKeyDown}
+        @focusin=${onToolbarFocusIn}
+      >
         <div role="group" aria-label=${this._t('editor_align')} class="toolbar">
           ${ALIGNMENTS.map(
             (alignment) => html`
@@ -1751,7 +1772,13 @@ export class GrowspaceLabelEditor extends LitElement {
           )}
         </div>
       </div>
-      <div class="toolbar" role="toolbar" aria-label=${this._t('editor_view')}>
+      <div
+        class="toolbar"
+        role="toolbar"
+        aria-label=${this._t('editor_view')}
+        @keydown=${onToolbarKeyDown}
+        @focusin=${onToolbarFocusIn}
+      >
         ${this.#icon(
           'zoom-out',
           'editor_zoom_out',
