@@ -108,7 +108,7 @@ export class GrowspaceLabelPrintPanel extends LitElement {
       }
       h3 {
         margin: 0 0 8px;
-        font-size: 1rem;
+        font-size: var(--font-size-md, 16px);
       }
       h4 {
         margin: 8px 0 4px;
@@ -123,7 +123,7 @@ export class GrowspaceLabelPrintPanel extends LitElement {
       label {
         display: grid;
         gap: 4px;
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm, 14px);
       }
       select,
       input,
@@ -167,7 +167,7 @@ export class GrowspaceLabelPrintPanel extends LitElement {
       .reason,
       .supporting {
         margin: 4px 0 0;
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm, 14px);
         color: var(--secondary-text-color);
       }
       .state {
@@ -191,7 +191,8 @@ export class GrowspaceLabelPrintPanel extends LitElement {
       }
       .problem {
         margin: 0;
-        font-size: 0.8125rem;
+        /* Keep measurement errors one pixel below body small as the scale changes. */
+        font-size: calc(var(--font-size-sm, 14px) - 1px);
         font-weight: 500;
       }
       .problem::before {
@@ -223,7 +224,7 @@ export class GrowspaceLabelPrintPanel extends LitElement {
       }
       dl.fidelity dd {
         margin: 0 0 4px;
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm, 14px);
         color: var(--secondary-text-color);
       }
       .visually-hidden {
