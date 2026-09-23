@@ -63,6 +63,22 @@ const GrowLightConfigSchema = z.object({
   sunrise_minutes: z.number().optional().default(0),
 });
 
+// The Light Leak Guard (GSM#794): alerts on a lit grow light or an
+// illuminance reading above threshold_lux during the dark period. Its own
+// sub-config rather than part of growlight_config, which the Growlights tab
+// replaces whole. Declared here, not in the growspace slice, because that
+// module imports this one; both environment payloads reference this schema.
+export const LightLeakConfigSchema = z.object({
+  enabled: z.boolean(),
+  illuminance_sensor: z.string().nullable(),
+  threshold_lux: z.number(),
+  debounce_seconds: z.number(),
+  switch_off_lights: z.boolean(),
+  all_stages: z.boolean(),
+});
+
+export type LightLeakConfig = z.infer<typeof LightLeakConfigSchema>;
+
 const StageThresholdsSchema = z
   .record(z.string(), z.object({ target: z.number(), tolerance: z.number() }))
   .optional();
@@ -132,6 +148,8 @@ export const EnvironmentConfigSchema = z.object({
   circulation_fan_config: CirculationFanConfigSchema.optional(),
   exhaust_fan_config: ExhaustFanConfigSchema.optional(),
   growlight_config: GrowLightConfigSchema.optional(),
+  // Optional: backends before GSM#813 do not send it.
+  light_leak_config: LightLeakConfigSchema.optional(),
   sensor_coordinates: z
     .record(
       z.string(),
