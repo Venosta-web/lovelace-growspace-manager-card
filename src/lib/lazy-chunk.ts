@@ -159,6 +159,9 @@ export const LAZY_CHUNKS = {
     name: 'heatmap-3d',
     feature: 'The 3D heatmap',
   },
+  envChart: { name: 'env-chart', feature: 'Environment graph' },
+  tankWaterChart: { name: 'tank-water-chart', feature: 'Tank water graph' },
+  metricComboChart: { name: 'metric-combo-chart', feature: 'Metric comparison graph' },
   managerCardEditor: {
     name: 'growspace-manager-card-editor',
     feature: 'The Growspace Manager card editor',
@@ -170,6 +173,14 @@ export const LAZY_CHUNKS = {
   analyticsCardEditor: {
     name: 'growspace-analytics-card-editor',
     feature: 'The Growspace Analytics card editor',
+  },
+  logbookList: {
+    name: 'growspace-logbook',
+    feature: 'Growspace Logbook list',
+  },
+  logbookTimeline: {
+    name: 'growspace-timeline',
+    feature: 'Growspace Logbook timeline',
   },
   aiInsightCardEditor: {
     name: 'growspace-ai-insight-card-editor',

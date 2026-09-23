@@ -30,7 +30,7 @@ import {
   mdiLightbulbOn,
   mdiLightbulbOff,
 } from '@mdi/js';
-import { DateTime } from 'luxon';
+import { nextScheduleTime } from '../../utils/local-date-time';
 import type { EnvSnapshot, SensorReadings } from '../environment';
 import type { DeviceEntry, DeviceSnapshot } from '../device-state';
 import type { PlantEntity } from '../../features/plants/types';
@@ -245,22 +245,8 @@ function _makeHeroReadingChip(
 }
 
 /** Return the next upcoming HH:MM from a schedule list, wrapping to tomorrow if past. */
-function _getNextEvent(times: IrrigationScheduleItem[]): string | undefined {
-  if (!times.length) return undefined;
-  const now = DateTime.now();
-  const upcoming = times
-    .filter((t) => t.time || t.start_time)
-    .map((t) => {
-      const timeStr = (t.time ?? t.start_time)!;
-      const parts = timeStr.split(':');
-      const h = Number(parts[0]);
-      const m = Number(parts[1]);
-      let dt = now.set({ hour: h, minute: m, second: 0 });
-      if (dt <= now) dt = dt.plus({ days: 1 });
-      return dt;
-    })
-    .sort((a, b) => a.toMillis() - b.toMillis())[0];
-  return upcoming?.toFormat('HH:mm');
+function _getNextEvent(times: IrrigationScheduleItem[], timeZone?: string): string | undefined {
+  return nextScheduleTime(times, new Date(), timeZone);
 }
 
 // ---------------------------------------------------------------------------
@@ -560,7 +546,8 @@ export function computeHeaderMetrics(
   linkedGraphGroups: string[][] = [],
   irrigationStrategy: IrrigationStrategy | null = null,
   deviceSnapshot: DeviceSnapshot | null = null,
-  litersToday: number | null = null
+  litersToday: number | null = null,
+  timeZone?: string
 ): HeaderMetricsResult {
   // --- Dominant stage ---
   let dominant: DominantStageInfo | undefined;
@@ -735,7 +722,7 @@ export function computeHeaderMetrics(
       // When phase is undefined (backend hasn't set it yet), omit the chip entirely rather
       // than fall back to the stale manual schedule.
     } else {
-      const nextIrrigation = _getNextEvent(irrigationConfig.irrigationTimes);
+      const nextIrrigation = _getNextEvent(irrigationConfig.irrigationTimes, timeZone);
       if (nextIrrigation != null) {
         chips.push(
           _makeChip(
@@ -750,7 +737,7 @@ export function computeHeaderMetrics(
       }
     }
 
-    const nextDrain = _getNextEvent(irrigationConfig.drainTimes);
+    const nextDrain = _getNextEvent(irrigationConfig.drainTimes, timeZone);
     if (nextDrain != null) {
       chips.push(
         _makeChip(

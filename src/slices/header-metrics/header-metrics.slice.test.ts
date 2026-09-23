@@ -6,7 +6,6 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { DateTime } from 'luxon';
 import { mdiFan, mdiLightbulbOn, mdiLightbulbOff } from '@mdi/js';
 import type { EnvSnapshot, SensorReadings } from '../environment';
 import type { DeviceEntry, DeviceSnapshot } from '../device-state';
@@ -325,9 +324,8 @@ describe('Cycle 5 — irrigation and drain timing chips', () => {
   });
 
   it('selects the soonest upcoming time when multiple schedule items are given out of order', () => {
-    const now = DateTime.now();
-    const near = now.plus({ minutes: 30 }).toFormat('HH:mm');
-    const far = now.plus({ hours: 3 }).toFormat('HH:mm');
+    const near = new Date(Date.now() + 30 * 60_000).toTimeString().slice(0, 5);
+    const far = new Date(Date.now() + 3 * 60 * 60_000).toTimeString().slice(0, 5);
     const config = makeIrrigationConfig({ irrigationTimes: [{ time: far }, { time: near }] });
 
     const { chips } = computeHeaderMetrics(null, [], config, [], 'main');

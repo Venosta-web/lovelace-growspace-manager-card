@@ -57,8 +57,8 @@ import {
   registerDialogPortal,
   unregisterDialogPortal,
 } from '../../../slices/ui/dialog-portals';
-import { tcPresence$, type TcPresence } from '../../../slices/tc';
-import { labelTemplateSupport$, type LabelTemplateSupport } from '../../../slices/labels';
+import { tcPresence$, type TcPresence } from '../../../slices/tc/presence';
+import { labelTemplateSupport$, type LabelTemplateSupport } from '../../../slices/labels/support';
 import * as uiSlice from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';

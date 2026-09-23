@@ -17,14 +17,14 @@ import { filterChips } from '../../../utils/chip-filter';
 import { envSnapshots$ } from '../../../slices/environment';
 import { deviceSnapshots$ } from '../../../slices/device-state';
 import { plants$ } from '../../../slices/plant';
-import { tcPresence$, type TcPresence } from '../../../slices/tc';
-import { labelTemplateSupport$, type LabelTemplateSupport } from '../../../slices/labels';
+import { tcPresence$, type TcPresence } from '../../../slices/tc/presence';
+import { labelTemplateSupport$, type LabelTemplateSupport } from '../../../slices/labels/support';
 import * as uiSlice from '../../../slices/ui';
 import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { ViewMode, ConfigTab } from '../../../constants';
-import { DateTime } from 'luxon';
+import { todayISO } from '../../../utils/local-date-time';
 import { localizePlural, localizeWithParams } from '../../../localize/localize';
 
 import '../components/growspace-header-ui';
@@ -180,7 +180,8 @@ export class GrowspaceHeaderContainer extends LitElement {
       linkedGraphGroups,
       irrigationStrategy,
       deviceSnapshot,
-      this.device.waterUsage?.litersToday ?? null
+      this.device.waterUsage?.litersToday ?? null,
+      this.hass.config?.time_zone
     );
 
     const hidden = this.config?.hidden_chips;
@@ -453,7 +454,7 @@ export class GrowspaceHeaderContainer extends LitElement {
 
   private get _flowerFlipInfo(): FlowerFlipInfo | null {
     if (!this.device || !this.store?.ui?.$flowerFlipDismissed) return null;
-    const today = DateTime.now().toISODate();
+    const today = todayISO(new Date(), this.hass?.config?.time_zone);
     const dismissed = this.store.ui.$flowerFlipDismissed.get();
     return getFlowerFlipInfo(this.device, today, dismissed);
   }

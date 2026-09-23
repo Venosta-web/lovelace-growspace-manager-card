@@ -31,7 +31,8 @@
  * output while presenting itself as recovery.
  */
 
-import { atom } from 'nanostores';
+import { labelTemplateSupport$, type LabelTemplateSupport } from './support';
+export { labelTemplateSupport$, type LabelTemplateSupport } from './support';
 import { z } from 'zod';
 import { hassCall } from '../../services/hass-call';
 import {
@@ -57,14 +58,6 @@ export const WS_GET_LABEL_TEMPLATE_CAPABILITY = 'growspace_manager/get_label_tem
 export const WS_PREVIEW_LABEL_FACTORY_TEMPLATE = 'growspace_manager/preview_label_factory_template';
 
 /** What this card may offer, and why. */
-export type LabelTemplateSupport =
-  | { status: 'unknown' }
-  | { status: 'classic'; reason: string }
-  | { status: 'incompatible'; reason: string }
-  | { status: 'available'; capability: LabelTemplateCapability };
-
-export const labelTemplateSupport$ = atom<LabelTemplateSupport>({ status: 'unknown' });
-
 let probe: Promise<LabelTemplateSupport> | null = null;
 
 /**

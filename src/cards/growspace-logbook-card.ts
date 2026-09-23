@@ -12,14 +12,13 @@ import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
-import '../features/shared/ui/growspace-logbook';
-import '../features/shared/ui/growspace-timeline';
 import '../features/shared/ui/error-boundary';
 import { LAZY_CHUNKS, loadLazyChunk } from '../lib/lazy-chunk';
 import { lazyChunkErrorEditor } from '../features/shared/ui/lazy-chunk-error';
 
 @customElement('growspace-logbook-card')
 export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
+  @state() private _viewMissing = false;
   @provide({ context: hassContext })
   @property({ attribute: false })
   public hass!: HomeAssistant;
@@ -100,6 +99,23 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
 
   private _handleTabClick(tab: 'list' | 'timeline'): void {
     this._activeTab = tab;
+    void this._loadView();
+  }
+
+  protected firstUpdated(): void {
+    void this._loadView();
+  }
+
+  private async _loadView(): Promise<void> {
+    this._viewMissing = false;
+    const tab = this._activeTab;
+    const chunk = tab === 'list' ? LAZY_CHUNKS.logbookList : LAZY_CHUNKS.logbookTimeline;
+    const loaded =
+      tab === 'list'
+        ? await loadLazyChunk(chunk, () => import('../features/shared/ui/growspace-logbook'))
+        : await loadLazyChunk(chunk, () => import('../features/shared/ui/growspace-timeline'));
+    if (tab !== this._activeTab) return;
+    this._viewMissing = loaded === null;
   }
 
   private _handleError(err: Error): void {
@@ -109,6 +125,12 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
   protected render(): TemplateResult {
     if (!this.hass || !this._config) {
       return html``;
+    }
+
+    if (this._viewMissing) {
+      const chunk =
+        this._activeTab === 'list' ? LAZY_CHUNKS.logbookList : LAZY_CHUNKS.logbookTimeline;
+      return html`<growspace-lazy-chunk-error .chunk=${chunk}></growspace-lazy-chunk-error>`;
     }
 
     const { devices, selectedDevice } = this._viewController.value.grid;
