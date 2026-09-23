@@ -211,7 +211,11 @@ describe('preview then print', () => {
     await click(view, '[data-action="print"]');
     await vi.waitFor(() => expect($(view, '[data-role="printed"]')).not.toBeNull());
 
-    expect(mocks.print).toHaveBeenCalledWith(PREVIEW.approval_id, PREVIEW.render.raster_identity);
+    expect(mocks.print).toHaveBeenCalledWith(
+      PREVIEW.approval_id,
+      PREVIEW.render.raster_identity,
+      false
+    );
     expect($(view, '[data-section="preview"]')).toBeNull();
     expect($(view, '[data-role="status"]')!.textContent).toContain(PRINTED.print.source.reference);
     expect(mocks.classic).not.toHaveBeenCalled();
@@ -279,6 +283,58 @@ describe('preview then print', () => {
     expect($(view, '[data-role="guidance"]')!.dataset.recovery).toBe('calibrate');
     expect(mocks.print).not.toHaveBeenCalled();
     expect(mocks.classic).not.toHaveBeenCalled();
+  });
+
+  test('a refusal the operator may print past offers Print anyway, with consent', async () => {
+    const view = await mount();
+    await previewed(
+      view,
+      preview((copy) => {
+        copy.decision = {
+          ...copy.decision,
+          allowed: false,
+          blocked_by: ['printer_model_not_covered', 'blocking_diagnostics'],
+        };
+        copy.override_available = true;
+        copy.recovery = 'select_profile';
+      })
+    );
+
+    expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);
+    expect($(view, '[data-action="print"]')!.getAttribute('aria-describedby')).toBe(
+      'record-anyway'
+    );
+    expect($(view, '#record-anyway')).not.toBeNull();
+    expect($(view, '#record-blocked')).toBeNull();
+    expect($(view, '[data-blocker="printer_model_not_covered"]')!.textContent).toContain(
+      'reload the Niimbot integration'
+    );
+
+    mocks.print.mockResolvedValueOnce(PRINTED);
+    await click(view, '[data-action="print-anyway"]');
+    await vi.waitFor(() => expect($(view, '[data-role="printed"]')).not.toBeNull());
+
+    expect(mocks.print).toHaveBeenCalledWith(
+      PREVIEW.approval_id,
+      PREVIEW.render.raster_identity,
+      true
+    );
+    expect(mocks.classic).not.toHaveBeenCalled();
+  });
+
+  test('a refusal nobody may print past offers no way around it', async () => {
+    const view = await mount();
+    await previewed(
+      view,
+      preview((copy) => {
+        copy.decision = { ...copy.decision, allowed: false, blocked_by: ['no_raster'] };
+        copy.override_available = false;
+        copy.recovery = 'retry_preview';
+      })
+    );
+
+    expect($(view, '[data-action="print-anyway"]')).toBeNull();
+    expect($(view, '#record-blocked')).not.toBeNull();
   });
 
   test('changing the setup drops the preview it no longer describes', async () => {

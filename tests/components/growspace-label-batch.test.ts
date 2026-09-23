@@ -214,7 +214,9 @@ describe('printing anyway', () => {
     await reviewed(view, uncalibrated());
     const anyway = () => $<HTMLButtonElement>(view, '[data-action="print-anyway"]')!;
 
-    expect($(view, '[data-role="blocked"]')!.textContent).toContain('not the labels');
+    expect($(view, '[data-role="blocked"]')!.textContent).toContain(
+      'print these labels as they are'
+    );
     expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);
     expect(anyway().disabled).toBe(true);
 
@@ -432,7 +434,7 @@ describe("a plant's own label, as a one-plant batch (hub #243)", () => {
 
     const blocked = $(view, '[data-role="blocked"]')!;
     expect(blocked.textContent).toContain(
-      'This label will not print until every problem is fixed.'
+      'This label has problems that stop it from printing normally.'
     );
     expect(blocked.textContent).toContain('has not passed physical testing');
     expect($<HTMLButtonElement>(view, '[data-action="print"]')!.disabled).toBe(true);

@@ -13,7 +13,8 @@
  *    the bitmap the printer receives, with every reason it may not print.
  * 3. **Print.** The approved raster, by its approval and raster identity. The
  *    card never sends the content again, so it cannot print a label nobody
- *    looked at.
+ *    looked at. Where every refusal is one the backend lets an operator print
+ *    past, **Print anyway** sends the same approval with that consent.
  *
  * A refusal — of the preview or of the print — is shown with the recovery it
  * names, and nothing else happens. In particular nothing here falls back to
@@ -391,11 +392,15 @@ export class GrowspaceLabelRecordPrint extends LitElement {
     });
   }
 
-  async #print(): Promise<void> {
+  async #print(anyway = false): Promise<void> {
     const record = this._record;
-    if (!record || !record.decision.allowed) return;
+    if (!record || !(record.decision.allowed || (anyway && record.override_available))) return;
     await this.#run('print', async () => {
-      const answer = await printLabelRecord(record.approval_id, record.render.raster_identity);
+      const answer = await printLabelRecord(
+        record.approval_id,
+        record.render.raster_identity,
+        anyway
+      );
       // Printed or refused, this approval has been spent: the next label is
       // previewed again, never printed from a picture already used.
       this._record = null;
@@ -576,6 +581,7 @@ export class GrowspaceLabelRecordPrint extends LitElement {
       .filter((item) => item.severity === 'error' || item.severity === 'warning')
       .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'error' ? -1 : 1));
     const warnings = problems.filter((item) => item.severity === 'warning').length;
+    const anyway = !decision.allowed && record.override_available;
     return html`
       <section data-section="preview" aria-labelledby="record-preview">
         <h3 id="record-preview" tabindex="-1">
@@ -634,16 +640,30 @@ export class GrowspaceLabelRecordPrint extends LitElement {
             class="primary"
             data-action="print"
             ?disabled=${!decision.allowed || this._busy !== null}
-            aria-describedby=${decision.allowed ? nothing : 'record-blocked'}
+            aria-describedby=${decision.allowed
+              ? nothing
+              : anyway
+                ? 'record-anyway'
+                : 'record-blocked'}
             @click=${() => void this.#print()}
           >
             ${this._t('print_record_action')}
           </button>
+          ${anyway
+            ? html`<button
+                data-action="print-anyway"
+                aria-describedby="record-anyway"
+                ?disabled=${this._busy !== null}
+                @click=${() => void this.#print(true)}
+              >
+                ${this._t('print_record_anyway')}
+              </button>`
+            : nothing}
         </div>
         ${decision.allowed
           ? nothing
-          : html`<p class="supporting" id="record-blocked">
-              ${this._t('print_record_blocked_hint')}
+          : html`<p class="supporting" id=${anyway ? 'record-anyway' : 'record-blocked'}>
+              ${this._t(anyway ? 'print_record_anyway_hint' : 'print_record_blocked_hint')}
             </p>`}
       </section>
     `;

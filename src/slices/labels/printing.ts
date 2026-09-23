@@ -129,14 +129,24 @@ export function previewLabelRecord(request: RecordRequest): Promise<RecordPrevie
   );
 }
 
-/** Print the record preview the operator approved. */
+/**
+ * Print the record preview the operator approved.
+ *
+ * `anyway` is the operator's consent to print past the refusals the preview
+ * reported as `override_available`; the approval already binds the raster.
+ */
 export function printLabelRecord(
   approvalId: string,
-  rasterIdentity: string
+  rasterIdentity: string,
+  anyway = false
 ): Promise<PrintedAnswer> {
   return gated(
     WS_PRINT_LABEL_RECORD,
-    { approval_id: approvalId, expected_raster_identity: rasterIdentity },
+    {
+      approval_id: approvalId,
+      expected_raster_identity: rasterIdentity,
+      ...(anyway ? { override: true } : {}),
+    },
     PrintedAnswerSchema
   );
 }
