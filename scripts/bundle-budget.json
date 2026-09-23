@@ -1,0 +1,33 @@
+{
+  "about": "Production-build size budget per emitted chunk, in bytes of gzip level 9 output. Each chunk is judged by the first rule whose pattern matches its file name; a chunk no rule matches fails the check. Lowering a limit is free. Any other change to a rule (a raised limit or Stage 2 target, a new, removed, rematched or reordered rule) needs a new changelog entry naming that rule. See scripts/bundle-budget.mjs.",
+  "rules": [
+    {
+      "id": "entry",
+      "label": "Entry",
+      "match": "growspace-manager-card.js",
+      "maxGzipBytes": 250000,
+      "stage2": { "maxGzipBytes": 170000, "by": "#970" }
+    },
+    {
+      "id": "three",
+      "label": "three.js (3D heatmap)",
+      "match": "growspace-heatmap-3d-*.js",
+      "maxGzipBytes": 165000,
+      "stage2": { "maxGzipBytes": 165000, "by": "#969" }
+    },
+    {
+      "id": "lazy",
+      "label": "Any other lazy chunk",
+      "match": "growspace-*.js",
+      "maxGzipBytes": 200000,
+      "stage2": { "maxGzipBytes": 60000, "by": "#969" }
+    }
+  ],
+  "changelog": [
+    {
+      "date": "2026-09-23",
+      "rules": ["entry", "three", "lazy"],
+      "change": "Stage 1 of #971, set once #968 made the release build the minified one. Measured at 101d0904: entry 243,072, dialog host 191,285, heatmap-3d 159,867 bytes gzip."
+    }
+  ]
+}

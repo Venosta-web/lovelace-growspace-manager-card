@@ -44,6 +44,8 @@ export interface TestContext {
   visionDashboardPath: string;
   /** Dashboard whose only card is custom:growspace-tc-card. */
   tcDashboardPath: string;
+  /** The Demo Tent, which the first-render scripting check measures. */
+  demoDashboardPath: string;
   /** Anchor plant for per-plant E2E tests (row 1, col 1 of veg growspace) */
   vegPlantId: string;
 }

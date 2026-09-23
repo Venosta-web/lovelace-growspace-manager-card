@@ -41,6 +41,7 @@ export function createTestContext(env: TestEnvironment): TestContext {
     visionGrowspaceId: env.TEST_VISION_GROWSPACE_ID || '',
     visionDashboardPath: env.TEST_VISION_DASHBOARD_PATH || '',
     tcDashboardPath: env.TEST_TC_DASHBOARD_PATH || '',
+    demoDashboardPath: env.TEST_DEMO_DASHBOARD_PATH || '/e2e-demo/0',
     vegPlantId: env.TEST_VEG_PLANT_ID || '',
   };
 }

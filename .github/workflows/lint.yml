@@ -52,6 +52,20 @@ jobs:
       - name: Validate HACS release layout
         run: npm run validate:hacs-release
 
+      # Fails on any chunk over scripts/bundle-budget.json and writes the
+      # per-chunk table to the job summary. On a pull request it also reads the
+      # budget file at the base branch, so a raised limit needs a changelog entry.
+      - name: Check bundle-size budget
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            git fetch --no-tags --depth=1 origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+            npm run budget:bundle -- --base "origin/$BASE_REF"
+          else
+            npm run budget:bundle
+          fi
+
       - name: Check Formatting
         run: npm run format:check
 
