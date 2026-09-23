@@ -1008,3 +1008,45 @@ describe('GrowspaceAPIResponseSchema grow light fields', () => {
     expect(parsed.environment.growlight_config?.power).toBe(90);
   });
 });
+
+describe('light_leak_config (Light Leak Guard, GSM#794)', () => {
+  // The golden fixture's shape: every key the backend's LightLeakConfig emits.
+  const lightLeakConfig = {
+    enabled: true,
+    illuminance_sensor: null,
+    threshold_lux: 1.0,
+    debounce_seconds: 120,
+    switch_off_lights: false,
+    all_stages: false,
+  };
+
+  it('keeps every key of the growspace environment config', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      environment: {
+        light_leak_config: { ...lightLeakConfig, illuminance_sensor: 'sensor.tent_lux' },
+      },
+    });
+    expect(parsed.environment.light_leak_config).toEqual({
+      ...lightLeakConfig,
+      illuminance_sensor: 'sensor.tent_lux',
+    });
+  });
+
+  it('keeps every key of a subarea environment config', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      subareas: [
+        { id: 'sa1', name: 'Left', environment_config: { light_leak_config: lightLeakConfig } },
+      ],
+    });
+    expect(parsed.subareas?.[0]?.environment_config.light_leak_config).toEqual(lightLeakConfig);
+  });
+
+  it('leaves it undefined when an older backend does not send it', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      environment: {},
+      subareas: [{ id: 'sa1', name: 'Left', environment_config: {} }],
+    });
+    expect(parsed.environment.light_leak_config).toBeUndefined();
+    expect(parsed.subareas?.[0]?.environment_config.light_leak_config).toBeUndefined();
+  });
+});

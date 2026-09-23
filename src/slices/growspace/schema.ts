@@ -8,7 +8,7 @@ import {
   SteeringModeSchema,
 } from '../irrigation/schema';
 import { TimedNotificationSchema } from '../notification/schema';
-import { SubareaSchema } from '../subarea/schema';
+import { LightLeakConfigSchema, SubareaSchema } from '../subarea/schema';
 
 const IrrigationScheduleItemSchema = z
   .object({
@@ -432,6 +432,8 @@ export const GrowspaceAPIResponseSchema = z.object({
       growlight_entities: z.array(z.string()).optional().default([]),
       growlight_ac_infinity_devices: z.array(AcInfinityGrowLightSchema).optional().default([]),
       growlight_config: GrowLightConfigSchema.optional(),
+      // Optional: backends before GSM#813 do not send it.
+      light_leak_config: LightLeakConfigSchema.optional(),
       light_sensors: z.array(z.string()).optional().default([]),
       // Plural sensor lists. The singular *_sensor keys above are the legacy
       // single-entity form; both are emitted.
