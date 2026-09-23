@@ -2,6 +2,11 @@ import { expect, test, vi, beforeEach, afterEach } from 'vitest';
 import { render } from 'lit';
 
 import './growspace-dialog-host.container';
+// The TC dialog's own chunk loaded; the view chunk behind it is the stale one.
+// With the loader mocked, the frame has to be defined here or the host would
+// report the frame's chunk instead — which growspace-dialog-host.chunks.test.ts
+// covers for every dialog.
+import '../../../dialogs/tc-dialog';
 import { GrowspaceDialogHost } from './growspace-dialog-host.container';
 import { mountedDialogPortals$ } from '../../../slices/ui/dialog-portals';
 import { tcPresence$ } from '../../../slices/tc';

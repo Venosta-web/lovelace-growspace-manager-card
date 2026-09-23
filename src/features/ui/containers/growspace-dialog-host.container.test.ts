@@ -4,7 +4,7 @@
  * _initControllers idempotency guard.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
 import {
   removeEnvironment as mockRemoveEnvironment,
@@ -19,6 +19,13 @@ import { mountedDialogPortals$ } from '../../../slices/ui/dialog-portals';
 import './growspace-dialog-host.container';
 import { GrowspaceDialogHost } from './growspace-dialog-host.container';
 import { portalVariables } from '../../../styles/variables';
+import { DIALOG_CHUNKS } from './growspace-dialog-chunks';
+
+// The host loads each dialog the first time it opens (#969). These tests are
+// about what it does with a dialog once it is there, so every dialog is loaded
+// up front, as on a dashboard that has already opened each one; the loading
+// itself is growspace-dialog-host.chunks.test.ts.
+beforeAll(() => Promise.all(Object.values(DIALOG_CHUNKS).map(({ load }) => load())));
 
 // Mock slices/plant so no real API calls are made
 vi.mock('../../../slices/plant', () => ({

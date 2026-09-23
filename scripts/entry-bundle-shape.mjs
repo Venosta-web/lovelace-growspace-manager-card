@@ -122,16 +122,30 @@ export function declaredOnDemandOnlyChunkNames(registrySource) {
 const fileNameOf = (specifier) => specifier.slice(specifier.lastIndexOf('/') + 1);
 
 /**
+ * The emitted files of the chunk rollup named `name`, as
+ * `growspace-[name]-[hash].js` with rollup's default eight-character hash.
+ *
+ * Matched exactly, never by prefix: chunk names prefix one another — `tc` and
+ * `tc-dialog`, `label-templates` and `label-templates-dialog` — so a prefix
+ * cannot tell a chunk from its neighbour.
+ */
+export function emittedChunkFiles(name, fileNames) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`^growspace-${escaped}-[A-Za-z0-9_-]{8}\\.js$`);
+  return fileNames.filter((file) => pattern.test(fileNameOf(file)));
+}
+
+/**
  * Fails when another emitted chunk statically imports an on-demand-only chunk.
  *
- * The house pattern for a dialog is a static import — all 23 of them in
- * `growspace-dialog-host.container.ts` are written that way — and written that
- * way the tissue-culture view becomes a static dependency of the dialog-host
- * chunk, fetched by the first dialog every dashboard opens, with every other
- * check in this repository still green. Chunk-to-chunk static imports are not
- * themselves a smell: the dialog-host chunk legitimately imports
- * `growspace-config-dialog-*.js`. So the rule is opt-in, per chunk, and this
- * is what the opt-in means. See ADR 0056.
+ * One static import is all it takes to fold a chunk into its importer: the
+ * tissue-culture view, or any dialog, becomes a static dependency of the
+ * dialog-host chunk, fetched by the first dialog every dashboard opens, with
+ * every other check in this repository still green. Chunk-to-chunk static
+ * imports are not themselves a smell: the card editors share two chunks that
+ * way, and the Label Template view imports what it shares with the label
+ * dialogs out of theirs. So the rule is opt-in, per chunk, and this is what
+ * the opt-in means. See ADRs 0056 and 0058.
  *
  * @param {{ chunks: Array<{ fileName: string, source: string }>, onDemandFileNames: string[] }} args
  *   every emitted bundle, and the emitted file names of the declared chunks.
