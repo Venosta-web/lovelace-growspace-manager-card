@@ -18,6 +18,7 @@
 
 import { expect, test, describe, vi, beforeEach } from 'vitest';
 import { fixture } from '@open-wc/testing-helpers';
+import { userEvent } from 'vitest/browser';
 
 import capabilityFixture from '../fixtures/contract/label_template_capability_v1.json';
 import openedFixture from '../fixtures/contract/label_draft_opened_v1.json';
@@ -264,9 +265,13 @@ describe('roles and names', () => {
 
 describe('focus', () => {
   test('can put focus on every control, with none removed from the tab order', async () => {
+    // A toolbar's buttons are the one exception, and a deliberate one: the
+    // toolbar is a single stop and its arrows reach the rest, which the
+    // "toolbars" tests below press their way through.
     const { element } = await mount();
 
     for (const control of controls(element)) {
+      if (control.closest('[role="toolbar"]')) continue;
       expect(control.getAttribute('tabindex')).not.toBe('-1');
     }
     const publishButton =
@@ -289,6 +294,158 @@ describe('focus', () => {
     const layout = element.renderRoot.querySelector<HTMLElement>('.layout')!;
 
     expect(layout.tabIndex).toBe(0);
+  });
+});
+
+/** The editor's three toolbars, in document order. */
+function toolbars(element: GrowspaceLabelEditor): HTMLElement[] {
+  return [...element.renderRoot.querySelectorAll<HTMLElement>('[role="toolbar"]')];
+}
+
+/** The buttons of a toolbar a Tab can land on. */
+function stops(toolbar: HTMLElement): HTMLButtonElement[] {
+  return [...toolbar.querySelectorAll<HTMLButtonElement>('button')].filter(
+    (button) => button.tabIndex === 0
+  );
+}
+
+function focused(element: GrowspaceLabelEditor): Element | null {
+  return element.renderRoot.activeElement;
+}
+
+describe('toolbars', () => {
+  // Pressed rather than dispatched: `userEvent` drives the browser's own
+  // keyboard, so Tab here is the real sequential-focus order, not a model of it.
+
+  test('are each a single Tab stop, on a button that can take it', async () => {
+    const { element } = await mount();
+
+    expect(toolbars(element)).toHaveLength(3);
+    for (const toolbar of toolbars(element)) {
+      const [stop, ...extra] = stops(toolbar);
+      expect(extra).toEqual([]);
+      expect(stop.disabled).toBe(false);
+    }
+  });
+
+  test('are crossed with one Tab each', async () => {
+    const { element } = await mount();
+    const [actions, arrange, view] = toolbars(element);
+
+    stops(actions)[0].focus();
+    await userEvent.keyboard('{Tab}');
+    expect(arrange.contains(focused(element))).toBe(true);
+    await userEvent.keyboard('{Tab}');
+    expect(view.contains(focused(element))).toBe(true);
+    await userEvent.keyboard('{Tab}');
+    expect(view.contains(focused(element))).toBe(false);
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(view.contains(focused(element))).toBe(true);
+  });
+
+  test('step between their buttons with the arrows, skipping disabled ones and wrapping', async () => {
+    const { element } = await mount();
+    const [actions] = toolbars(element);
+    const enabled = [...actions.querySelectorAll<HTMLButtonElement>('button')].filter(
+      (button) => !button.disabled
+    );
+    expect(enabled.length).toBeGreaterThan(2);
+
+    enabled[0].focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(focused(element)).toBe(enabled[1]);
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+    expect(focused(element)).toBe(enabled[enabled.length - 1]);
+    await userEvent.keyboard('{Home}');
+    expect(focused(element)).toBe(enabled[0]);
+    await userEvent.keyboard('{End}');
+    expect(focused(element)).toBe(enabled[enabled.length - 1]);
+    expect(stops(actions)).toEqual([enabled[enabled.length - 1]]);
+  });
+
+  test('walk the nested Align, Distribute and Order groups as one row', async () => {
+    const { element } = await mount();
+    const [, arrange] = toolbars(element);
+    const enabled = [...arrange.querySelectorAll<HTMLButtonElement>('button')].filter(
+      (button) => !button.disabled
+    );
+
+    enabled[0].focus();
+    for (const expected of enabled.slice(1)) {
+      await userEvent.keyboard('{ArrowRight}');
+      expect(focused(element)).toBe(expected);
+    }
+    expect(enabled.some((button) => button.dataset.order)).toBe(true);
+  });
+
+  test('keep their arrows from nudging the selection', async () => {
+    const { element, session } = await mount();
+    const [actions] = toolbars(element);
+    expect(session.state.selectedIds.length).toBeGreaterThan(0);
+    const before = structuredClone(session.state.document);
+
+    // Left, and only Left: a Right and a Left would cancel a nudge out, and
+    // the default selection is flush with the label's right edge, where a
+    // Right nudge is clamped to nothing. Either would pass whether or not the
+    // toolbar kept the keys.
+    actions.querySelector<HTMLButtonElement>('button:not([disabled])')!.focus();
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+
+    expect(session.state.document).toEqual(before);
+  });
+
+  test('still press the focused button with Enter and Space', async () => {
+    // The toolbar claims only its navigation keys; activation stays the
+    // button's own.
+    const { element } = await mount();
+    const [, , view] = toolbars(element);
+    const zoom = (): string =>
+      element.renderRoot.querySelector('[data-role="zoom"]')!.textContent!.trim();
+    const zoomIn = view.querySelector<HTMLButtonElement>('[data-action="zoom-in"]')!;
+    const before = zoom();
+
+    zoomIn.focus();
+    await userEvent.keyboard('{Enter}');
+    await element.updateComplete;
+    const afterEnter = zoom();
+    await userEvent.keyboard(' ');
+    await element.updateComplete;
+
+    expect(afterEnter).not.toBe(before);
+    expect(zoom()).not.toBe(afterEnter);
+  });
+
+  test('come back to the button last used', async () => {
+    const { element } = await mount();
+    const [actions, arrange] = toolbars(element);
+
+    stops(actions)[0].focus();
+    await userEvent.keyboard('{ArrowRight}');
+    const used = focused(element);
+    await userEvent.keyboard('{Tab}');
+    expect(arrange.contains(focused(element))).toBe(true);
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}');
+
+    expect(focused(element)).toBe(used);
+  });
+
+  test('move the stop off a button that becomes disabled', async () => {
+    // Delete disables itself: once the selection is gone there is nothing
+    // left to delete. A stop left on it would take the whole toolbar out of
+    // the Tab order with it.
+    const { element, session } = await mount();
+    const [actions] = toolbars(element);
+    const remove = actions.querySelector<HTMLButtonElement>('[data-action="delete"]')!;
+
+    remove.focus();
+    expect(stops(actions)).toEqual([remove]);
+    session.select(null);
+    await element.updateComplete;
+
+    expect(remove.disabled).toBe(true);
+    const [stop, ...extra] = stops(actions);
+    expect(extra).toEqual([]);
+    expect(stop.disabled).toBe(false);
   });
 });
 
