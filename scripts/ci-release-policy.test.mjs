@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import test from 'node:test';
 
 import { parse } from 'yaml';
@@ -142,6 +142,42 @@ test('the HACS update check follows publishing on both channels and gates neithe
   assert.equal(check.on.push, undefined, 'the check never runs outside a publish');
   assert.ok('workflow_call' in check.on, 'the release workflow calls it');
   assert.equal(check.on.workflow_call.inputs.tag.required, true);
+});
+
+test('superseded prereleases are pruned after publishing on both channels', async () => {
+  const release = await readWorkflow('release.yml');
+  const window = await readWorkflow('release-window.yml');
+
+  const job = release.jobs['release-window'];
+  assert.deepEqual(job.needs, ['prerelease', 'stable-release']);
+  assert.equal(
+    job.if,
+    'always() && (needs.prerelease.outputs.tag || needs.stable-release.outputs.tag)'
+  );
+  assert.equal(job.uses, './.github/workflows/release-window.yml');
+  for (const [name, other] of Object.entries(release.jobs)) {
+    const needs = other.needs === undefined ? [] : [other.needs].flat();
+    assert.ok(!needs.includes('release-window'), `${name} must not wait on the prune`);
+  }
+
+  assert.ok('workflow_call' in window.on, 'the release workflow calls it');
+  assert.equal(window.on.workflow_dispatch.inputs.dry_run.default, true);
+  const [prune] = runCommands(window.jobs['release-window']);
+  assert.equal(prune, 'node scripts/run-release-window.mjs $DRY_RUN');
+});
+
+test('no workflow waits on a release event, which a GITHUB_TOKEN publish never raises', async () => {
+  // semantic-release publishes with GITHUB_TOKEN, and events that token raises
+  // start no workflow. cleanup.yml listened for `release: published` and
+  // silently stopped running, which is how #975 came to exist.
+  const names = (await readdir(new URL('../.github/workflows/', import.meta.url))).filter((name) =>
+    /\.ya?ml$/.test(name)
+  );
+  for (const name of names) {
+    const workflow = await readWorkflow(name);
+    const triggers = typeof workflow.on === 'string' ? [workflow.on] : Object.keys(workflow.on);
+    assert.ok(!triggers.includes('release'), `${name} must not trigger on release events`);
+  }
 });
 
 test('the PR build the HACS validator judges is the release build', async () => {

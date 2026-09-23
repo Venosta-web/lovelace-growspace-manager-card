@@ -1,0 +1,47 @@
+name: Release Window
+
+# Post-publish only, like the HACS update check. HACS reads one page of 30
+# releases and installs the first stable on it; with `show_beta` off — every new
+# user — a page of 30 prereleases leaves it nothing to install, and `dev`
+# publishes several a day. This deletes the GitHub release (never the tag) of
+# every prerelease older than the newest 20, which keeps the newest stable on
+# that page. See docs/adr/0059.
+#
+# It is called from the Release workflow rather than triggered by a `release`
+# event, because semantic-release publishes with GITHUB_TOKEN and events raised
+# by that token start no workflow. The `cleanup.yml` this replaces listened for
+# exactly that event and had not run since 2026-06-29.
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List what would be pruned without deleting anything.
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release-window:
+    name: Keep a stable inside the HACS release window
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          sparse-checkout: scripts
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: '24'
+
+      # `inputs.dry_run` is unset when the Release workflow calls this, so a
+      # publish always prunes; only a manual dispatch defaults to a dry run.
+      - name: Prune superseded prereleases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: node scripts/run-release-window.mjs $DRY_RUN
