@@ -9,6 +9,7 @@ import {
   declaredCardTypes,
   declaredLazyChunkNames,
   declaredOnDemandOnlyChunkNames,
+  emittedChunkFiles,
   staticDependencies,
 } from './entry-bundle-shape.mjs';
 
@@ -130,7 +131,57 @@ const dialogHost = (imports) =>
 // against the file rather than against a fixture that can agree with nothing.
 test('the registry declares every on-demand-only chunk it should', async () => {
   const names = declaredOnDemandOnlyChunkNames(await readFile('src/lib/lazy-chunk.ts', 'utf8'));
-  assert.deepEqual(names, ['label-templates', 'tc']);
+  assert.deepEqual(names, [
+    // Every dialog chunk but the label family (#969).
+    'config-dialog',
+    'add-plant-dialog',
+    'add-plants-dialog',
+    'plant-overview.container',
+    'strain-library-dialog',
+    'strain-recommendation-dialog',
+    'grow-master-dialog',
+    'irrigation-dialog',
+    'recipe-library-dialog.container',
+    'program-library-dialog.container',
+    'logbook-dialog',
+    'nutrient-dialogs',
+    'training-dialog',
+    'growspace-ipm-dialog-ui',
+    'clone-dialog',
+    'batch-clone-dialog',
+    'harvest-scoring-dialog',
+    'snapshots-dialog',
+    'tc-dialog',
+    'label-templates',
+    'tc',
+  ]);
+});
+
+test('a chunk name resolves to its own emitted file, not to a neighbour it prefixes', () => {
+  const emitted = [
+    'dist/growspace-tc-EFmqwtip.js',
+    'dist/growspace-tc-dialog-Dm4Kueqk.js',
+    'dist/growspace-label-templates-CmZvdP40.js',
+    'dist/growspace-label-templates-dialog-DQKUWQOf.js',
+    'dist/growspace-plant-overview.container-r4psUuC2.js',
+    'dist/growspace-irrigation-dialog-DE6_-u7z.js',
+  ];
+  assert.deepEqual(emittedChunkFiles('tc', emitted), ['dist/growspace-tc-EFmqwtip.js']);
+  assert.deepEqual(emittedChunkFiles('tc-dialog', emitted), [
+    'dist/growspace-tc-dialog-Dm4Kueqk.js',
+  ]);
+  assert.deepEqual(emittedChunkFiles('label-templates', emitted), [
+    'dist/growspace-label-templates-CmZvdP40.js',
+  ]);
+  // A `.` in a name is literal, and `-` and `_` are hash characters.
+  assert.deepEqual(emittedChunkFiles('plant-overview.container', emitted), [
+    'dist/growspace-plant-overview.container-r4psUuC2.js',
+  ]);
+  assert.deepEqual(emittedChunkFiles('plant-overviewXcontainer', emitted), []);
+  assert.deepEqual(emittedChunkFiles('irrigation-dialog', emitted), [
+    'dist/growspace-irrigation-dialog-DE6_-u7z.js',
+  ]);
+  assert.deepEqual(emittedChunkFiles('label', emitted), []);
 });
 
 test('an entry without the flag is not declared on demand only', () => {

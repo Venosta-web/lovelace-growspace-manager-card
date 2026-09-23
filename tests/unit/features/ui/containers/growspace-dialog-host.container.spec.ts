@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceDialogHost } from '../../../../../src/features/ui/containers/growspace-dialog-host.container';
 import { atom } from 'nanostores';
@@ -44,6 +44,13 @@ vi.mock('../../../../../src/slices/ui', { spy: true });
 
 // Import side-effects for element registration
 import '../../../../../src/features/ui/containers/growspace-dialog-host.container';
+import { DIALOG_CHUNKS } from '../../../../../src/features/ui/containers/growspace-dialog-chunks';
+
+// The host loads each dialog the first time it opens (#969). These tests are
+// about what it does with a dialog once it is there, so every dialog is loaded
+// up front, as on a dashboard that has already opened each one; the loading
+// itself is src/features/ui/containers/growspace-dialog-host.chunks.test.ts.
+beforeAll(() => Promise.all(Object.values(DIALOG_CHUNKS).map(({ load }) => load())));
 
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {

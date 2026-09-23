@@ -22,9 +22,10 @@
  * reads rather than a number they skim past.
  *
  * Each rule may carry a `stage2` target that the table reports but does not
- * enforce. #969 and #970 activate Stage 2 by moving their targets into
- * `maxGzipBytes`, and #970 adds the per-card rule (standalone card code at
- * most 25 KB each) once standalone cards are chunks of their own.
+ * enforce. A Stage 2 is activated by moving its target into `maxGzipBytes`:
+ * #969 did that for the lazy chunks once each dialog became its own, and
+ * #970 does it for the entry and adds the per-card rule (standalone card code
+ * at most 25 KB each) once standalone cards are chunks of their own.
  */
 
 import { gzipSync } from 'node:zlib';

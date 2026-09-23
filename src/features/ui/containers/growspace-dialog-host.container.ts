@@ -91,33 +91,15 @@ import {
   updateNutrientStock as sliceUpdateNutrientStock,
 } from '../../../slices/nutrient';
 
-import './growspace-nutrient-presets-editor.container';
-import '../../../dialogs/tc-dialog';
-import '../../irrigation/containers/recipe-library-dialog.container';
-import '../../irrigation/containers/program-library-dialog.container';
-import '../../../dialogs/add-plant-dialog';
-import '../../../dialogs/add-plants-dialog';
-import '../../../dialogs/clone-dialog';
-import '../../../dialogs/config-dialog';
+// No dialog is imported here. Each one is its own lazy chunk, loaded the first
+// time it opens; see growspace-dialog-chunks.ts.
 import type { RemoveEnvironmentEventDetail } from '../../../dialogs/config-dialog';
-import '../../../dialogs/grow-master-dialog';
-import '../../../dialogs/harvest-scoring-dialog';
-import '../../../dialogs/irrigation-dialog';
-import '../../../dialogs/logbook-dialog';
-import '../../../dialogs/print-label-dialog';
-import '../../../dialogs/label-templates-dialog';
-import '../../../dialogs/batch-print-label-dialog';
-import '../../../dialogs/batch-clone-dialog';
-import '../../../dialogs/snapshots-dialog';
-import '../../../dialogs/strain-library-dialog';
-import '../../../dialogs/strain-recommendation-dialog';
-import '../../../dialogs/training-dialog';
 import '../../shared/ui/error-boundary';
-
-import '../components/growspace-ipm-dialog-ui';
-import '../components/growspace-nutrient-inventory-dialog-ui';
-import '../../../dialogs/feed-and-water-dialog';
-import '../../plants/containers/plant-overview.container';
+import '../../shared/ui/gs-dialog';
+import '../../shared/ui/lazy-chunk-error';
+import { DIALOG_CHUNKS, DialogType, dialogChunkFor } from './growspace-dialog-chunks';
+import { loadLazyChunk } from '../../../lib/lazy-chunk';
+import { mdiAlertCircleOutline } from '@mdi/js';
 
 import { HomeAssistant } from 'custom-card-helpers';
 import { portalVariables } from '../../../styles/variables';
@@ -170,6 +152,9 @@ export class GrowspaceDialogHost extends LitElement {
   private _dataChangeTimeout?: any;
   private _geneticsLoaded = false;
   @state() private _addPlantsLibraryError = '';
+  /** Dialog chunks that failed to load, by chunk name. Terminal until reload. */
+  @state() private _missingDialogChunks: ReadonlySet<string> = new Set();
+  private _loadingDialogChunks = new Set<string>();
 
   connectedCallback() {
     super.connectedCallback();
@@ -190,6 +175,34 @@ export class GrowspaceDialogHost extends LitElement {
       this._initControllers();
       this._registerPortal();
     }
+    this._loadActiveDialogChunk();
+  }
+
+  /**
+   * Fetch the chunk behind the dialog being opened, unless its element is
+   * already defined — by an earlier open, by another portal, or by a sibling
+   * dialog of the same family. `render` shows nothing until it is, and the
+   * failure message if it never will be.
+   */
+  private _loadActiveDialogChunk(): void {
+    if (!this._controllersInitialized) return;
+    const { type } = this._dialogHostController.value.activeDialog;
+    const entry = dialogChunkFor(type);
+    if (!entry) return;
+    const { chunk, tag, load } = entry;
+    if (
+      customElements.get(tag) ||
+      this._missingDialogChunks.has(chunk.name) ||
+      this._loadingDialogChunks.has(chunk.name)
+    ) {
+      return;
+    }
+    this._loadingDialogChunks.add(chunk.name);
+    void loadLazyChunk(chunk, load).then((loaded) => {
+      this._loadingDialogChunks.delete(chunk.name);
+      if (loaded !== null) this.requestUpdate();
+      else this._missingDialogChunks = new Set([...this._missingDialogChunks, chunk.name]);
+    });
   }
 
   /**
@@ -292,6 +305,17 @@ export class GrowspaceDialogHost extends LitElement {
       return html``;
     }
 
+    // Nothing until the dialog's element exists: rendered earlier, it would be
+    // an unknown element that upgrades whenever its chunk happens to arrive.
+    const dialogChunk = dialogChunkFor(active.type);
+    if (!dialogChunk) return html``;
+    const { chunk, tag } = dialogChunk;
+    if (!customElements.get(tag)) {
+      return this._missingDialogChunks.has(chunk.name)
+        ? this._renderMissingDialogChunk(active.type)
+        : html``;
+    }
+
     const effectiveDeviceData =
       (payloadGrowspaceId ? devices.find((d) => d.deviceId === payloadGrowspaceId) : null) ||
       selectedDeviceData;
@@ -364,6 +388,27 @@ export class GrowspaceDialogHost extends LitElement {
           }
         })()}
       </error-boundary>
+    `;
+  }
+
+  /**
+   * The dialog a stale install cannot load. The click still produces a dialog,
+   * one that says which file is missing and closes like any other, rather than
+   * a menu item that opened nothing.
+   */
+  private _renderMissingDialogChunk(type: DialogType): TemplateResult {
+    return html`
+      <gs-dialog
+        .open=${true}
+        width="small"
+        .heading=${'Dialog unavailable'}
+        .iconPath=${mdiAlertCircleOutline}
+        @close=${() => this._closeDialogIfActive(type)}
+      >
+        <growspace-lazy-chunk-error
+          .chunk=${DIALOG_CHUNKS[type].chunk}
+        ></growspace-lazy-chunk-error>
+      </gs-dialog>
     `;
   }
 

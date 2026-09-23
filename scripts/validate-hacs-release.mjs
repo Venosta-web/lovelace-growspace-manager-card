@@ -10,6 +10,7 @@ import {
   declaredCardTypes,
   declaredLazyChunkNames,
   declaredOnDemandOnlyChunkNames,
+  emittedChunkFiles,
 } from './entry-bundle-shape.mjs';
 import { assertMinifiedRelease } from './release-minification.mjs';
 
@@ -77,11 +78,10 @@ if (!process.argv.includes('--config-only')) {
   assertOnDemandChunksAreNotImported({
     chunks: emitted,
     onDemandFileNames: declaredOnDemandOnlyChunkNames(registrySource).map((name) => {
-      const prefix = `dist/growspace-${name}-`;
-      const matches = bundlePaths.filter((emittedPath) => emittedPath.startsWith(prefix));
+      const matches = emittedChunkFiles(name, bundlePaths);
       if (matches.length !== 1) {
         throw new Error(
-          `${prefix}*.js matches ${matches.length} emitted files; ` +
+          `The chunk named ${name} matches ${matches.length} emitted files; ` +
             'an on-demand-only chunk must resolve to exactly one'
         );
       }

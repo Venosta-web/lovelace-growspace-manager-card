@@ -43,6 +43,11 @@ export interface LazyChunk {
  * the release validator check the names against the build output.
  */
 export const LAZY_CHUNKS = {
+  // The router every dialog opens through. It holds the handlers and none of
+  // the dialogs: each one below is its own chunk, fetched the first time it
+  // opens, so opening one dialog never downloads another (#969). All but one
+  // declare onDemandOnly for that reason -- a static import from anywhere,
+  // the router included, would fold a dialog back into whatever imported it.
   dialogHost: {
     name: 'growspace-dialog-host.container',
     feature: 'Growspace Manager dialogs',
@@ -50,6 +55,105 @@ export const LAZY_CHUNKS = {
   configDialog: {
     name: 'config-dialog',
     feature: 'The growspace configuration dialog',
+    onDemandOnly: true,
+  },
+  addPlantDialog: {
+    name: 'add-plant-dialog',
+    feature: 'The add plant dialog',
+    onDemandOnly: true,
+  },
+  addPlantsDialog: {
+    name: 'add-plants-dialog',
+    feature: 'The add plants dialog',
+    onDemandOnly: true,
+  },
+  plantOverview: {
+    name: 'plant-overview.container',
+    feature: 'The plant overview',
+    onDemandOnly: true,
+  },
+  strainLibraryDialog: {
+    name: 'strain-library-dialog',
+    feature: 'The strain library',
+    onDemandOnly: true,
+  },
+  strainRecommendationDialog: {
+    name: 'strain-recommendation-dialog',
+    feature: 'The strain recommendation dialog',
+    onDemandOnly: true,
+  },
+  growMasterDialog: {
+    name: 'grow-master-dialog',
+    feature: 'The Grow Master dialog',
+    onDemandOnly: true,
+  },
+  irrigationDialog: {
+    name: 'irrigation-dialog',
+    feature: 'The irrigation dialog',
+    onDemandOnly: true,
+  },
+  recipeLibraryDialog: {
+    name: 'recipe-library-dialog.container',
+    feature: 'The irrigation recipe library',
+    onDemandOnly: true,
+  },
+  programLibraryDialog: {
+    name: 'program-library-dialog.container',
+    feature: 'The irrigation programs editor',
+    onDemandOnly: true,
+  },
+  logbookDialog: {
+    name: 'logbook-dialog',
+    feature: 'The events logbook',
+    onDemandOnly: true,
+  },
+  nutrientDialogs: {
+    name: 'nutrient-dialogs',
+    feature: 'The feed, water and nutrient dialogs',
+    onDemandOnly: true,
+  },
+  trainingDialog: {
+    name: 'training-dialog',
+    feature: 'The training dialog',
+    onDemandOnly: true,
+  },
+  ipmDialog: {
+    name: 'growspace-ipm-dialog-ui',
+    feature: 'The IPM dialog',
+    onDemandOnly: true,
+  },
+  cloneDialog: {
+    name: 'clone-dialog',
+    feature: 'The take clone dialog',
+    onDemandOnly: true,
+  },
+  batchCloneDialog: {
+    name: 'batch-clone-dialog',
+    feature: 'The batch clone dialog',
+    onDemandOnly: true,
+  },
+  harvestScoringDialog: {
+    name: 'harvest-scoring-dialog',
+    feature: 'The harvest scoring dialog',
+    onDemandOnly: true,
+  },
+  snapshotsDialog: {
+    name: 'snapshots-dialog',
+    feature: 'The camera snapshots dialog',
+    onDemandOnly: true,
+  },
+  // The one dialog chunk without onDemandOnly. The Label Template view is
+  // opened only from these dialogs, so rollup lets it import what the two
+  // share back out of this chunk -- a static edge, but one that can only be
+  // followed after this chunk has already loaded.
+  labelDialogs: {
+    name: 'label-dialogs',
+    feature: 'The label printing dialogs',
+  },
+  tcDialog: {
+    name: 'tc-dialog',
+    feature: 'The tissue culture dialog',
+    onDemandOnly: true,
   },
   heatmap3d: {
     name: 'heatmap-3d',
