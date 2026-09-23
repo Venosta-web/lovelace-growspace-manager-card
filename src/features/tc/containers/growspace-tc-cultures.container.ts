@@ -154,6 +154,18 @@ export class GrowspaceTcCultures extends LitElement {
         display: none;
       }
 
+      /* The worklist and the board stack in the standalone card; in the dialog
+         one of them is hidden and the gap goes with it. */
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+      }
+
+      .stack > p {
+        margin: 0;
+      }
+
       .error {
         color: var(--error-color, #f44336);
       }
@@ -176,6 +188,12 @@ export class GrowspaceTcCultures extends LitElement {
 
       .relink p {
         margin: 0 0 8px;
+      }
+
+      .relink growspace-tc-phenotype-picker {
+        display: block;
+        max-width: 40rem;
+        margin-bottom: 8px;
       }
 
       button {
@@ -535,7 +553,7 @@ export class GrowspaceTcCultures extends LitElement {
     if (this._acting.open) return this._renderActionDialog(this._acting);
 
     return html`
-      <div>
+      <div class="stack">
         ${this._error ? html`<p class="error" role="alert">${this._error}</p>` : nothing}
         ${this._graduationNotice ? html`<p role="status">${this._graduationNotice}</p>` : nothing}
         ${this._relinking.open ? this._renderRelink(this._relinking.line) : nothing}

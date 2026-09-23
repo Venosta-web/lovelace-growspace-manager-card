@@ -21,6 +21,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { localize } from '../../../localize/localize';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { variables } from '../../../styles/variables';
+import { tcLayoutStyles } from '../tc-layout.styles';
 import {
   draftIntroduction,
   type CultureStage,
@@ -42,6 +43,7 @@ export class GrowspaceTcIntroductionForm extends LitElement {
   static styles: CSSResultGroup = [
     variables,
     sharedStyles,
+    tcLayoutStyles,
     css`
       :host {
         display: block;
@@ -97,6 +99,11 @@ export class GrowspaceTcIntroductionForm extends LitElement {
 
       .chosen {
         font-weight: 600;
+        margin: 0 0 8px;
+      }
+
+      fieldset .supporting {
+        margin-bottom: 8px;
       }
 
       .buttons {
@@ -192,82 +199,89 @@ export class GrowspaceTcIntroductionForm extends LitElement {
         <h3>${this._t('introduction_title')}</h3>
         <p class="supporting">${this._t('introduction_explainer')}</p>
 
-        <fieldset>
-          <legend>${this._t('introduction_phenotype')}</legend>
-          ${chosen
-            ? html`<p class="chosen">${this._draft.phenotype_name}</p>`
-            : html`<p class="supporting">${this._t('introduction_phenotype_none')}</p>`}
-          <growspace-tc-phenotype-picker
-            .phenotypes=${this.phenotypes}
-            .selected=${this._draft.phenotype_id}
-            .language=${this.language}
-            @phenotype-selected=${this._selectPhenotype}
-          ></growspace-tc-phenotype-picker>
-        </fieldset>
+        <div class="split">
+          <fieldset>
+            <legend>${this._t('introduction_phenotype')}</legend>
+            ${chosen
+              ? html`<p class="chosen">${this._draft.phenotype_name}</p>`
+              : html`<p class="supporting">${this._t('introduction_phenotype_none')}</p>`}
+            <growspace-tc-phenotype-picker
+              .phenotypes=${this.phenotypes}
+              .selected=${this._draft.phenotype_id}
+              .language=${this.language}
+              @phenotype-selected=${this._selectPhenotype}
+            ></growspace-tc-phenotype-picker>
+          </fieldset>
 
-        <fieldset>
-          <legend>${this._t('introduction_intervals')}</legend>
-          <p class="supporting">${this._t('introduction_intervals_explainer')}</p>
-          <div class="row">
-            <label>
-              ${this._t('line_interval_multiplication')}
-              <input
-                type="number"
-                min="1"
-                step="1"
-                .value=${String(this._draft.replate_interval_days.multiplication)}
-                @input=${(e: Event) => this._setInterval('multiplication', e)}
-              />
-            </label>
-            <label>
-              ${this._t('line_interval_rooting')}
-              <input
-                type="number"
-                min="1"
-                step="1"
-                .value=${String(this._draft.replate_interval_days.rooting)}
-                @input=${(e: Event) => this._setInterval('rooting', e)}
-              />
-            </label>
-          </div>
-        </fieldset>
+          <div class="column">
+            <fieldset>
+              <legend>${this._t('introduction_intervals')}</legend>
+              <p class="supporting">${this._t('introduction_intervals_explainer')}</p>
+              <div class="row">
+                <label>
+                  ${this._t('line_interval_multiplication')}
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    .value=${String(this._draft.replate_interval_days.multiplication)}
+                    @input=${(e: Event) => this._setInterval('multiplication', e)}
+                  />
+                </label>
+                <label>
+                  ${this._t('line_interval_rooting')}
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    .value=${String(this._draft.replate_interval_days.rooting)}
+                    @input=${(e: Event) => this._setInterval('rooting', e)}
+                  />
+                </label>
+              </div>
+            </fieldset>
 
-        <fieldset>
-          <legend>${this._t('introduction_first_culture')}</legend>
-          <div class="row">
-            <label>
-              ${this._t('culture_stage')}
-              <select
-                .value=${this._draft.stage}
-                @change=${(e: Event) =>
-                  this._set('stage', (e.target as HTMLSelectElement).value as CultureStage)}
-              >
-                <option value="multiplication">${this._t('culture_stage_multiplication')}</option>
-                <option value="rooting">${this._t('culture_stage_rooting')}</option>
-              </select>
-            </label>
-            <label>
-              ${this._t('culture_plantlets')}
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder=${this._t('culture_plantlets_uncounted')}
-                .value=${this._draft.plantlet_count === null
-                  ? ''
-                  : String(this._draft.plantlet_count)}
-                @input=${this._setPlantletCount}
-              />
-            </label>
-            <label>
-              ${this._t('culture_location')}
-              <input
-                .value=${this._draft.location}
-                @input=${(e: Event) => this._set('location', (e.target as HTMLInputElement).value)}
-              />
-            </label>
+            <fieldset>
+              <legend>${this._t('introduction_first_culture')}</legend>
+              <div class="row">
+                <label>
+                  ${this._t('culture_stage')}
+                  <select
+                    .value=${this._draft.stage}
+                    @change=${(e: Event) =>
+                      this._set('stage', (e.target as HTMLSelectElement).value as CultureStage)}
+                  >
+                    <option value="multiplication">
+                      ${this._t('culture_stage_multiplication')}
+                    </option>
+                    <option value="rooting">${this._t('culture_stage_rooting')}</option>
+                  </select>
+                </label>
+                <label>
+                  ${this._t('culture_plantlets')}
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder=${this._t('culture_plantlets_uncounted')}
+                    .value=${this._draft.plantlet_count === null
+                      ? ''
+                      : String(this._draft.plantlet_count)}
+                    @input=${this._setPlantletCount}
+                  />
+                </label>
+                <label>
+                  ${this._t('culture_location')}
+                  <input
+                    .value=${this._draft.location}
+                    @input=${(e: Event) =>
+                      this._set('location', (e.target as HTMLInputElement).value)}
+                  />
+                </label>
+              </div>
+            </fieldset>
           </div>
-        </fieldset>
+        </div>
 
         ${this.error ? html`<p class="error" role="alert">${this.error}</p>` : nothing}
 

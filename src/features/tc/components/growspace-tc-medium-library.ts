@@ -20,6 +20,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { localize, localizeWithParams } from '../../../localize/localize';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { variables } from '../../../styles/variables';
+import { tcLayoutStyles } from '../tc-layout.styles';
 import type { CultureMedium, MediumComponent, MediumVersion } from '../../../slices/tc';
 
 @customElement('growspace-tc-medium-library')
@@ -32,24 +33,10 @@ export class GrowspaceTcMediumLibrary extends LitElement {
   static styles: CSSResultGroup = [
     variables,
     sharedStyles,
+    tcLayoutStyles,
     css`
       :host {
         display: block;
-      }
-
-      header.library {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 12px;
-      }
-
-      header.library h3 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
       }
 
       ul {
@@ -64,7 +51,7 @@ export class GrowspaceTcMediumLibrary extends LitElement {
       li.medium {
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
         border-radius: 12px;
-        padding: 12px 14px;
+        padding: 12px 14px 14px 16px;
       }
 
       .medium-head {
@@ -88,50 +75,39 @@ export class GrowspaceTcMediumLibrary extends LitElement {
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
       }
 
-      .actions {
-        margin-left: auto;
-        display: flex;
-        gap: 4px;
-      }
-
-      dl {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 2px 10px;
-        margin: 8px 0 0;
-        font-size: 0.8125rem;
-      }
-
-      dt {
-        opacity: 0.7;
-      }
-
-      dd {
-        margin: 0;
-      }
-
       .history {
-        margin-top: 10px;
+        margin-top: 4px;
         border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
-        padding-top: 8px;
+        padding-top: 12px;
       }
 
+      .history > p {
+        margin: 0;
+        font-size: 0.8125rem;
+        max-width: 65ch;
+      }
+
+      /* Versions side by side, newest on the left: the question a history
+         answers is what changed, and that is read across, not down. */
       .history ol {
         list-style: none;
-        margin: 8px 0 0;
+        margin: 12px 0 0;
         padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+        gap: 16px 24px;
+      }
+
+      .history li {
+        padding-top: 10px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
         display: flex;
         flex-direction: column;
         gap: 10px;
       }
 
-      .history li {
-        padding-left: 10px;
-        border-left: 2px solid var(--divider-color, rgba(255, 255, 255, 0.12));
-      }
-
       .history li.current {
-        border-left-color: var(--primary-color);
+        border-top-color: var(--primary-color);
       }
 
       .history-head {
@@ -152,6 +128,7 @@ export class GrowspaceTcMediumLibrary extends LitElement {
       }
 
       .empty {
+        margin: 0;
         padding: 20px 0;
         text-align: center;
       }
@@ -167,11 +144,19 @@ export class GrowspaceTcMediumLibrary extends LitElement {
         cursor: pointer;
       }
 
+      button:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      }
+
       button.link {
         border: none;
         padding: 4px 0;
         text-decoration: underline;
         min-height: 32px;
+      }
+
+      button.link:hover {
+        background: none;
       }
     `,
   ];
@@ -204,22 +189,36 @@ export class GrowspaceTcMediumLibrary extends LitElement {
 
   private _renderFormulation(version: MediumVersion): TemplateResult {
     return html`
-      <dl>
-        <dt>${this._t('medium_base_salts')}</dt>
-        <dd>${version.base_salts}</dd>
-        <dt>${this._t('medium_hormones')}</dt>
-        <dd>${this._components(version.hormones)}</dd>
-        <dt>${this._t('medium_additives')}</dt>
-        <dd>${this._components(version.additives)}</dd>
-        <dt>${this._t('medium_agar')}</dt>
-        <dd>${version.agar_g_per_l} g/L</dd>
-        <dt>${this._t('medium_sugar')}</dt>
-        <dd>${version.sugar_g_per_l} g/L</dd>
-        <dt>${this._t('medium_ph')}</dt>
-        <dd>${version.ph_target}</dd>
+      <dl class="spec">
+        <div>
+          <dt>${this._t('medium_base_salts')}</dt>
+          <dd>${version.base_salts}</dd>
+        </div>
+        <div>
+          <dt>${this._t('medium_hormones')}</dt>
+          <dd>${this._components(version.hormones)}</dd>
+        </div>
+        <div>
+          <dt>${this._t('medium_additives')}</dt>
+          <dd>${this._components(version.additives)}</dd>
+        </div>
+        <div>
+          <dt>${this._t('medium_agar')}</dt>
+          <dd>${version.agar_g_per_l} g/L</dd>
+        </div>
+        <div>
+          <dt>${this._t('medium_sugar')}</dt>
+          <dd>${version.sugar_g_per_l} g/L</dd>
+        </div>
+        <div>
+          <dt>${this._t('medium_ph')}</dt>
+          <dd>${version.ph_target}</dd>
+        </div>
         ${version.notes
-          ? html`<dt>${this._t('medium_notes')}</dt>
-              <dd>${version.notes}</dd>`
+          ? html`<div class="wide">
+              <dt>${this._t('medium_notes')}</dt>
+              <dd>${version.notes}</dd>
+            </div>`
           : nothing}
       </dl>
     `;
@@ -265,38 +264,40 @@ export class GrowspaceTcMediumLibrary extends LitElement {
     const open = this._openHistory.has(medium.id);
 
     return html`
-      <li class="medium">
-        <div class="medium-head">
-          <h4>${medium.name}</h4>
-          <span class="version-chip">
+      <li class="medium record">
+        <div class="record-identity">
+          <div class="medium-head">
+            <h4>${medium.name}</h4>
+            <span class="version-chip">
+              ${localizeWithParams(
+                'tc.medium_version_label',
+                { version: medium.current_version },
+                this.language
+              )}
+            </span>
+          </div>
+          <button
+            class="link"
+            aria-expanded=${open ? 'true' : 'false'}
+            @click=${() => this._toggleHistory(medium.id)}
+          >
             ${localizeWithParams(
-              'tc.medium_version_label',
-              { version: medium.current_version },
+              open ? 'tc.medium_hide_history' : 'tc.medium_show_history',
+              { count: medium.versions.length },
               this.language
             )}
-          </span>
-          <div class="actions">
-            <button @click=${() => this._emit('medium-edit-requested', { id: medium.id })}>
-              ${this._t('medium_edit')}
-            </button>
-            <button @click=${() => this._emit('medium-delete-requested', { id: medium.id })}>
-              ${this._t('medium_delete')}
-            </button>
-          </div>
+          </button>
         </div>
-        ${current ? this._renderFormulation(current) : nothing}
-        <button
-          class="link"
-          aria-expanded=${open ? 'true' : 'false'}
-          @click=${() => this._toggleHistory(medium.id)}
-        >
-          ${localizeWithParams(
-            open ? 'tc.medium_hide_history' : 'tc.medium_show_history',
-            { count: medium.versions.length },
-            this.language
-          )}
-        </button>
-        ${open ? this._renderHistory(medium) : nothing}
+        <div class="record-detail">${current ? this._renderFormulation(current) : nothing}</div>
+        <div class="actions record-actions">
+          <button @click=${() => this._emit('medium-edit-requested', { id: medium.id })}>
+            ${this._t('medium_edit')}
+          </button>
+          <button @click=${() => this._emit('medium-delete-requested', { id: medium.id })}>
+            ${this._t('medium_delete')}
+          </button>
+        </div>
+        ${open ? html`<div class="record-more">${this._renderHistory(medium)}</div>` : nothing}
       </li>
     `;
   }
@@ -304,8 +305,10 @@ export class GrowspaceTcMediumLibrary extends LitElement {
   protected render(): TemplateResult {
     return html`
       <section aria-label=${this._t('medium_library_title')}>
-        <header class="library">
-          <h3>${this._t('medium_library_title')}</h3>
+        <header class="library surface-head">
+          <div class="title">
+            <h3>${this._t('medium_library_title')}</h3>
+          </div>
           <button @click=${() => this._emit('medium-create-requested')}>
             ${this._t('medium_add')}
           </button>

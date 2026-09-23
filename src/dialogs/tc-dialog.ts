@@ -125,10 +125,13 @@ export class TcDialog extends LitElement {
       /* The pane scrolls; the header and the tab bar stay put. The view declares
          no height and no overflow of its own, which is what lets it live in an
          ha-card and in here. */
+      /* The gutter keeps a classic scrollbar off the rows' right edges. */
       .pane {
         flex: 1;
         min-height: 0;
         overflow-y: auto;
+        scrollbar-gutter: stable;
+        padding-inline-end: 8px;
         --growspace-tc-view-padding: 0;
       }
 

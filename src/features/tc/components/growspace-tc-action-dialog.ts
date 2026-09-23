@@ -23,6 +23,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { localize, localizeWithParams } from '../../../localize/localize';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { variables } from '../../../styles/variables';
+import { tcLayoutStyles } from '../tc-layout.styles';
 import {
   draftReplate,
   type GraduationPlant,
@@ -90,6 +91,7 @@ export class GrowspaceTcActionDialog extends LitElement {
   static styles: CSSResultGroup = [
     variables,
     sharedStyles,
+    tcLayoutStyles,
     css`
       :host {
         display: block;
@@ -101,8 +103,14 @@ export class GrowspaceTcActionDialog extends LitElement {
         gap: 12px;
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
         border-radius: 12px;
-        padding: 12px 14px;
+        padding: 14px 14px 14px 16px;
         margin-bottom: 12px;
+      }
+
+      /* The vessel's history is the column beside the act, read while
+         deciding it; the toggle stays where the history will appear. */
+      .history-column {
+        align-items: flex-start;
       }
 
       h3 {
@@ -142,9 +150,12 @@ export class GrowspaceTcActionDialog extends LitElement {
         opacity: 0.7;
       }
 
+      /* Plantlets, location, and the remove button the divisions carry. Explicit
+         tracks: the full-width name row would keep auto-fit from collapsing the
+         empty ones, and the two fields would sit at a fixed 130px. */
       .vessel {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
         gap: 10px;
         align-items: end;
         padding: 8px 0;
@@ -701,27 +712,33 @@ export class GrowspaceTcActionDialog extends LitElement {
           ${this._t(replating ? 'action_replate_explainer' : `action_${this.action}_explainer`)}
         </p>
 
-        ${replating ? this._renderReplate() : nothing}
-        ${this.action === 'discard' ? this._renderDiscard() : nothing}
-        ${this.action === 'graduate' ? this._renderGraduation() : nothing}
+        <div class="split">
+          <div class="column">
+            ${replating ? this._renderReplate() : nothing}
+            ${this.action === 'discard' ? this._renderDiscard() : nothing}
+            ${this.action === 'graduate' ? this._renderGraduation() : nothing}
 
-        <label>
-          ${this._t('action_note_label')}
-          <textarea
-            .value=${this._note}
-            @input=${(e: Event) => (this._note = (e.target as HTMLTextAreaElement).value)}
-          ></textarea>
-        </label>
+            <label>
+              ${this._t('action_note_label')}
+              <textarea
+                .value=${this._note}
+                @input=${(e: Event) => (this._note = (e.target as HTMLTextAreaElement).value)}
+              ></textarea>
+            </label>
+          </div>
 
-        <button
-          type="button"
-          class="link"
-          aria-expanded=${this._showHistory ? 'true' : 'false'}
-          @click=${() => (this._showHistory = !this._showHistory)}
-        >
-          ${this._t(this._showHistory ? 'history_hide' : 'history_show')}
-        </button>
-        ${this._showHistory ? this._renderHistory() : nothing}
+          <div class="column history-column">
+            <button
+              type="button"
+              class="link"
+              aria-expanded=${this._showHistory ? 'true' : 'false'}
+              @click=${() => (this._showHistory = !this._showHistory)}
+            >
+              ${this._t(this._showHistory ? 'history_hide' : 'history_show')}
+            </button>
+            ${this._showHistory ? this._renderHistory() : nothing}
+          </div>
+        </div>
         ${this.error ? html`<p class="error" role="alert">${this.error}</p>` : nothing}
 
         <div class="buttons">

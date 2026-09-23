@@ -26,6 +26,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { localize, localizeWithParams } from '../../../localize/localize';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { variables } from '../../../styles/variables';
+import { tcLayoutStyles } from '../tc-layout.styles';
 import type { MaintenanceActionType, WorklistEntry } from '../../../slices/tc';
 
 const OFFERED_ACTIONS: MaintenanceActionType[] = [
@@ -51,33 +52,24 @@ export class GrowspaceTcWorklist extends LitElement {
   static styles: CSSResultGroup = [
     variables,
     sharedStyles,
+    tcLayoutStyles,
     css`
       :host {
         display: block;
-        margin-bottom: 20px;
-      }
-
-      header.worklist {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-
-      header.worklist h3 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
       }
 
       .filters {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-        margin: 8px 0 12px;
         font-size: 0.8125rem;
+      }
+
+      .filters label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .count {
+        font-variant-numeric: tabular-nums;
       }
 
       select {
@@ -102,7 +94,8 @@ export class GrowspaceTcWorklist extends LitElement {
       li.entry {
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
         border-radius: 12px;
-        padding: 10px 12px;
+        padding: 10px 12px 10px 16px;
+        align-items: center;
       }
 
       li.entry.overdue {
@@ -145,16 +138,9 @@ export class GrowspaceTcWorklist extends LitElement {
       }
 
       .facts {
-        margin: 4px 0 0;
+        margin: 0;
         font-size: 0.8125rem;
-        opacity: 0.8;
-      }
-
-      .actions {
-        display: flex;
-        gap: 4px;
-        flex-wrap: wrap;
-        margin-top: 8px;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
       }
 
       button {
@@ -168,6 +154,21 @@ export class GrowspaceTcWorklist extends LitElement {
         cursor: pointer;
       }
 
+      /* The act the worklist exists for. The fill carries the emphasis; the
+         label stays the theme's text colour so it reads on any theme. */
+      button.primary {
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 16%, transparent);
+        border-color: color-mix(in srgb, var(--primary-color, #4caf50) 55%, transparent);
+      }
+
+      button:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      }
+
+      button.primary:hover {
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 26%, transparent);
+      }
+
       button.link {
         border: none;
         padding: 6px 0;
@@ -175,9 +176,19 @@ export class GrowspaceTcWorklist extends LitElement {
         min-height: 32px;
       }
 
+      button.link:hover {
+        background: none;
+      }
+
       .supporting {
         opacity: 0.7;
         font-size: 0.8125rem;
+      }
+
+      .empty {
+        margin: 0;
+        padding: 20px 0;
+        text-align: center;
       }
     `,
   ];
@@ -222,16 +233,18 @@ export class GrowspaceTcWorklist extends LitElement {
   private _renderEntry(entry: WorklistEntry): TemplateResult {
     const { culture, urgency } = entry;
     return html`
-      <li class="entry ${urgency}">
-        <div class="entry-head">
-          <h4>${this._nameOf(entry)}</h4>
-          ${urgency === 'scheduled'
-            ? nothing
-            : html`<span class="chip ${urgency}">
-                ${this._t(urgency === 'overdue' ? 'worklist_overdue_chip' : 'worklist_due_chip')}
-              </span>`}
+      <li class="entry record many-actions ${urgency}">
+        <div class="record-identity">
+          <div class="entry-head">
+            <h4>${this._nameOf(entry)}</h4>
+            ${urgency === 'scheduled'
+              ? nothing
+              : html`<span class="chip ${urgency}">
+                  ${this._t(urgency === 'overdue' ? 'worklist_overdue_chip' : 'worklist_due_chip')}
+                </span>`}
+          </div>
         </div>
-        <p class="facts">
+        <p class="facts record-detail">
           ${this._whenDue(entry)} · ${this._t(`culture_stage_${culture.stage}`)} ·
           ${culture.location || this._t('culture_location_none')} ·
           ${culture.plantlet_count === null
@@ -242,10 +255,11 @@ export class GrowspaceTcWorklist extends LitElement {
                 this.language
               )}
         </p>
-        <div class="actions">
+        <div class="actions record-actions">
           ${OFFERED_ACTIONS.map(
             (action) =>
               html`<button
+                class=${action === 'replate' ? 'primary' : ''}
                 @click=${() =>
                   this._emit('culture-action-requested', { cultureId: culture.id, action })}
               >
@@ -262,38 +276,40 @@ export class GrowspaceTcWorklist extends LitElement {
 
     return html`
       <section aria-label=${this._t('worklist_title')}>
-        <header class="worklist">
-          <h3>${this._t('worklist_title')}</h3>
-          <span class="supporting">
-            ${localizeWithParams(
-              'tc.worklist_counted',
-              { shown: shown.length, total: this.entries.length },
-              this.language
-            )}
-          </span>
-        </header>
-        <p class="supporting">${this._t('worklist_explainer')}</p>
-        <div class="filters">
-          <label>
-            ${this._t('worklist_filter_location')}
-            <select
-              .value=${this._location}
-              @change=${(e: Event) => (this._location = (e.target as HTMLSelectElement).value)}
+        <header class="worklist surface-head">
+          <div class="title">
+            <h3>${this._t('worklist_title')}</h3>
+            <p class="supporting">${this._t('worklist_explainer')}</p>
+          </div>
+          <div class="filters controls">
+            <label>
+              ${this._t('worklist_filter_location')}
+              <select
+                .value=${this._location}
+                @change=${(e: Event) => (this._location = (e.target as HTMLSelectElement).value)}
+              >
+                <option value="">${this._t('worklist_all_locations')}</option>
+                ${this.locations.map(
+                  (location) => html`<option value=${location}>${location}</option>`
+                )}
+              </select>
+            </label>
+            <button
+              class="link"
+              aria-pressed=${this._onlyDue ? 'true' : 'false'}
+              @click=${() => (this._onlyDue = !this._onlyDue)}
             >
-              <option value="">${this._t('worklist_all_locations')}</option>
-              ${this.locations.map(
-                (location) => html`<option value=${location}>${location}</option>`
+              ${this._t(this._onlyDue ? 'worklist_show_upcoming' : 'worklist_only_due')}
+            </button>
+            <span class="supporting count">
+              ${localizeWithParams(
+                'tc.worklist_counted',
+                { shown: shown.length, total: this.entries.length },
+                this.language
               )}
-            </select>
-          </label>
-          <button
-            class="link"
-            aria-pressed=${this._onlyDue ? 'true' : 'false'}
-            @click=${() => (this._onlyDue = !this._onlyDue)}
-          >
-            ${this._t(this._onlyDue ? 'worklist_show_upcoming' : 'worklist_only_due')}
-          </button>
-        </div>
+            </span>
+          </div>
+        </header>
         ${shown.length
           ? html`<ul>
               ${shown.map((entry) => this._renderEntry(entry))}

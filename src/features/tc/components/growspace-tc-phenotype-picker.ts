@@ -45,6 +45,18 @@ export class GrowspaceTcPhenotypePicker extends LitElement {
       input[type='search'] {
         width: 100%;
         box-sizing: border-box;
+        min-height: 40px;
+        padding: 8px 10px;
+        font: inherit;
+        color: inherit;
+        background: var(--card-background-color, transparent);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+        border-radius: 8px;
+      }
+
+      input[type='search']:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       ul {

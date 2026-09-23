@@ -31,6 +31,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { localize, localizeWithParams } from '../../../localize/localize';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { variables } from '../../../styles/variables';
+import { tcLayoutStyles } from '../tc-layout.styles';
 import type {
   Culture,
   CultureLine,
@@ -73,30 +74,10 @@ export class GrowspaceTcCultureBoard extends LitElement {
   static styles: CSSResultGroup = [
     variables,
     sharedStyles,
+    tcLayoutStyles,
     css`
       :host {
         display: block;
-      }
-
-      header.board {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 12px;
-      }
-
-      header.board h3 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-      }
-
-      .header-actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
       }
 
       ul {
@@ -111,7 +92,7 @@ export class GrowspaceTcCultureBoard extends LitElement {
       li.line {
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
         border-radius: 12px;
-        padding: 12px 14px;
+        padding: 12px 14px 12px 16px;
       }
 
       li.line.missing {
@@ -148,14 +129,8 @@ export class GrowspaceTcCultureBoard extends LitElement {
         color: var(--warning-color, #ffa726);
       }
 
-      .actions {
-        margin-left: auto;
-        display: flex;
-        gap: 4px;
-      }
-
       .missing-note {
-        margin: 8px 0 0;
+        margin: 4px 0 0;
         font-size: 0.8125rem;
         color: var(--warning-color, #ffa726);
       }
@@ -163,31 +138,55 @@ export class GrowspaceTcCultureBoard extends LitElement {
       dl.intervals {
         display: grid;
         grid-template-columns: auto 1fr;
-        gap: 2px 10px;
-        margin: 8px 0 0;
+        gap: 2px 16px;
+        margin: 0;
         font-size: 0.8125rem;
       }
 
-      dt {
-        opacity: 0.7;
+      dl.intervals dt {
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      }
+
+      dl.intervals dd {
+        font-variant-numeric: tabular-nums;
       }
 
       dd {
         margin: 0;
       }
 
+      /* The vessels are the one part of a line that is genuinely tabular, so
+         they keep a table, and it scrolls sideways inside the line rather than
+         pushing the dialog wider on a narrow card. */
+      .vessels {
+        overflow-x: auto;
+        margin-top: 4px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+      }
+
       table.cultures {
         width: 100%;
-        margin-top: 10px;
         border-collapse: collapse;
         font-size: 0.8125rem;
+        font-variant-numeric: tabular-nums;
       }
 
       table.cultures th,
       table.cultures td {
         text-align: left;
-        padding: 4px 8px 4px 0;
+        vertical-align: middle;
+        padding: 6px 16px 6px 0;
         border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+        white-space: nowrap;
+      }
+
+      table.cultures tr:last-child td {
+        border-bottom: none;
+      }
+
+      table.cultures td:last-child {
+        padding-right: 0;
+        width: 1%;
       }
 
       table.cultures th {
@@ -222,7 +221,21 @@ export class GrowspaceTcCultureBoard extends LitElement {
       .culture-actions {
         display: flex;
         gap: 4px;
-        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      button:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      }
+
+      button.link:hover {
+        background: none;
+      }
+
+      .empty {
+        margin: 0;
+        padding: 20px 0;
+        text-align: center;
       }
     `,
   ];
@@ -260,42 +273,44 @@ export class GrowspaceTcCultureBoard extends LitElement {
 
   private _renderCultures(cultures: Culture[]): TemplateResult {
     return html`
-      <table class="cultures">
-        <thead>
-          <tr>
-            <th>${this._t('culture_stage')}</th>
-            <th>${this._t('culture_status')}</th>
-            <th>${this._t('culture_plantlets')}</th>
-            <th>${this._t('culture_location')}</th>
-            <th>${this._t('culture_started')}</th>
-            <th>${this._t('culture_due')}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${cultures.map(
-            (culture) => html`
-              <tr>
-                <td>${this._t(`culture_stage_${culture.stage}`)}</td>
-                <td>${this._t(`culture_status_${culture.status}`)}</td>
-                <td>
-                  ${culture.plantlet_count === null
-                    ? this._t('culture_plantlets_uncounted')
-                    : culture.plantlet_count}
-                </td>
-                <td>${culture.location || this._t('culture_location_none')}</td>
-                <td>${this._day(culture.started_at)}</td>
-                <td>
-                  ${culture.replate_due_at === null
-                    ? this._t('culture_due_none')
-                    : this._day(culture.replate_due_at)}
-                </td>
-                <td>${this._renderActions(culture)}</td>
-              </tr>
-            `
-          )}
-        </tbody>
-      </table>
+      <div class="vessels">
+        <table class="cultures">
+          <thead>
+            <tr>
+              <th>${this._t('culture_stage')}</th>
+              <th>${this._t('culture_status')}</th>
+              <th>${this._t('culture_plantlets')}</th>
+              <th>${this._t('culture_location')}</th>
+              <th>${this._t('culture_started')}</th>
+              <th>${this._t('culture_due')}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cultures.map(
+              (culture) => html`
+                <tr>
+                  <td>${this._t(`culture_stage_${culture.stage}`)}</td>
+                  <td>${this._t(`culture_status_${culture.status}`)}</td>
+                  <td>
+                    ${culture.plantlet_count === null
+                      ? this._t('culture_plantlets_uncounted')
+                      : culture.plantlet_count}
+                  </td>
+                  <td>${culture.location || this._t('culture_location_none')}</td>
+                  <td>${this._day(culture.started_at)}</td>
+                  <td>
+                    ${culture.replate_due_at === null
+                      ? this._t('culture_due_none')
+                      : this._day(culture.replate_due_at)}
+                  </td>
+                  <td>${this._renderActions(culture)}</td>
+                </tr>
+              `
+            )}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
@@ -355,27 +370,29 @@ export class GrowspaceTcCultureBoard extends LitElement {
     const open = this._openLines.has(line.id);
 
     return html`
-      <li class="line ${missing ? 'missing' : ''} ${archived ? 'archived' : ''}">
-        <div class="line-head">
-          <h4>${resolution.name}</h4>
-          ${missing
-            ? html`<span class="chip missing">${this._t('line_missing_chip')}</span>`
-            : nothing}
-          ${archived ? html`<span class="chip">${this._t('line_archived_chip')}</span>` : nothing}
-          <div class="actions">
-            <button @click=${() => this._emit('line-relink-requested', { id: line.id })}>
-              ${this._t('line_relink')}
-            </button>
-            <button
-              @click=${() =>
-                this._emit('line-archive-requested', { id: line.id, archived: !archived })}
-            >
-              ${this._t(archived ? 'line_unarchive' : 'line_archive')}
-            </button>
+      <li class="line record ${missing ? 'missing' : ''} ${archived ? 'archived' : ''}">
+        <div class="record-identity">
+          <div class="line-head">
+            <h4>${resolution.name}</h4>
+            ${missing
+              ? html`<span class="chip missing">${this._t('line_missing_chip')}</span>`
+              : nothing}
+            ${archived ? html`<span class="chip">${this._t('line_archived_chip')}</span>` : nothing}
           </div>
+          ${missing ? this._renderMissing(line) : nothing}
+          <button
+            class="link"
+            aria-expanded=${open ? 'true' : 'false'}
+            @click=${() => this._toggleVessels(line.id)}
+          >
+            ${localizeWithParams(
+              open ? 'tc.line_hide_vessels' : 'tc.line_show_vessels',
+              { count: line.cultures.length },
+              this.language
+            )}
+          </button>
         </div>
-        ${missing ? this._renderMissing(line) : nothing}
-        <dl class="intervals">
+        <dl class="intervals record-detail">
           <dt>${this._t('line_interval_multiplication')}</dt>
           <dd>
             ${localizeWithParams(
@@ -393,18 +410,20 @@ export class GrowspaceTcCultureBoard extends LitElement {
             )}
           </dd>
         </dl>
-        <button
-          class="link"
-          aria-expanded=${open ? 'true' : 'false'}
-          @click=${() => this._toggleVessels(line.id)}
-        >
-          ${localizeWithParams(
-            open ? 'tc.line_hide_vessels' : 'tc.line_show_vessels',
-            { count: line.cultures.length },
-            this.language
-          )}
-        </button>
-        ${open ? this._renderCultures(line.cultures) : nothing}
+        <div class="actions record-actions">
+          <button @click=${() => this._emit('line-relink-requested', { id: line.id })}>
+            ${this._t('line_relink')}
+          </button>
+          <button
+            @click=${() =>
+              this._emit('line-archive-requested', { id: line.id, archived: !archived })}
+          >
+            ${this._t(archived ? 'line_unarchive' : 'line_archive')}
+          </button>
+        </div>
+        ${open
+          ? html`<div class="record-more">${this._renderCultures(line.cultures)}</div>`
+          : nothing}
       </li>
     `;
   }
@@ -420,9 +439,11 @@ export class GrowspaceTcCultureBoard extends LitElement {
 
     return html`
       <section aria-label=${this._t('board_title')}>
-        <header class="board">
-          <h3>${this._t('board_title')}</h3>
-          <div class="header-actions">
+        <header class="board surface-head">
+          <div class="title">
+            <h3>${this._t('board_title')}</h3>
+          </div>
+          <div class="header-actions controls">
             ${archivedCount || this.showArchived
               ? html`<button
                   class="link"
