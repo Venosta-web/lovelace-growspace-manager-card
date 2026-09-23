@@ -228,11 +228,7 @@ chunk imports resolve. HACS installs every JavaScript release asset automaticall
 
 ## Contributing
 
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/my-feature`).
-3. Commit changes (`git commit -m 'Add new feature'`).
-4. Push to the branch (`git push origin feature/my-feature`).
-5. Open a pull request.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Found a bug? [Open a bug report](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/new/choose); the form explains how to copy the browser console output it needs. Questions go to [Discussions](https://github.com/Venosta-web/lovelace-growspace-manager-card/discussions).
 
 ---
 

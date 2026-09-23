@@ -1,0 +1,62 @@
+---
+name: Feature request
+description: Suggest something the card should show or let you do that it does not today.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for a concrete change you would like to see. To think an
+        idea through with other growers first, post it under
+        [Ideas](https://github.com/Venosta-web/lovelace-growspace-manager-card/discussions/categories/ideas).
+        The [roadmap](https://github.com/Venosta-web/growspace_manager_workspace/issues/245)
+        lists what is already planned.
+
+        If the card would need data or an action the integration does not offer
+        yet, file it on the
+        [integration repository](https://github.com/Venosta-web/growspace_manager/issues/new/choose).
+        The integration's part has to land first.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: >-
+        Describe what you are trying to do on your dashboard and where the card
+        gets in the way. Describe the need, not a solution.
+      placeholder: When I check on my tents from my phone, I cannot see …
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: How you picture it. A sketch or a screenshot of something similar helps.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?
+      description: Other cards, dashboards or workarounds you use for this now.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the card is this about?
+      multiple: true
+      options:
+        - Plant grid and plant details
+        - Environment and graphs
+        - Irrigation and crop steering
+        - Strain library
+        - Label printing
+        - Growspace Vision
+        - Tissue culture
+        - Mobile layout
+        - Something else
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?

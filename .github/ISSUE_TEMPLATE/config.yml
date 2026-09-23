@@ -1,0 +1,18 @@
+---
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/Venosta-web/lovelace-growspace-manager-card/discussions/categories/q-a
+    about: Setup help and questions about how the card works.
+  - name: Show your grow
+    url: https://github.com/Venosta-web/lovelace-growspace-manager-card/discussions/categories/show-your-grow
+    about: Share your dashboard and how you laid it out.
+  - name: Share commissioning results
+    url: https://github.com/Venosta-web/lovelace-growspace-manager-card/discussions/categories/commissioning-results
+    about: Post the reliability evidence export from a commissioned growspace.
+  - name: Report an integration problem
+    url: https://github.com/Venosta-web/growspace_manager/issues/new/choose
+    about: Sensors, services, irrigation or stored data misbehave, not just the card.
+  - name: Roadmap
+    url: https://github.com/Venosta-web/growspace_manager_workspace/issues/245
+    about: What is planned next, across the integration, the card and Vision.
