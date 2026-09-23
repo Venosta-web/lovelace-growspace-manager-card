@@ -44,8 +44,10 @@ jobs:
       - name: Audit colour literals
         run: npm run tokens:audit -- --check
 
+      # The release build, because that is what the validator below judges and
+      # what publishing ships: a development build is refused as unminified.
       - name: Build
-        run: npm run build
+        run: npm run build:release
 
       - name: Validate HACS release layout
         run: npm run validate:hacs-release

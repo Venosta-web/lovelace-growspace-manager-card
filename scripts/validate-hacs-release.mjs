@@ -11,6 +11,7 @@ import {
   declaredLazyChunkNames,
   declaredOnDemandOnlyChunkNames,
 } from './entry-bundle-shape.mjs';
+import { assertMinifiedRelease } from './release-minification.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -87,6 +88,10 @@ if (!process.argv.includes('--config-only')) {
       return path.basename(matches[0]);
     }),
   });
+
+  // Every dashboard load downloads and parses these, so a development build
+  // that is otherwise a valid release is still refused.
+  assertMinifiedRelease({ chunks: emitted });
 
   for (const emittedPath of bundlePaths) {
     const bundle = await stat(emittedPath);

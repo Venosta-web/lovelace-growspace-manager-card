@@ -33,7 +33,7 @@ jobs:
       - name: Install and build
         run: |
           npm ci
-          npm run build
+          npm run build:release
 
       # The site is assembled into a dedicated directory rather than published
       # from the repository root. Publishing `./` copies .gitignore into the
