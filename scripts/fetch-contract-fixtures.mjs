@@ -40,6 +40,10 @@ const LABEL_FIXTURES = [
   'label_batch_retry_v1',
   'label_localization_catalogue_v1',
 ];
+// The update_plant request: the fields the backend accepts, which every payload
+// the card builds must stay within (GSM#804). It is prerelease-first like the
+// label contracts, and no release carries it yet.
+const PLANT_FIXTURES = ['update_plant_request_v1'];
 // Every payload the card's TC chunk parses, and the local file each is written
 // to. One entry per contract, so adding a TC command is one line here rather
 // than a fourth copy of the download call.
@@ -128,7 +132,7 @@ export async function fetchContractFixtures({
     });
   }
 
-  for (const fixture of LABEL_FIXTURES) {
+  for (const fixture of [...LABEL_FIXTURES, ...PLANT_FIXTURES]) {
     await downloadFixture({
       baseUrl,
       fetchImpl,

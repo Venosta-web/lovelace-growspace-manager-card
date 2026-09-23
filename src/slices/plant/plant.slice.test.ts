@@ -201,6 +201,29 @@ describe('updatePlant', () => {
 
     expect(plants$.get()[0].attributes.strain).toBe('OG Kush');
   });
+
+  it('refuses a field update_plant would refuse, before patching or sending anything', async () => {
+    setPlants([makePlant({ plant_id: 'abc', strain: 'AK47' })]);
+    vi.mocked(hassCallModule.hassCall).mockClear();
+    const untyped = { strain: 'OG Kush', stage_history: ['mother'] } as unknown as Parameters<
+      typeof updatePlant
+    >[1];
+
+    await expect(updatePlant('abc', untyped)).rejects.toThrow(/stage_history/);
+
+    expect(plants$.get()[0].attributes.strain).toBe('AK47');
+    expect(hassCallModule.hassCall).not.toHaveBeenCalled();
+  });
+
+  it('sends a position typed into the dialog as a number', async () => {
+    await updatePlant('abc', { row: '3', col: '2' });
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_plant',
+      { plant_id: 'abc', row: 3, col: 2 },
+      expect.anything()
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

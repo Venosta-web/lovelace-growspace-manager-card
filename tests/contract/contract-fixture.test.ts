@@ -23,6 +23,10 @@ import {
   FactoryTemplatePreviewSchema,
   LabelTemplateCapabilitySchema,
 } from '../../src/slices/labels/schema';
+import {
+  UPDATE_PLANT_EDITABLE_FIELDS,
+  UpdatePlantRequestContractSchema,
+} from '../../src/slices/plant/schema';
 
 interface FixtureContract {
   name: string;
@@ -100,6 +104,15 @@ const CONTRACTS: FixtureContract[] = [
     releaseVariable: 'GSM_RELEASE_LABEL_REFUSAL_FIXTURE',
     releaseRequired: false,
   },
+  // A request rather than a response: the fields update_plant accepts. The key
+  // diff keeps its shape honest; the check below holds the card to its values.
+  {
+    name: 'update_plant request',
+    schema: UpdatePlantRequestContractSchema,
+    leadingVariable: 'GSM_PRERELEASE_UPDATE_PLANT_REQUEST_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_UPDATE_PLANT_REQUEST_FIXTURE',
+    releaseRequired: false,
+  },
   // Growspace Manager TC is a separate repository that owns its own WebSocket
   // contract and integrates on `main`. It has published no release yet, so
   // there is no installed card-facing shape to stay backward-safe with; the
@@ -174,5 +187,15 @@ describe('GSM contract fixtures', () => {
         contract.releaseRequired
       );
     }
+  });
+});
+
+describe('update_plant request', () => {
+  it('sends only fields the leading backend accepts', async () => {
+    const fixture = await readFixture('GSM_PRERELEASE_UPDATE_PLANT_REQUEST_FIXTURE', true);
+    const { editable } = UpdatePlantRequestContractSchema.parse(fixture);
+
+    const refused = UPDATE_PLANT_EDITABLE_FIELDS.filter((field) => !editable.includes(field));
+    expect(refused, `the backend refuses: ${refused.join(', ')}`).toEqual([]);
   });
 });
