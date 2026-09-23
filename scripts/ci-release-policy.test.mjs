@@ -143,3 +143,24 @@ test('the HACS update check follows publishing on both channels and gates neithe
   assert.ok('workflow_call' in check.on, 'the release workflow calls it');
   assert.equal(check.on.workflow_call.inputs.tag.required, true);
 });
+
+test('the PR build the HACS validator judges is the release build', async () => {
+  const lint = await readWorkflow('lint.yml');
+  const demo = await readWorkflow('demo.yaml');
+
+  // The validator refuses an unminified bundle, and a plain `npm run build` is
+  // one, so a job that validates must build the way publishing does.
+  const validating = Object.values(lint.jobs).filter((job) =>
+    runCommands(job).includes('npm run validate:hacs-release')
+  );
+  assert.equal(validating.length, 1, 'one PR job validates the HACS release layout');
+  const commands = runCommands(validating[0]);
+  const build = commands.indexOf('npm run build:release');
+  assert.ok(build !== -1, 'the validated bundle is built with build:release');
+  assert.ok(build < commands.indexOf('npm run validate:hacs-release'), 'and built before it');
+  assert.ok(!commands.includes('npm run build'), 'no development build replaces it');
+
+  // The public demo is release output and loads the same bundle a dashboard does.
+  const demoBuild = runCommands(demo.jobs.build).join('\n');
+  assert.match(demoBuild, /^npm run build:release$/m);
+});

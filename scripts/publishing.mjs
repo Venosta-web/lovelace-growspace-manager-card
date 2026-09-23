@@ -196,7 +196,10 @@ export async function runPublishing({
     }
   };
 
-  for (const arguments_ of [['ci'], ['run', 'build']]) {
+  // `build:release` sets NODE_ENV=production for the build alone. Setting it on
+  // the environment instead would reach `npm ci` too, which then omits the
+  // devDependencies — rollup among them — that the build needs.
+  for (const arguments_ of [['ci'], ['run', 'build:release']]) {
     await run({
       command: 'npm',
       arguments: arguments_,

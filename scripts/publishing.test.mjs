@@ -22,7 +22,7 @@ const CHANNELS = [
 
 const SUCCESSFUL_PUBLISHING_STAGES = [
   'command:npm ci',
-  'command:npm run build',
+  'command:npm run build:release',
   'command:npm run validate:hacs-release',
 ];
 
