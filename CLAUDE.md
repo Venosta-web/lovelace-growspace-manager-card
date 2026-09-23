@@ -31,6 +31,9 @@ hub; for specifics see:
    `npm run validate:hacs-release` fails the build if either half regresses.
    It also refuses an unminified bundle, so run it after `npm run build:release`,
    not `npm run build` — see `scripts/release-minification.mjs`.
+   `npm run budget:bundle` then holds every chunk to the gzip limits in
+   `scripts/bundle-budget.json`. Raising a limit needs a new `changelog` entry in
+   that file naming the rule, and PR CI refuses one without it.
 4. **Load lazy chunks through `src/lib/lazy-chunk.ts`, never a bare `import()`.**
    `loadLazyChunk` resolves to `null` instead of rejecting and logs the diagnosis
    once, so the surface that triggered the load renders
@@ -48,6 +51,7 @@ hub; for specifics see:
 ```bash
 npm run build        # rollup -> dist/, then copies to root bundle (unminified, sourcemaps)
 npm run build:release # the same with NODE_ENV=production: minified, what publishing ships
+npm run budget:bundle # judge the build:release chunks against scripts/bundle-budget.json
 npm run build:dev    # build + copy bundle into ../../config/www (for a running HA)
 npm test             # vitest unit tests (alias: test:unit)
 npm run test:unit:watch

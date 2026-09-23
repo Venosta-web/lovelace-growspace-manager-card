@@ -164,3 +164,25 @@ test('the PR build the HACS validator judges is the release build', async () => 
   const demoBuild = runCommands(demo.jobs.build).join('\n');
   assert.match(demoBuild, /^npm run build:release$/m);
 });
+
+test('the release build is held to the bundle budget, and a PR to its base branch', async () => {
+  const lint = await readWorkflow('lint.yml');
+
+  const judging = Object.values(lint.jobs).filter((job) =>
+    runCommands(job).some((command) => command.includes('npm run budget:bundle'))
+  );
+  assert.equal(judging.length, 1, 'one PR job judges the bundle budget');
+  const commands = runCommands(judging[0]);
+  const budget = commands.findIndex((command) => command.includes('npm run budget:bundle'));
+  assert.ok(
+    commands.indexOf('npm run build:release') < budget,
+    'the budget judges the release build, built before it'
+  );
+
+  // Without the base branch's budget file a raised limit cannot be told from an
+  // unchanged one, so the changelog rule would never fire.
+  const step = judging[0].steps.find((candidate) => candidate.run === commands[budget]);
+  assert.equal(step.env.BASE_REF, '${{ github.base_ref }}');
+  assert.match(step.run, /git fetch .*origin .*\$BASE_REF/);
+  assert.match(step.run, /npm run budget:bundle -- --base "origin\/\$BASE_REF"/);
+});
