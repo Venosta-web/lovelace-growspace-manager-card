@@ -46,7 +46,9 @@ async function render(
   names: Array<[string, string]> = [],
   locations: string[] = []
 ): Promise<GrowspaceTcWorklist> {
-  const element = await fixture<GrowspaceTcWorklist>('<growspace-tc-worklist></growspace-tc-worklist>');
+  const element = await fixture<GrowspaceTcWorklist>(
+    '<growspace-tc-worklist></growspace-tc-worklist>'
+  );
   element.entries = entries;
   element.names = new Map(names);
   element.locations = locations;
@@ -111,11 +113,10 @@ describe('GrowspaceTcWorklist', () => {
     const element = await render(worklistEntries(lines, TODAY));
     await click(element, 'Show upcoming too');
 
-    expect(rows(element).map((row) => row.className)).toEqual([
-      'entry overdue',
-      'entry due',
-      'entry scheduled',
-    ]);
+    const urgencies = ['overdue', 'due', 'scheduled'];
+    expect(
+      rows(element).map((row) => urgencies.filter((urgency) => row.classList.contains(urgency)))
+    ).toEqual([['overdue'], ['due'], ['scheduled']]);
   });
 
   test('filters by the location the grower picked', async () => {

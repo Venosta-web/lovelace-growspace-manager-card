@@ -19,6 +19,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { localize } from '../../../localize/localize';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { variables } from '../../../styles/variables';
+import { tcLayoutStyles } from '../tc-layout.styles';
 import {
   draftFromMedium,
   type CultureMedium,
@@ -42,6 +43,7 @@ export class GrowspaceTcMediumForm extends LitElement {
   static styles: CSSResultGroup = [
     variables,
     sharedStyles,
+    tcLayoutStyles,
     css`
       :host {
         display: block;
@@ -274,59 +276,64 @@ export class GrowspaceTcMediumForm extends LitElement {
       <form @submit=${this._submit}>
         <h3>${this._t(this.medium ? 'medium_form_edit_title' : 'medium_form_new_title')}</h3>
 
-        <label>
-          ${this._t('medium_name')}
-          <input .value=${this._draft.name} @input=${(e: Event) => this._setText('name', e)} />
-        </label>
+        <div class="split">
+          <div class="column">
+            <label>
+              ${this._t('medium_name')}
+              <input .value=${this._draft.name} @input=${(e: Event) => this._setText('name', e)} />
+            </label>
 
-        <label>
-          ${this._t('medium_base_salts')}
-          <input
-            .value=${this._draft.base_salts}
-            @input=${(e: Event) => this._setText('base_salts', e)}
-          />
-        </label>
+            <label>
+              ${this._t('medium_base_salts')}
+              <input
+                .value=${this._draft.base_salts}
+                @input=${(e: Event) => this._setText('base_salts', e)}
+              />
+            </label>
 
-        ${this._renderComponents('hormones', this._t('medium_hormones'))}
-        ${this._renderComponents('additives', this._t('medium_additives'))}
+            <div class="numbers">
+              <label>
+                ${this._t('medium_agar')}
+                <input
+                  type="number"
+                  step="any"
+                  .value=${String(this._draft.agar_g_per_l)}
+                  @input=${(e: Event) => this._setNumber('agar_g_per_l', e)}
+                />
+              </label>
+              <label>
+                ${this._t('medium_sugar')}
+                <input
+                  type="number"
+                  step="any"
+                  .value=${String(this._draft.sugar_g_per_l)}
+                  @input=${(e: Event) => this._setNumber('sugar_g_per_l', e)}
+                />
+              </label>
+              <label>
+                ${this._t('medium_ph')}
+                <input
+                  type="number"
+                  step="any"
+                  .value=${String(this._draft.ph_target)}
+                  @input=${(e: Event) => this._setNumber('ph_target', e)}
+                />
+              </label>
+            </div>
 
-        <div class="numbers">
-          <label>
-            ${this._t('medium_agar')}
-            <input
-              type="number"
-              step="any"
-              .value=${String(this._draft.agar_g_per_l)}
-              @input=${(e: Event) => this._setNumber('agar_g_per_l', e)}
-            />
-          </label>
-          <label>
-            ${this._t('medium_sugar')}
-            <input
-              type="number"
-              step="any"
-              .value=${String(this._draft.sugar_g_per_l)}
-              @input=${(e: Event) => this._setNumber('sugar_g_per_l', e)}
-            />
-          </label>
-          <label>
-            ${this._t('medium_ph')}
-            <input
-              type="number"
-              step="any"
-              .value=${String(this._draft.ph_target)}
-              @input=${(e: Event) => this._setNumber('ph_target', e)}
-            />
-          </label>
+            <label>
+              ${this._t('medium_notes')}
+              <textarea
+                .value=${this._draft.notes}
+                @input=${(e: Event) => this._setText('notes', e)}
+              ></textarea>
+            </label>
+          </div>
+          <div class="column">
+            ${this._renderComponents('hormones', this._t('medium_hormones'))}
+            ${this._renderComponents('additives', this._t('medium_additives'))}
+          </div>
         </div>
-
-        <label>
-          ${this._t('medium_notes')}
-          <textarea
-            .value=${this._draft.notes}
-            @input=${(e: Event) => this._setText('notes', e)}
-          ></textarea>
-        </label>
 
         ${this.medium
           ? html`<p class="supporting">

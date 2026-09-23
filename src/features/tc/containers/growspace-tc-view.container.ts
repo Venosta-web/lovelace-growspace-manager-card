@@ -78,6 +78,12 @@ export class GrowspaceTcView extends LitElement {
         opacity: 0.7;
       }
 
+      .surfaces {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+      }
+
       /* Beats the hidden surface's own :host display rule. A rule in the tree
          an element lives in outranks the :host rules inside it. */
       [hidden] {
@@ -113,7 +119,7 @@ export class GrowspaceTcView extends LitElement {
     }
 
     return html`
-      <div role="region" aria-label=${this._t('view_title')}>
+      <div class="surfaces" role="region" aria-label=${this._t('view_title')}>
         ${surfaces.includes('cultures')
           ? html`<growspace-tc-cultures
               ?hidden=${this._hidden('worklist', 'cultures')}
