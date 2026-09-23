@@ -303,6 +303,37 @@ describe('one production print', () => {
     );
   });
 
+  test('prints past a refusal the operator may override, only when asked', async () => {
+    const { panel } = await mount({ templateId: 'uuid-1' });
+    const blocked = structuredClone(recordPreviewFixture) as typeof recordPreviewFixture & {
+      decision: { allowed: boolean; blocked_by: string[] };
+      override_available: boolean;
+    };
+    blocked.decision = {
+      ...blocked.decision,
+      allowed: false,
+      blocked_by: ['blocking_diagnostics'],
+    };
+    blocked.override_available = true;
+    mocks.recordPreview.mockResolvedValue(blocked);
+    mocks.print.mockResolvedValue(refusedFixture);
+
+    $<HTMLButtonElement>(panel, '[data-action="preview-record"]')!.click();
+    await vi.waitFor(() =>
+      expect($<HTMLButtonElement>(panel, '[data-action="print-record-anyway"]')).not.toBeNull()
+    );
+    expect($<HTMLButtonElement>(panel, '[data-action="print-record"]')?.disabled).toBe(true);
+    expect($(panel, '#record-anyway')).not.toBeNull();
+
+    $<HTMLButtonElement>(panel, '[data-action="print-record-anyway"]')!.click();
+    await vi.waitFor(() => expect(mocks.print).toHaveBeenCalled());
+    expect(mocks.print).toHaveBeenCalledWith(
+      blocked.approval_id,
+      blocked.render.raster_identity,
+      true
+    );
+  });
+
   test('prints the approved preview, and a refusal names what to do next', async () => {
     const { panel } = await mount({ templateId: 'uuid-1' });
     mocks.recordPreview.mockResolvedValue(recordPreviewFixture);
@@ -319,7 +350,11 @@ describe('one production print', () => {
       approval_id: string;
       render: { raster_identity: string };
     };
-    expect(mocks.print).toHaveBeenCalledWith(preview.approval_id, preview.render.raster_identity);
+    expect(mocks.print).toHaveBeenCalledWith(
+      preview.approval_id,
+      preview.render.raster_identity,
+      false
+    );
     const refusal = $(panel, '.refusal')!;
     expect(refusal.getAttribute('role')).toBe('alert');
     // Reviewed copy, not the backend's sentence.

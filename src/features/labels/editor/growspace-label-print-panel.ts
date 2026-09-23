@@ -480,11 +480,15 @@ export class GrowspaceLabelPrintPanel extends LitElement {
     });
   }
 
-  async #printRecord(): Promise<void> {
+  async #printRecord(anyway = false): Promise<void> {
     const record = this._record;
-    if (!record || !record.decision.allowed) return;
+    if (!record || !(record.decision.allowed || (anyway && record.override_available))) return;
     await this.#run('print', async () => {
-      const answer = await printLabelRecord(record.approval_id, record.render.raster_identity);
+      const answer = await printLabelRecord(
+        record.approval_id,
+        record.render.raster_identity,
+        anyway
+      );
       if (answer.outcome === 'refused') {
         this._record = null;
         return this.#refused(answer.refusal);
@@ -784,6 +788,7 @@ export class GrowspaceLabelPrintPanel extends LitElement {
           ? 'no_strain'
           : null;
     const recovery = record && !record.decision.allowed ? record.recovery : null;
+    const anyway = !!record && !record.decision.allowed && record.override_available;
     const recoveryLabel = recovery ? this.#recoveryLabel(recovery) : null;
     return html`
       <section data-section="record" aria-labelledby="print-record">
@@ -846,11 +851,25 @@ export class GrowspaceLabelPrintPanel extends LitElement {
                   class="primary"
                   data-action="print-record"
                   ?disabled=${!record.decision.allowed || this._busy !== null}
-                  aria-describedby=${record.decision.allowed ? nothing : 'record-blocked'}
+                  aria-describedby=${record.decision.allowed
+                    ? nothing
+                    : anyway
+                      ? 'record-anyway'
+                      : 'record-blocked'}
                   @click=${() => void this.#printRecord()}
                 >
                   ${this._t('print_record_action')}
                 </button>
+                ${anyway
+                  ? html`<button
+                      data-action="print-record-anyway"
+                      aria-describedby="record-anyway"
+                      ?disabled=${this._busy !== null}
+                      @click=${() => void this.#printRecord(true)}
+                    >
+                      ${this._t('print_record_anyway')}
+                    </button>`
+                  : nothing}
                 ${recovery && recoveryLabel
                   ? html`<button
                       data-action="follow"
@@ -863,8 +882,8 @@ export class GrowspaceLabelPrintPanel extends LitElement {
               </div>
               ${record.decision.allowed
                 ? nothing
-                : html`<p class="reason" id="record-blocked">
-                    ${this._t('print_record_blocked_hint')}
+                : html`<p class="reason" id=${anyway ? 'record-anyway' : 'record-blocked'}>
+                    ${this._t(anyway ? 'print_record_anyway_hint' : 'print_record_blocked_hint')}
                   </p>`}
             `
           : nothing}

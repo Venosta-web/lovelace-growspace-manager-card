@@ -177,6 +177,11 @@ export const RecordPreviewAnswerSchema = answer({
   calibration: CalibrationStatusSchema,
   /** The production print's own answer: the render's plus provenance. */
   decision: OperationEligibilitySchema,
+  /**
+   * Whether every reason `decision` refuses may be printed past: judgements
+   * about a raster that exists, never one that would print something else.
+   */
+  override_available: z.boolean().default(false),
   /** The one correction to make first, or `none`. */
   recovery: z.string(),
   render: RenderResultSchema,
