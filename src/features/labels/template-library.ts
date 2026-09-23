@@ -48,6 +48,7 @@ export class GrowspaceTemplateLibrary extends LitElement {
     :host {
       display: block;
       color: var(--primary-text-color);
+      min-width: 0;
     }
     section {
       margin-block: 20px;
@@ -136,6 +137,170 @@ export class GrowspaceTemplateLibrary extends LitElement {
       min-height: 44px;
       cursor: pointer;
     }
+
+    /* ---- The catalogue: a header, a list of templates, then the folds. ---- */
+
+    .catalogue {
+      margin: 0;
+    }
+    .catalogue-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--divider-color);
+    }
+    .catalogue-head h3 {
+      margin: 0 0 2px;
+      font-size: var(--font-size-md, 16px);
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .catalogue-head p {
+      margin: 0;
+      font-size: var(--font-size-sm, 13px);
+    }
+    .catalogue-head strong {
+      font-weight: 500;
+      color: var(--primary-text-color);
+    }
+    .catalogue-head .actions {
+      margin: 0;
+    }
+    .template {
+      padding-block: 16px;
+    }
+    .template-name {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 8px;
+      overflow-wrap: anywhere;
+    }
+    .template-name strong {
+      font-weight: 500;
+    }
+    .revision {
+      font-size: var(--font-size-xs, 11px);
+      font-variant-numeric: tabular-nums;
+      color: var(--secondary-text-color);
+    }
+    .template .actions {
+      margin: 12px 0 0;
+      gap: 4px;
+    }
+    .template > p,
+    .template > ul {
+      margin: 8px 0 0;
+    }
+
+    /* Row actions: one tonal primary, the rest quiet, the destructive one
+       set apart at the far end so it is never the neighbour of a routine
+       click. */
+    button.tonal {
+      border-color: color-mix(in srgb, var(--primary-color, #4caf50) 55%, transparent);
+      background: color-mix(in srgb, var(--primary-color, #4caf50) 12%, transparent);
+      font-weight: 500;
+      padding-inline: 16px;
+    }
+    button.tonal:hover {
+      background: color-mix(in srgb, var(--primary-color, #4caf50) 20%, transparent);
+    }
+    button.quiet,
+    button.danger {
+      border-color: transparent;
+      background: transparent;
+      padding-inline: 10px;
+    }
+    button.quiet:hover {
+      background: var(--secondary-background-color);
+    }
+    button.danger {
+      margin-inline-start: auto;
+      color: var(--error-color, #f44336);
+    }
+    button.danger:hover {
+      background: color-mix(in srgb, var(--error-color, #f44336) 10%, transparent);
+    }
+    .empty {
+      margin: 0;
+      padding-block: 16px;
+      border-bottom: 1px solid var(--divider-color);
+      color: var(--secondary-text-color);
+    }
+
+    /* Drafts, deleted templates and transfer are rarer than the list above,
+       so they fold away as three rows of one list rather than three blocks. */
+    details.fold {
+      margin: 0;
+      border-bottom: 1px solid var(--divider-color);
+    }
+    section:not(.catalogue) + details.fold {
+      border-top: 1px solid var(--divider-color);
+    }
+    details.fold > summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      list-style: none;
+      font-weight: 500;
+    }
+    details.fold > summary::-webkit-details-marker {
+      display: none;
+    }
+    details.fold > summary::before {
+      content: '';
+      flex: none;
+      width: 6px;
+      height: 6px;
+      margin-inline: 3px 1px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(-45deg);
+      opacity: 0.7;
+      transition: transform var(--md3-motion-duration-short4, 200ms)
+        var(--md3-motion-easing-standard, ease);
+    }
+    details.fold[open] > summary::before {
+      transform: rotate(45deg);
+    }
+    .count {
+      min-width: 20px;
+      padding: 0 6px;
+      border-radius: var(--border-radius-full, 9999px);
+      background: color-mix(in srgb, currentColor 12%, transparent);
+      color: var(--secondary-text-color);
+      font-size: var(--font-size-xs, 11px);
+      font-variant-numeric: tabular-nums;
+      line-height: 20px;
+      text-align: center;
+      font-weight: 400;
+    }
+    .fold-body {
+      padding: 0 0 16px 22px;
+    }
+    .fold-body > p:first-child {
+      margin-top: 0;
+      color: var(--secondary-text-color);
+    }
+    .fold-body .row:last-child {
+      border-bottom: 0;
+    }
+    .fold-body .row > p {
+      margin: 4px 0 0;
+      color: var(--secondary-text-color);
+    }
+    .fold-body .row > .actions {
+      margin: 12px 0 0;
+      gap: 4px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      details.fold > summary::before {
+        transition: none;
+      }
+    }
   `;
   private t(key: string): string {
     return localize(`labels.library_${key}`, '', '', this.language);
@@ -178,9 +343,15 @@ export class GrowspaceTemplateLibrary extends LitElement {
       if (read === this.reading) this.failure = String(error);
     }
   }
-  private button(label: string, run: () => void, disabled = false): TemplateResult {
+  private button(
+    label: string,
+    run: () => void,
+    disabled = false,
+    variant?: 'tonal' | 'quiet' | 'danger'
+  ): TemplateResult {
     return html`<button
       type="button"
+      class=${variant ?? nothing}
       data-action=${label}
       ?disabled=${this.busy || disabled}
       @click=${run}
@@ -420,21 +591,31 @@ export class GrowspaceTemplateLibrary extends LitElement {
   private catalogue(library: ManagementLibrary): TemplateResult {
     const templates = library.templates.filter((item) => item.label_size_id === this.labelSizeId);
     const effective = library.effective_defaults[this.labelSizeId];
-    return html`<section>
-        <h3>${this.t('title')}</h3>
-        <p>${this.t('default')}: ${effective?.name ?? this.t('unavailable')}</p>
-        <div class="actions">
-          ${this.button('blank', () => this.open(undefined, true))}${this.button(
-            'clear_default',
-            () => this.stage('clear_default', { label_size_id: this.labelSizeId }),
-            !library.defaults[this.labelSizeId]
-          )}
+    return html`<section class="catalogue" aria-labelledby="library-title">
+        <div class="catalogue-head">
+          <div>
+            <h3 id="library-title">${this.t('title')}</h3>
+            <p class="muted">
+              ${this.t('default')}: <strong>${effective?.name ?? this.t('unavailable')}</strong>
+            </p>
+          </div>
+          <div class="actions">
+            ${this.button('blank', () => this.open(undefined, true))}${this.button(
+              'clear_default',
+              () => this.stage('clear_default', { label_size_id: this.labelSizeId }),
+              !library.defaults[this.labelSizeId],
+              'quiet'
+            )}
+          </div>
         </div>
         ${templates.length
           ? templates.map(
               (item) =>
-                html`<div class="row">
-                  <strong>${item.name}</strong> · r${item.head_revision}
+                html`<div class="row template">
+                  <div class="template-name">
+                    <strong>${item.name}</strong
+                    ><span class="revision">r${item.head_revision}</span>
+                  </div>
                   ${item.quarantined
                     ? html`<p class="error">${this.t('quarantined')}</p>
                         <ul>
@@ -442,14 +623,18 @@ export class GrowspaceTemplateLibrary extends LitElement {
                         </ul>`
                     : nothing}
                   <div class="actions">
-                    ${this.button('edit', () => this.open(item.id), item.quarantined)}
-                    ${this.button('rename', () =>
-                      this.stage('rename', { template_id: item.id }, item.name)
+                    ${this.button('edit', () => this.open(item.id), item.quarantined, 'tonal')}
+                    ${this.button(
+                      'rename',
+                      () => this.stage('rename', { template_id: item.id }, item.name),
+                      false,
+                      'quiet'
                     )}
                     ${this.button(
                       'duplicate',
                       () => this.stage('duplicate', { ref: { kind: 'named', id: item.id } }, ''),
-                      item.quarantined
+                      item.quarantined,
+                      'quiet'
                     )}
                     ${this.button(
                       'set_default',
@@ -458,24 +643,37 @@ export class GrowspaceTemplateLibrary extends LitElement {
                           label_size_id: item.label_size_id,
                           ref: { kind: 'named', id: item.id },
                         }),
-                      item.quarantined
+                      item.quarantined,
+                      'quiet'
                     )}
                     ${this.button(
                       'inspect',
-                      () => void this.read('inspect', { template_id: item.id })
+                      () => void this.read('inspect', { template_id: item.id }),
+                      false,
+                      'quiet'
                     )}
                     ${this.button(
                       'export',
-                      () => void this.read('export', { refs: [{ kind: 'named', id: item.id }] })
+                      () => void this.read('export', { refs: [{ kind: 'named', id: item.id }] }),
+                      false,
+                      'quiet'
                     )}
-                    ${this.button('replace_factory', () =>
-                      this.stage('replace_factory', { template_id: item.id })
+                    ${this.button(
+                      'replace_factory',
+                      () => this.stage('replace_factory', { template_id: item.id }),
+                      false,
+                      'quiet'
                     )}
-                    ${this.button('delete', () => this.stage('delete', { template_id: item.id }))}
+                    ${this.button(
+                      'delete',
+                      () => this.stage('delete', { template_id: item.id }),
+                      false,
+                      'danger'
+                    )}
                   </div>
                 </div>`
             )
-          : html`<p>${this.t('empty')}</p>`}
+          : html`<p class="empty">${this.t('empty')}</p>`}
       </section>
       ${this.inspection
         ? html`<section>
@@ -500,55 +698,76 @@ export class GrowspaceTemplateLibrary extends LitElement {
             )}
           </section>`
         : nothing}
-      <details>
-        <summary>${this.t('drafts')} (${library.drafts.length})</summary>
-        <p>${this.t('ownership')}</p>
-        ${library.drafts.map(
-          (draft) =>
-            html`<div class="row">
-              <strong>${draft.name ?? draft.template_id ?? draft.label_size_id}</strong>
-              <p>
-                ${draft.orphaned
-                  ? this.t('orphaned')
-                  : draft.stale
-                    ? this.t('stale')
-                    : this.t('unfinished')}
-              </p>
-              <div class="actions">
-                ${this.button('resume', () =>
-                  this.open(draft.template_id ?? undefined, false, draft)
-                )}
-                ${this.button('export_work', () =>
-                  downloadTemplateData(draft, 'label-draft-recovery.json')
-                )}
-                ${this.button('save_as', () =>
-                  this.stage(
+      <details class="fold">
+        <summary>${this.t('drafts')} <span class="count">${library.drafts.length}</span></summary>
+        <div class="fold-body">
+          <p>${this.t('ownership')}</p>
+          ${library.drafts.map(
+            (draft) =>
+              html`<div class="row">
+                <strong>${draft.name ?? draft.template_id ?? draft.label_size_id}</strong>
+                <p>
+                  ${draft.orphaned
+                    ? this.t('orphaned')
+                    : draft.stale
+                      ? this.t('stale')
+                      : this.t('unfinished')}
+                </p>
+                <div class="actions">
+                  ${this.button(
+                    'resume',
+                    () => this.open(draft.template_id ?? undefined, false, draft),
+                    false,
+                    'tonal'
+                  )}
+                  ${this.button(
+                    'export_work',
+                    () => downloadTemplateData(draft, 'label-draft-recovery.json'),
+                    false,
+                    'quiet'
+                  )}
+                  ${this.button(
                     'save_as',
-                    {
-                      ...(draft.template_id
-                        ? { template_id: draft.template_id }
-                        : { label_size_id: draft.label_size_id }),
-                      draft_id: draft.id,
-                    },
-                    ''
-                  )
-                )}
-                ${this.button('discard', () =>
-                  this.stage(
+                    () =>
+                      this.stage(
+                        'save_as',
+                        {
+                          ...(draft.template_id
+                            ? { template_id: draft.template_id }
+                            : { label_size_id: draft.label_size_id }),
+                          draft_id: draft.id,
+                        },
+                        ''
+                      ),
+                    false,
+                    'quiet'
+                  )}
+                  ${draft.recovery
+                    ? this.button(
+                        'inspect_recovery',
+                        () => {
+                          this.recovery = draft;
+                        },
+                        false,
+                        'quiet'
+                      )
+                    : nothing}
+                  ${this.button(
                     'discard',
-                    draft.template_id
-                      ? { template_id: draft.template_id }
-                      : { label_size_id: draft.label_size_id }
-                  )
-                )}
-                ${draft.recovery
-                  ? this.button('inspect_recovery', () => {
-                      this.recovery = draft;
-                    })
-                  : nothing}
-              </div>
-            </div>`
-        )}
+                    () =>
+                      this.stage(
+                        'discard',
+                        draft.template_id
+                          ? { template_id: draft.template_id }
+                          : { label_size_id: draft.label_size_id }
+                      ),
+                    false,
+                    'danger'
+                  )}
+                </div>
+              </div>`
+          )}
+        </div>
       </details>
       ${this.recovery
         ? html`<section>
@@ -559,82 +778,98 @@ export class GrowspaceTemplateLibrary extends LitElement {
             )}
           </section>`
         : nothing}
-      <details>
-        <summary>${this.t('deleted')} (${library.tombstones.length})</summary>
-        ${library.tombstones.map(
-          (stone) =>
-            html`<div class="row">
-              <strong>${stone.template.name}</strong>
-              <p>${this.t('expires')} ${stone.expires_at}</p>
-              <div class="actions">
-                ${this.button('restore', () =>
-                  this.stage('restore', { template_id: stone.template.id }, stone.template.name)
-                )}${this.button(
-                  'inspect',
-                  () => void this.read('inspect', { template_id: stone.template.id })
-                )}
-              </div>
-            </div>`
-        )}
-      </details>
-      <details>
-        <summary>${this.t('transfer')}</summary>
-        <p>${this.t('portable')}</p>
-        ${this.button('export_all', () => void this.read('export', {}))}
-        <label
-          >${this.t('choose_file')}<input
-            type="file"
-            accept="application/json,.json"
-            @change=${(event: Event) => void this.upload(event)}
-        /></label>
-        ${this.preflight
-          ? html`${this.preflight.entries.map(
-                (entry) =>
-                  html`<div class="row">
-                    <strong>${entry.name}</strong><small>${entry.id}</small>
-                    <label
-                      >${this.t('name')}<input
-                        .value=${this.names[entry.id] ?? entry.name}
-                        @input=${(event: Event) => {
-                          this.names = {
-                            ...this.names,
-                            [entry.id]: (event.target as HTMLInputElement).value,
-                          };
-                          this.preflight = this.preflight && { ...this.preflight, ready: false };
-                        }}
-                    /></label>
-                    <label
-                      ><input
-                        type="checkbox"
-                        .checked=${this.copies.includes(entry.id)}
-                        @change=${(event: Event) => {
-                          this.copies = (event.target as HTMLInputElement).checked
-                            ? [...this.copies, entry.id]
-                            : this.copies.filter((id) => id !== entry.id);
-                          this.preflight = this.preflight && { ...this.preflight, ready: false };
-                        }}
-                      />${this.t('as_copy')}</label
-                    >
-                    <ul>
-                      ${this.preflight?.issues
-                        .filter((issue) => issue.template_id === entry.id)
-                        .map((issue) => html`<li class="error">${issue.reason}</li>`)}
-                    </ul>
-                  </div>`
-              )}
-              <div class="actions">
-                ${this.button('preflight', () => void this.checkImport())}${this.button(
-                  'import',
-                  () =>
-                    this.stage('import', {
-                      bundle: this.bundle,
-                      as_copy: this.copies,
-                      names: this.names,
-                    }),
-                  !this.preflight.ready || this.preflight.generation !== library.generation
-                )}
+      <details class="fold">
+        <summary>
+          ${this.t('deleted')} <span class="count">${library.tombstones.length}</span>
+        </summary>
+        <div class="fold-body">
+          ${library.tombstones.map(
+            (stone) =>
+              html`<div class="row">
+                <strong>${stone.template.name}</strong>
+                <p>${this.t('expires')} ${stone.expires_at}</p>
+                <div class="actions">
+                  ${this.button(
+                    'restore',
+                    () =>
+                      this.stage(
+                        'restore',
+                        { template_id: stone.template.id },
+                        stone.template.name
+                      ),
+                    false,
+                    'tonal'
+                  )}${this.button(
+                    'inspect',
+                    () => void this.read('inspect', { template_id: stone.template.id }),
+                    false,
+                    'quiet'
+                  )}
+                </div>
               </div>`
-          : nothing}
+          )}
+        </div>
+      </details>
+      <details class="fold">
+        <summary>${this.t('transfer')}</summary>
+        <div class="fold-body">
+          <p>${this.t('portable')}</p>
+          ${this.button('export_all', () => void this.read('export', {}))}
+          <label
+            >${this.t('choose_file')}<input
+              type="file"
+              accept="application/json,.json"
+              @change=${(event: Event) => void this.upload(event)}
+          /></label>
+          ${this.preflight
+            ? html`${this.preflight.entries.map(
+                  (entry) =>
+                    html`<div class="row">
+                      <strong>${entry.name}</strong><small>${entry.id}</small>
+                      <label
+                        >${this.t('name')}<input
+                          .value=${this.names[entry.id] ?? entry.name}
+                          @input=${(event: Event) => {
+                            this.names = {
+                              ...this.names,
+                              [entry.id]: (event.target as HTMLInputElement).value,
+                            };
+                            this.preflight = this.preflight && { ...this.preflight, ready: false };
+                          }}
+                      /></label>
+                      <label
+                        ><input
+                          type="checkbox"
+                          .checked=${this.copies.includes(entry.id)}
+                          @change=${(event: Event) => {
+                            this.copies = (event.target as HTMLInputElement).checked
+                              ? [...this.copies, entry.id]
+                              : this.copies.filter((id) => id !== entry.id);
+                            this.preflight = this.preflight && { ...this.preflight, ready: false };
+                          }}
+                        />${this.t('as_copy')}</label
+                      >
+                      <ul>
+                        ${this.preflight?.issues
+                          .filter((issue) => issue.template_id === entry.id)
+                          .map((issue) => html`<li class="error">${issue.reason}</li>`)}
+                      </ul>
+                    </div>`
+                )}
+                <div class="actions">
+                  ${this.button('preflight', () => void this.checkImport())}${this.button(
+                    'import',
+                    () =>
+                      this.stage('import', {
+                        bundle: this.bundle,
+                        as_copy: this.copies,
+                        names: this.names,
+                      }),
+                    !this.preflight.ready || this.preflight.generation !== library.generation
+                  )}
+                </div>`
+            : nothing}
+        </div>
       </details>`;
   }
 }
