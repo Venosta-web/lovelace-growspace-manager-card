@@ -62,21 +62,66 @@ export type AddPlantsPayload = z.infer<typeof AddPlantsPayloadSchema>;
 // Update plant
 // ---------------------------------------------------------------------------
 
+// Clearing a date is part of editing one: `null` goes out verbatim (ADR-0018).
+const clearableDates = z.object({
+  veg_start: z.string().nullable().optional(),
+  flower_start: z.string().nullable().optional(),
+  seedling_start: z.string().nullable().optional(),
+  mother_start: z.string().nullable().optional(),
+  clone_start: z.string().nullable().optional(),
+  dry_start: z.string().nullable().optional(),
+  cure_start: z.string().nullable().optional(),
+});
+
+// md3-number-input emits its text, so a position edited in the plant dialog
+// arrives as "3". It leaves as a number, and a cleared field fails here rather
+// than at the backend.
+const gridPosition = z.coerce.number().int().min(1).optional();
+
+/**
+ * The fields a grower edits through update_plant, and nothing else. Growspace
+ * Manager refuses any other key by name (GSM#804) and publishes the same list
+ * as its `update_plant_request_v1` contract fixture, which this schema is held
+ * to in `update-plant-request.test.ts` and in the contract-fixture job.
+ */
 export const UpdatePlantPayloadSchema = plantIdPayload
   .extend({
     strain: z.string().optional(),
     phenotype: z.string().optional(),
-    row: z.number().int().optional(),
-    col: z.number().int().optional(),
+    row: gridPosition,
+    col: gridPosition,
     growspace_id: z.string().optional(),
+    stage: z.string().optional(),
   })
-  .merge(optionalDates)
+  .merge(clearableDates)
   // Outbound request, so the rule runs the other way from the inbound schemas:
   // an unexpected key here is a card-side mistake and should fail loudly rather
   // than travel to the backend (ADR 0031).
   .strict();
 
 export type UpdatePlantPayload = z.infer<typeof UpdatePlantPayloadSchema>;
+
+/** What a caller hands `updatePlant`: the payload before parsing, minus the ID. */
+export type UpdatePlantUpdates = Omit<z.input<typeof UpdatePlantPayloadSchema>, 'plant_id'>;
+
+/** Every field `updatePlant` can send, in the order the contract fixture lists them. */
+export const UPDATE_PLANT_EDITABLE_FIELDS: readonly string[] = Object.keys(
+  UpdatePlantPayloadSchema.shape
+)
+  .filter((field) => field !== 'plant_id')
+  .sort();
+
+/** Growspace Manager's `update_plant_request_v1` contract fixture. */
+export const UpdatePlantRequestContractSchema = z
+  .object({
+    command: z.literal('growspace_manager/update_plant'),
+    required: z.array(z.string()),
+    editable: z.array(z.string()),
+    clearable_with_null: z.array(z.string()),
+  })
+  .strict();
+
+export type UpdatePlantRequestContract = z.infer<typeof UpdatePlantRequestContractSchema>;
 
 // ---------------------------------------------------------------------------
 // Remove plant

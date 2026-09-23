@@ -46,6 +46,7 @@ import {
   setDevices,
 } from '../grid';
 import { fetchNutrientInventory } from '../nutrient';
+import { UpdatePlantPayloadSchema, type UpdatePlantUpdates } from './schema';
 
 // ---------------------------------------------------------------------------
 // Atoms (public read)
@@ -322,19 +323,22 @@ export async function addPlants(params: {
  * Apply: calls growspace_manager.update_plant.
  * Inverse: restores the original plant in plants$.
  */
-export async function updatePlant(
-  plantId: string,
-  updates: Partial<PlantEntity['attributes']>
-): Promise<void> {
+export async function updatePlant(plantId: string, updates: UpdatePlantUpdates): Promise<void> {
+  // Parsed before anything is patched: a field update_plant would refuse is a
+  // card-side mistake, and it must not show optimistically first (GSM#804).
+  const { plant_id: _plantId, ...fields } = UpdatePlantPayloadSchema.parse({
+    ...updates,
+    plant_id: plantId,
+  });
   const originalList = plants$.get();
-  const patched = _patchPlant(plantId, updates);
+  const patched = _patchPlant(plantId, fields);
 
   await mutate(
     {
       type: 'updatePlant',
       optimistic: () => plants$.set(patched),
       inverse: () => plants$.set(originalList),
-      apply: () => wsVoid('growspace_manager/update_plant', { plant_id: plantId, ...updates }),
+      apply: () => wsVoid('growspace_manager/update_plant', { plant_id: plantId, ...fields }),
     },
     _growspaceIdFor(plantId)
   );

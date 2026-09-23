@@ -59,6 +59,8 @@ jobs:
           GSM_RELEASE_LABEL_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-release-label_factory_template_preview_v1.json
           GSM_PRERELEASE_LABEL_REFUSAL_FIXTURE: ${{ runner.temp }}/gsm-prerelease-label_factory_template_preview_refused_v1.json
           GSM_RELEASE_LABEL_REFUSAL_FIXTURE: ${{ runner.temp }}/gsm-release-label_factory_template_preview_refused_v1.json
+          GSM_PRERELEASE_UPDATE_PLANT_REQUEST_FIXTURE: ${{ runner.temp }}/gsm-prerelease-update_plant_request_v1.json
+          GSM_RELEASE_UPDATE_PLANT_REQUEST_FIXTURE: ${{ runner.temp }}/gsm-release-update_plant_request_v1.json
           TC_MAIN_MANIFEST_FIXTURE: ${{ runner.temp }}/tc-main-manifest.json
           TC_MAIN_CULTURE_MEDIA_FIXTURE: ${{ runner.temp }}/tc-main-culture-media.json
           TC_MAIN_CULTURE_LINES_FIXTURE: ${{ runner.temp }}/tc-main-culture-lines.json

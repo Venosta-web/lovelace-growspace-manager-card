@@ -130,6 +130,20 @@ describe('UpdatePlantPayloadSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('accepts a stage and a date cleared with null', () => {
+    const result = UpdatePlantPayloadSchema.safeParse({
+      plant_id: 'abc',
+      stage: 'flower',
+      flower_start: null,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects a cleared or zero grid position', () => {
+    expect(UpdatePlantPayloadSchema.safeParse({ plant_id: 'abc', row: '' }).success).toBe(false);
+    expect(UpdatePlantPayloadSchema.safeParse({ plant_id: 'abc', col: 0 }).success).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
