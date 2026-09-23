@@ -1,453 +1,129 @@
 import { fixture, html } from '@open-wc/testing-helpers';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GrowspaceTimeline } from '../../../../src/features/shared/ui/growspace-timeline';
-import { HomeAssistant } from 'custom-card-helpers';
 import '../../../../src/features/shared/ui/growspace-timeline';
 
-// vi.mock is hoisted — use vi.hoisted() to share refs between factory and tests
 const { mockFetchGrowspaceEvents } = vi.hoisted(() => ({
-  mockFetchGrowspaceEvents: vi.fn().mockResolvedValue([]),
+  mockFetchGrowspaceEvents: vi.fn(),
 }));
 
 vi.mock('../../../../src/slices/logbook', () => ({
   fetchGrowspaceEvents: mockFetchGrowspaceEvents,
-  fetchPlantEvents: vi.fn().mockResolvedValue([]),
-  addGrowspaceNote: vi.fn(),
-  addPlantNote: vi.fn(),
-  deleteEvent: vi.fn(),
-  growspaceEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
-  plantEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
-  setGrowspaceEvents: vi.fn(),
-  setPlantEvents: vi.fn(),
 }));
 
+const events = [
+  {
+    growspace_id: 'tent',
+    category: 'note',
+    timestamp: '2026-09-23T10:00:00',
+    notes: 'Checked leaves',
+    reasons: [],
+  },
+  {
+    growspace_id: 'tent',
+    category: 'alert',
+    sensor_type: 'temperature',
+    timestamp: '2026-09-23T08:00:00',
+    reasons: ['High temperature'],
+    severity: 0.9,
+  },
+  {
+    growspace_id: 'tent',
+    category: 'irrigation',
+    sensor_type: 'water',
+    timestamp: '2026-09-22T18:00:00',
+    reasons: [],
+  },
+];
+
+async function createTimeline(): Promise<GrowspaceTimeline> {
+  const element = await fixture<GrowspaceTimeline>(html`
+    <growspace-timeline .hass=${{}} .growspaceId=${'tent'}></growspace-timeline>
+  `);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await element.updateComplete;
+  return element;
+}
+
 describe('GrowspaceTimeline', () => {
-  let element: GrowspaceTimeline;
-  let mockHass: any;
-
-  const mockEvents = [
-    {
-      sensor_type: 'water',
-      category: 'irrigation',
-      growspace_id: 'test_growspace',
-      start_time: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      end_time: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      duration_sec: 0,
-      severity: 0,
-      reasons: [],
-    },
-    {
-      sensor_type: 'temperature',
-      category: 'alert',
-      growspace_id: 'test_growspace',
-      start_time: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      end_time: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      duration_sec: 0,
-      severity: 0.9,
-      reasons: ['High Temp'],
-    },
-    {
-      sensor_type: 'custom',
-      category: 'note',
-      growspace_id: 'test_growspace',
-      start_time: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      end_time: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      duration_sec: 0,
-      severity: 0,
-      reasons: [],
-      notes: 'Manual note',
-    },
-    {
-      sensor_type: 'unknown',
-      category: 'training',
-      growspace_id: 'test_growspace',
-      start_time: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-      end_time: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-      duration_sec: 0,
-      severity: 0,
-      reasons: [],
-    },
-    {
-      sensor_type: 'humidity',
-      category: 'environment',
-      growspace_id: 'test_growspace',
-      start_time: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-      end_time: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-      duration_sec: 0,
-      severity: 0,
-      reasons: [],
-    },
-    {
-      sensor_type: 'vpd',
-      category: 'environment',
-      growspace_id: 'test_growspace',
-      start_time: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-      end_time: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-      duration_sec: 0,
-      severity: 0,
-      reasons: [],
-    },
-    {
-      sensor_type: 'other',
-      category: 'phase_change',
-      growspace_id: 'test_growspace',
-      start_time: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-      end_time: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-      duration_sec: 0,
-      severity: 0,
-      reasons: [],
-    },
-    {
-      sensor_type: 'other',
-      category: 'general',
-      growspace_id: 'test_growspace',
-      start_time: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
-      end_time: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
-      duration_sec: 0,
-      severity: 0,
-      reasons: [],
-    },
-  ];
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    // Default: return mockEvents so rendering tests see populated markers
-    mockFetchGrowspaceEvents.mockResolvedValue(mockEvents);
-
-    mockHass = {
-      callWS: vi.fn(),
-      callService: vi.fn(),
-    };
+    mockFetchGrowspaceEvents.mockResolvedValue(events);
   });
 
-  async function createTimeline(): Promise<GrowspaceTimeline> {
-    const el = await fixture<GrowspaceTimeline>(html`
-      <growspace-timeline .hass=${mockHass} .growspaceId=${'test_growspace'}></growspace-timeline>
-    `);
-
-    // Trigger fetch (will use mocked callWS)
-    await el.updateComplete;
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    return el;
-  }
-
-  it('should render empty state when loading or no events', async () => {
-    const el = await fixture<GrowspaceTimeline>(html`<growspace-timeline></growspace-timeline>`);
-    const content = el.shadowRoot!.textContent;
-    expect(content!.includes('Loading timeline') || content!.includes('No events')).to.be.true;
+  it('groups events by day and opens the newest day', async () => {
+    const element = await createTimeline();
+    const root = element.shadowRoot!;
+    expect(mockFetchGrowspaceEvents).toHaveBeenCalledWith('tent', 100);
+    expect(root.querySelectorAll('.day')).toHaveLength(2);
+    expect(root.querySelector('.day[aria-pressed="true"]')?.textContent).toContain('2 events');
+    expect(root.querySelectorAll('.event-row')).toHaveLength(2);
+    expect(root.textContent).toContain('Checked leaves');
+    expect(root.textContent).toContain('High temperature');
+    expect(root.querySelector('.marker-alert')).toBeTruthy();
+    expect(root.textContent).not.toContain('water');
   });
 
-  it('should render event markers after fetching', async () => {
-    element = await createTimeline();
-
-    // allow async fetch to complete
-    await new Promise((resolve) => setTimeout(resolve, 0));
+  it('shows another day without overlapping or losing events', async () => {
+    const element = await createTimeline();
+    const days = element.shadowRoot!.querySelectorAll<HTMLButtonElement>('.day');
+    days[1].click();
     await element.updateComplete;
 
-    const markers = element.shadowRoot!.querySelectorAll('.event-marker');
-    expect(markers.length).to.equal(8);
-
-    // Verify specific classes
-    const alertMarker = element.shadowRoot!.querySelector('.marker-alert');
-    expect(alertMarker).to.exist;
-
-    const waterMarker = element.shadowRoot!.querySelector('.marker-water');
-    expect(waterMarker).to.exist;
+    expect(element.shadowRoot!.querySelectorAll('.event-row')).toHaveLength(1);
+    expect(element.shadowRoot!.querySelector('.marker-water')).toBeTruthy();
+    expect(days[1].getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('should display error state', async () => {
-    // Mock error from slice
-    mockFetchGrowspaceEvents.mockRejectedValueOnce(new Error('Fetch failed'));
-
-    element = new GrowspaceTimeline();
-    element.hass = mockHass;
-    element.growspaceId = 'gs1';
-    document.body.appendChild(element);
-
-    await element.updateComplete;
-    await new Promise((r) => setTimeout(r, 10)); // Follow async
-    await element.updateComplete;
-
-    const errorMsg = element.shadowRoot?.querySelector('.empty-state');
-    expect(errorMsg?.textContent).toContain('Fetch failed');
-  });
-
-  it('should handle zoom controls', async () => {
-    element = await createTimeline();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await element.updateComplete;
-
-    const track = element.shadowRoot!.querySelector('.timeline-track') as HTMLElement;
-
-    const zoomInBtn = element.shadowRoot!.querySelectorAll('.zoom-btn')[1] as HTMLElement; // + button
-    zoomInBtn.click();
-    await element.updateComplete;
-
-    // Implementation adds 0.5 to zoom level 1 -> 1.5
-    expect(track.style.width).to.equal('150%');
-
-    const zoomOutBtn = element.shadowRoot!.querySelectorAll('.zoom-btn')[0] as HTMLElement; // - button
-    zoomOutBtn.click();
-    await element.updateComplete;
-    expect(track.style.width).to.equal('100%');
-  });
-
-  it('should zoom to ~24h window when clicking an event', async () => {
-    element = await createTimeline();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await element.updateComplete;
-
-    const container = element.shadowRoot!.querySelector('.timeline-container') as HTMLElement;
-    const scrollToSpy = vi.spyOn(container, 'scrollTo');
-
-    const markers = element.shadowRoot!.querySelectorAll('.event-marker');
-    const marker = markers[0] as HTMLElement; // Should correspond to an event
-
-    marker.click();
-    await element.updateComplete;
-
-    // Check if zoom level increased significantly (more than 100%)
-    // The mock events span ~24h (oldest is 24h ago).
-    // With 1 day buffer on each side, total duration is ~3 days.
-    // 24h window ~ 3 days / 1 day = 3x zoom.
-    // If zoom level > 1.5 it worked.
-
-    // Let's check internal state or width
-    const track = element.shadowRoot!.querySelector('.timeline-track') as HTMLElement;
-    const widthVal = parseFloat(track.style.width.replace('%', ''));
-    expect(widthVal).to.be.greaterThan(100);
-
-    // Check compatibility with scrollTo
-    expect(scrollToSpy).toHaveBeenCalled();
-  });
-
-  it('should show tooltip on hover', async () => {
-    element = await createTimeline();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await element.updateComplete;
-
-    const marker = element.shadowRoot!.querySelector('.event-marker') as HTMLElement;
-    marker.dispatchEvent(new MouseEvent('mouseenter'));
-    await element.updateComplete;
-
-    const tooltip = element.shadowRoot!.querySelector('.tooltip.visible');
-    expect(tooltip).to.exist;
-    expect(tooltip!.textContent).to.include('water');
-
-    marker.dispatchEvent(new MouseEvent('mouseleave'));
-    await element.updateComplete;
-    const tooltipHidden = element.shadowRoot!.querySelector('.tooltip.visible');
-    expect(tooltipHidden).to.not.exist;
-  });
-
-  it('should render correct markers for all event types', async () => {
-    element = await createTimeline();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await element.updateComplete;
-
-    const markers = element.shadowRoot!.querySelectorAll('.event-marker');
-    // We added 8 events in mockController
-    expect(markers.length).to.equal(8);
-
-    expect(element.shadowRoot!.querySelector('.marker-alert')).to.exist;
-    expect(element.shadowRoot!.querySelector('.marker-water')).to.exist;
-    expect(element.shadowRoot!.querySelector('.marker-note')).to.exist;
-    // expect(element.shadowRoot!.querySelector('.marker-stage')).to.exist; // hypothetical category in code?
-    // Checking code: if (cat === 'phase_change') return 'marker-stage';
-    // In mock: type='other', category='phase_change'. Should exist.
-    expect(element.shadowRoot!.querySelector('.marker-stage')).to.exist;
-  });
-
-  it('should trigger fetch when growspaceId changes', async () => {
-    element = await createTimeline();
-    // Clear previous calls
-    mockFetchGrowspaceEvents.mockClear();
-    mockFetchGrowspaceEvents.mockResolvedValue(mockEvents);
-
-    element.growspaceId = 'new_growspace';
-    await element.updateComplete;
-
-    // Wait for potential async effects
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    // Check that fetchGrowspaceEvents was called with new growspace ID
-    expect(mockFetchGrowspaceEvents).toHaveBeenCalledWith('new_growspace', 100);
-  });
-
-  it('should handle fetch error gracefully', async () => {
-    // Mock error response from slice
-    mockFetchGrowspaceEvents.mockRejectedValueOnce(new Error('Fetch failed'));
-
-    const el = await fixture<GrowspaceTimeline>(html`
-      <growspace-timeline .hass=${mockHass} .growspaceId=${'test'}></growspace-timeline>
-    `);
-
-    await el.updateComplete;
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    // Service returns empty array on error (matches old controller behavior)
-    const content = el.shadowRoot!.textContent;
-    // expect(content).to.include('No events'); // Old behavior
-    expect(content).to.include('Fetch failed'); // New behavior
-  });
-
-  it('should show correct tooltip content for notes', async () => {
-    element = await createTimeline();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await element.updateComplete;
-
-    // Find the note marker by class — robust against render order
-    const noteMarker = element.shadowRoot!.querySelector('.marker-note') as HTMLElement;
-    expect(noteMarker).to.exist;
-
-    noteMarker.dispatchEvent(new MouseEvent('mouseenter'));
-    await element.updateComplete;
-
-    const tooltip = element.shadowRoot!.querySelector('.tooltip.visible');
-    expect(tooltip).to.exist;
-    expect(tooltip!.textContent).to.include('Note');
-    expect(tooltip!.textContent).to.include('Manual note');
-  });
-
-  it('should show correct tooltip for non-note events with reasons', async () => {
-    element = await createTimeline();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await element.updateComplete;
-
-    // Find the alert marker by class for robustness
-    const marker = element.shadowRoot!.querySelector('.marker-alert') as HTMLElement;
-
-    // Mock getBoundingClientRect
-    marker.getBoundingClientRect = () =>
-      ({
-        top: 100,
-        left: 100,
-        width: 32,
-        height: 32,
-        bottom: 132,
-        right: 132,
-      }) as DOMRect;
-
-    marker.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-    await element.updateComplete;
-
-    // Tooltip is now at the root level
-    const tooltip = element.shadowRoot!.querySelector('.tooltip.visible');
-    expect(tooltip).to.exist;
-
-    // tooltip template:
-    // ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
-    // ${...reasons?.join(', ')...}
-    expect(tooltip!.textContent).to.include('High Temp'); // reasons
-  });
-
-  it('should fallback to Event title if sensor_type is missing', async () => {
-    mockFetchGrowspaceEvents.mockResolvedValueOnce([
-      {
-        category: 'general',
-        growspace_id: 'test_growspace',
-        start_time: new Date().toISOString(),
-        end_time: new Date().toISOString(),
-        duration_sec: 0,
-        severity: 0,
-        reasons: [],
-        // sensor_type undefined
-      },
-    ]);
-
-    element = await createTimeline();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await element.updateComplete;
-
-    const markers = element.shadowRoot!.querySelectorAll('.event-marker');
-    const marker = markers[0] as HTMLElement;
-    marker.dispatchEvent(new MouseEvent('mouseenter'));
-    await element.updateComplete;
-
-    const tooltip = element.shadowRoot!.querySelector('.tooltip.visible');
-    expect(tooltip!.textContent).to.include('Event');
-  });
-
-  it('should trigger fetch if hass changes and events are empty', async () => {
-    mockFetchGrowspaceEvents.mockClear();
-    const el = await fixture<GrowspaceTimeline>(
-      html`<growspace-timeline .growspaceId=${'id'}></growspace-timeline>`
+  it('keeps a busy day in a scrollable vertical sequence', async () => {
+    mockFetchGrowspaceEvents.mockResolvedValueOnce(
+      Array.from({ length: 24 }, (_, index) => ({
+        ...events[0],
+        timestamp: `2026-09-23T${String(index).padStart(2, '0')}:00:00`,
+        notes: `Observation ${index}`,
+      }))
     );
+    const element = await createTimeline();
+    element.style.width = '420px';
+    element.style.height = '320px';
+    await element.updateComplete;
 
-    // Initial state: events empty, no hass
-    // Update hass
-    el.hass = mockHass;
-    await el.updateComplete;
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(mockFetchGrowspaceEvents).toHaveBeenCalled();
+    const detail = element.shadowRoot!.querySelector<HTMLElement>('.day-detail')!;
+    const markers = element.shadowRoot!.querySelectorAll<HTMLElement>('.event-marker');
+    expect(markers).toHaveLength(24);
+    expect(markers[0].getBoundingClientRect().bottom).toBeLessThan(
+      markers[1].getBoundingClientRect().top
+    );
+    expect(detail.scrollHeight).toBeGreaterThan(detail.clientHeight);
+    expect(detail.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      element.getBoundingClientRect().bottom
+    );
   });
 
-  it('should result in different icons for specific environment types', async () => {
-    mockFetchGrowspaceEvents.mockResolvedValueOnce([
-      {
-        sensor_type: 'temperature',
-        category: 'environment',
-        growspace_id: 'test_growspace',
-        start_time: new Date(Date.now() - 1000).toISOString(),
-        end_time: new Date(Date.now() - 1000).toISOString(),
-        duration_sec: 0,
-        severity: 0,
-        reasons: [],
-      },
-      {
-        sensor_type: 'humidity',
-        category: 'environment',
-        growspace_id: 'test_growspace',
-        start_time: new Date(Date.now() - 2000).toISOString(),
-        end_time: new Date(Date.now() - 2000).toISOString(),
-        duration_sec: 0,
-        severity: 0,
-        reasons: [],
-      },
-      {
-        sensor_type: 'vpd',
-        category: 'environment',
-        growspace_id: 'test_growspace',
-        start_time: new Date(Date.now() - 3000).toISOString(),
-        end_time: new Date(Date.now() - 3000).toISOString(),
-        duration_sec: 0,
-        severity: 0,
-        reasons: [],
-      },
-      // Test specific irrigation check
-      {
-        sensor_type: 'water',
-        category: 'general',
-        growspace_id: 'test_growspace',
-        start_time: new Date(Date.now() - 4000).toISOString(),
-        end_time: new Date(Date.now() - 4000).toISOString(),
-        duration_sec: 0,
-        severity: 0,
-        reasons: [],
-      },
-      // Test training check
-      {
-        category: 'training',
-        sensor_type: 'unknown',
-        growspace_id: 'test_growspace',
-        start_time: new Date(Date.now() - 5000).toISOString(),
-        end_time: new Date(Date.now() - 5000).toISOString(),
-        duration_sec: 0,
-        severity: 0,
-        reasons: [],
-      },
-    ]);
-
-    element = await createTimeline();
+  it('refreshes its selected day for a new growspace', async () => {
+    const element = await createTimeline();
+    element.shadowRoot!.querySelectorAll<HTMLButtonElement>('.day')[1].click();
+    await element.updateComplete;
+    mockFetchGrowspaceEvents.mockResolvedValueOnce([events[0]]);
+    element.growspaceId = 'other';
+    await element.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 0));
     await element.updateComplete;
 
-    const markers = element.shadowRoot!.querySelectorAll('.event-marker svg path');
-    expect(markers.length).to.equal(5);
-    // We verify that we got through the rendering without error and presumably hit the branches.
-    const d1 = markers[0].getAttribute('d');
-    const d2 = markers[1].getAttribute('d');
-    expect(d1).not.to.equal(d2);
+    expect(mockFetchGrowspaceEvents).toHaveBeenCalledWith('other', 100);
+    expect(element.shadowRoot!.querySelectorAll('.day')).toHaveLength(1);
+    expect(element.shadowRoot!.querySelector('.day')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('renders empty and error states', async () => {
+    mockFetchGrowspaceEvents.mockResolvedValueOnce([]);
+    const empty = await createTimeline();
+    expect(empty.shadowRoot!.textContent).toContain('No events to display');
+
+    mockFetchGrowspaceEvents.mockRejectedValueOnce(new Error('Fetch failed'));
+    const failed = await createTimeline();
+    expect(failed.shadowRoot!.querySelector('[role="alert"]')?.textContent).toContain(
+      'Fetch failed'
+    );
   });
 });
