@@ -4,6 +4,7 @@ import * as path from 'path';
 
 dotenv.config({
   path: process.env.GROWSPACE_E2E_ENV_PATH ?? path.join(__dirname, '.env.test'),
+  quiet: true,
 });
 
 const managedOutputRoot = process.env.GROWSPACE_E2E_PLAYWRIGHT_OUTPUT_ROOT;

@@ -7,7 +7,7 @@ import type { KnipConfig } from 'knip';
  * looks as alive as any other: base-dialog-layout sat in the tree for eight
  * months, spec and all, collecting accessibility and mobile fixes (#915).
  *
- * The gate is two knip runs with two different ideas of "used":
+ * The gate is three knip runs with three different ideas of "used":
  *
  * - `knip --production --files`: every module under src/ must be reachable
  *   from what the card ships. Knip follows src/index.ts (the Rollup input)
@@ -19,6 +19,11 @@ import type { KnipConfig } from 'knip';
  *   does count, so an export kept as a testing seam is fine. What this
  *   catches is `export` on something only its own file uses, and re-exports
  *   nobody reads through.
+ * - `knip --dependencies` (#1000): every package in package.json must be
+ *   imported or run somewhere, and every package imported must be listed.
+ *   That "somewhere" is the whole repository, not just src/: a package only
+ *   the release scripts or the E2E suite use is used. So knip has to see
+ *   those entry points too, which is what `entry` and `playwright` are for.
  *
  * Real exceptions go below, each with its reason. Don't silence a finding
  * with a JSDoc tag or a CLI flag: if it's intended, it belongs in this file.
@@ -28,7 +33,20 @@ const config: KnipConfig = {
     // `npm run tokens:generate` and `tokens:check` transpile this in memory and
     // import it as a data URL, which static analysis can't follow.
     'src/styles/tokens.ts',
+    // Started by path, as `node scripts/<name>.mjs` from package.json and the
+    // workflows, or spawned by another script (e2e-runtime-harness runs
+    // verify-e2e-bundle, the one thing that uses dotenv outside tests/e2e).
+    // Not a production entry, so `--production --files` ignores them.
+    'scripts/*.mjs',
   ],
+  // tests/e2e is part of this package, not a workspace of its own. Its
+  // package.json is never installed: the harness runs `npm --prefix tests/e2e
+  // run test` purely for the scripts, and every import resolves up to the root
+  // node_modules. The file stays because it has no `"type"`, which keeps the
+  // Playwright config CommonJS (it reads __dirname); root's `"type": "module"`
+  // would break it. Pointing the plugin at the config is what makes knip see
+  // the config itself and its globalSetup.
+  playwright: { config: ['tests/e2e/playwright.config.ts'] },
   project: ['src/**/*.ts!', '!src/**/*.{test,spec}.ts!'],
   ignoreFiles: [
     // Build-time source: variables.generated.ts is what ships.
