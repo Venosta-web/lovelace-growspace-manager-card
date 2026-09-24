@@ -2951,17 +2951,6 @@
       "behavior": "controllable"
     },
     {
-      "entity_id": "sensor.e2e_irrigation_monitored_substrate_moisture",
-      "role": "environment.substrate_moisture",
-      "profile": "irrigation_monitored",
-      "slug": "irrigation_monitored",
-      "domain": "sensor",
-      "behavior": "read-only",
-      "unit_of_measurement": "%",
-      "device_class": "moisture",
-      "state_class": "measurement"
-    },
-    {
       "entity_id": "sensor.e2e_irrigation_tanks_substrate_moisture",
       "role": "environment.substrate_moisture",
       "profile": "irrigation_tanks",
@@ -3038,6 +3027,18 @@
       "device_class": "moisture",
       "state_class": "measurement",
       "backing_entity_id": "input_number.sim_e2e_telemetry_multi_substrate_moisture"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "state_class": "measurement",
+      "backing_entity_id": "input_number.sim_e2e_irrigation_monitored_substrate_moisture"
     },
     {
       "entity_id": "sensor.e2e_veg_power",
@@ -4335,6 +4336,14 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "input_number.sim_e2e_irrigation_monitored_substrate_moisture",
+      "role": "simulation.substrate_moisture_input",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "input_number.sim_e2e_telemetry_multi_power",
       "role": "simulation.power_input",
       "profile": "telemetry_multi",
@@ -4371,6 +4380,14 @@
       "role": "simulation.manual_telemetry",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_manual_telemetry",
+      "role": "simulation.manual_telemetry",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
