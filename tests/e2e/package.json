@@ -10,11 +10,5 @@
     "test:plant": "playwright test plant-management",
     "test:env": "playwright test environmental-monitoring",
     "test:config": "playwright test configuration"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.48.0",
-    "@types/node": "^22.0.0",
-    "typescript": "^5.6.0",
-    "dotenv": "^16.4.0"
   }
 }
