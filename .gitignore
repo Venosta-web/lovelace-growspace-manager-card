@@ -70,8 +70,9 @@ verification/
 tests/**/*.png
 !tests/**/__screenshots__/**/*.png
 
-# Vitest runtime attachments (failure diffs, not baselines)
-.vitest-attachments/
+# Vitest artifacts: attachments, failure screenshots and report output
+# (not the __screenshots__ baselines)
+.vitest/
 
 # E2E test reports
 tests/e2e/test-reports/

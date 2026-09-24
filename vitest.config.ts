@@ -15,6 +15,13 @@ export default defineConfig({
   // node_modules may be shared by lockfile-identical hub worktrees. Keep the
   // writable Vite optimiser cache local to this checkout.
   cacheDir: '.cache/vite',
+  // Only label-release-acceptance imports axe-core, so on a cold cache Vite
+  // finds it mid-run, re-optimises and reloads the page. Vitest 5 reports
+  // that reload as a test disruption (it failed a CI batch on #1013), so
+  // pre-bundle it with the rest.
+  optimizeDeps: {
+    include: ['axe-core'],
+  },
   test: {
     // Per-test retry absorbs transient in-context flakes (spy timing etc.).
     // It does NOT absorb the browser-mode module-mock race (vitest-dev/
