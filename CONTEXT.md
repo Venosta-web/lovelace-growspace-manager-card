@@ -619,6 +619,14 @@ A semantic UI-intent `CustomEvent` a [[Tab Component]] emits (e.g. `edit-tank-re
 **Dialog Shell**
 The host container of a decomposed dialog (`features/irrigation/containers/irrigation-dialog.container.ts`), reduced to wiring: it owns the [[DialogStateMachine]] atom, the [[MutationRunController]], the [[Dialog Capabilities atom]], the shell ViewModel (nav rail / rail-group visibility / footer / active tab / toast), translates each [[Tab Intent]] into an SM event, and renders the active [[Tab Component]] with its [[Tab ViewModel]]. During migration it renders extracted tabs (`<irrigation-x-tab .vm=…>`) alongside still-inline `_renderXTab()` methods, so decomposition proceeds strictly tab-by-tab with both forms coexisting.
 
+**Dialog Frame**
+The chrome every dialog renders inside: Home Assistant's `ha-dialog` surface wrapped with the card's glass container and standard header — icon, heading, subtitle, a `header-extra` slot, the close button — and one content slot below it. `gs-dialog` is the only Dialog Frame, and there is meant to be exactly one: it owns nothing about a dialog's content, tabs, drafts or saving — a tabbed dialog places a [[Tab Strip]] in the content slot itself — and inherits scrim, stacking, Escape and focus handling from `ha-dialog` rather than reimplementing them. A decomposed dialog's [[Dialog Shell]] *renders* a Dialog Frame; the two are different layers.
+_Avoid_: shell, dialog shell, base dialog, dialog layout — for this meaning; "shell" belongs to [[Dialog Shell]].
+
+**Tab Strip**
+The horizontal `tablist` a tabbed dialog places at the top of its [[Dialog Frame]]'s content slot: one Tab stop (roving tabindex), ←/→ with Home/End, and automatic activation — moving to a tab selects it. It owns the tabs and nothing below them: whether the panels render only while active or, like Tissue Culture's surfaces (ADR-0055), stay mounted is the dialog's business. Not a **nav rail** — the vertical, grouped navigation of the config and irrigation dialogs — and not a **view switch**, the segmented control that swaps one view for another (the snapshots dialog's Captures / Vision Checkup, the genetics tree's mode toggle).
+_Avoid_: tab bar, tabs header.
+
 **Dialog Capabilities atom**
 A single shared `computed` atom holding a dialog's cross-tab derived state — visibility gates (e.g. the Crop-Steering rail group's `(hasSoilMoisture || hasStrategy) && hasPump`, ADR-0016), server-authoritative capability flags (`volume_mode_capable`, ADR-0017), and cross-tab labels (Sizing-Mode relabelling the Steering tab's shot fields). It is a peer input to both the [[Dialog Shell]]'s shell VM and every [[Tab ViewModel]] — **never** re-derived per tab. This is the seam that lets per-tab ViewModels exist without re-fragmenting the cross-tab coupling ADR-0016/0017 deliberately consolidated.
 
