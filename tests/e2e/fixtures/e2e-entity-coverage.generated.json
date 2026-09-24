@@ -2957,17 +2957,6 @@
       "behavior": "controllable"
     },
     {
-      "entity_id": "sensor.e2e_irrigation_monitored_substrate_moisture",
-      "role": "environment.substrate_moisture",
-      "profile": "irrigation_monitored",
-      "slug": "irrigation_monitored",
-      "domain": "sensor",
-      "behavior": "read-only",
-      "unit_of_measurement": "%",
-      "device_class": "moisture",
-      "state_class": "measurement"
-    },
-    {
       "entity_id": "sensor.e2e_irrigation_tanks_substrate_moisture",
       "role": "environment.substrate_moisture",
       "profile": "irrigation_tanks",
@@ -3044,6 +3033,18 @@
       "device_class": "moisture",
       "state_class": "measurement",
       "backing_entity_id": "input_number.sim_e2e_telemetry_multi_substrate_moisture"
+    },
+    {
+      "entity_id": "sensor.e2e_irrigation_monitored_substrate_moisture",
+      "role": "environment.substrate_moisture",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "sensor",
+      "behavior": "read-only",
+      "unit_of_measurement": "%",
+      "device_class": "moisture",
+      "state_class": "measurement",
+      "backing_entity_id": "input_number.sim_e2e_irrigation_monitored_substrate_moisture"
     },
     {
       "entity_id": "sensor.e2e_veg_power",
@@ -3965,6 +3966,54 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "switch.sim_e2e_vwc_veg_irrigation_pump_stuck",
+      "role": "simulation.irrigation_pump_stuck",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_flower_irrigation_pump_stuck",
+      "role": "simulation.irrigation_pump_stuck",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_veg_irrigation_pump_error",
+      "role": "simulation.irrigation_pump_error",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_flower_irrigation_pump_error",
+      "role": "simulation.irrigation_pump_error",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_irrigation_pump_stuck",
+      "role": "simulation.irrigation_pump_stuck_state",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_irrigation_pump_stuck",
+      "role": "simulation.irrigation_pump_stuck_state",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "input_boolean.sim_e2e_veg_irrigation_pump",
       "role": "simulation.irrigation_pump_state",
       "profile": "stage",
@@ -4293,6 +4342,14 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "input_number.sim_e2e_irrigation_monitored_substrate_moisture",
+      "role": "simulation.substrate_moisture_input",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
+      "domain": "input_number",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "input_number.sim_e2e_telemetry_multi_power",
       "role": "simulation.power_input",
       "profile": "telemetry_multi",
@@ -4329,6 +4386,14 @@
       "role": "simulation.manual_telemetry",
       "profile": "telemetry_multi",
       "slug": "telemetry_multi",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_irrigation_monitored_manual_telemetry",
+      "role": "simulation.manual_telemetry",
+      "profile": "irrigation_monitored",
+      "slug": "irrigation_monitored",
       "domain": "input_boolean",
       "behavior": "controllable"
     },
