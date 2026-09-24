@@ -159,6 +159,11 @@ const IrrigationConfigSchema = z.object({
   sensor_stale_after_minutes: z.number().optional(),
   sensor_alert_delay_minutes: z.number().optional(),
   moisture_zero_is_implausible: z.boolean().optional(),
+  // What a pump switched on outside Growspace Manager leads to (GSM#793,
+  // ADR-0053): "alert" or "enforce_off". A string rather than an enum so a
+  // policy a newer backend adds still parses. Declared for the contract; the
+  // card neither shows nor edits it yet. Optional because older backends omit it.
+  unexpected_on_policy: z.string().optional(),
   active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
   phase_changed_at: z.string().nullable().optional(),
 });

@@ -35,6 +35,19 @@ export type SafetyReason = z.infer<typeof SafetyReasonSchema>;
  * `device_class`, `icon`); those are not part of this contract and are
  * stripped rather than declared.
  */
+/**
+ * A Manual Override (GSM#793, ADR-0053): one subsystem of the growspace handed
+ * to a person until `expires_at`. `subsystem` stays a string for the same
+ * reason `code` does.
+ */
+const ManualOverrideSchema = z.object({
+  subsystem: z.string().min(1),
+  started_at: z.string(),
+  expires_at: z.string(),
+  user_id: z.string().nullable(),
+  reason: z.string().nullable(),
+});
+
 export const IrrigationControllerSchema = z.object({
   state: ControllerStateSchema,
   attributes: z.object({
@@ -42,6 +55,10 @@ export const IrrigationControllerSchema = z.object({
     fault_id: z.string().nullable(),
     requires_ack: z.boolean(),
     since: z.string().nullable(),
+    // Every Manual Override of the growspace, whatever it holds. Declared for
+    // the contract; the card does not show it yet. Optional because older
+    // backends omit it.
+    overrides: z.array(ManualOverrideSchema).optional(),
   }),
 });
 

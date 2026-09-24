@@ -457,6 +457,19 @@ describe('Growspace Zod Schemas', () => {
         expect(config.moisture_zero_is_implausible).toBeUndefined();
       });
 
+      it('keeps the unexpected ON policy, and one a newer backend adds', () => {
+        for (const policy of ['alert', 'enforce_off', 'ask_first']) {
+          const parsed = GrowspaceAPIResponseSchema.parse({
+            irrigation: { irrigation_config: { unexpected_on_policy: policy } },
+          });
+          expect(parsed.irrigation.irrigation_config.unexpected_on_policy).toBe(policy);
+        }
+        const older = GrowspaceAPIResponseSchema.parse({
+          irrigation: { irrigation_config: { irrigation_duration: 30 } },
+        });
+        expect(older.irrigation.irrigation_config.unexpected_on_policy).toBeUndefined();
+      });
+
       it('keeps the pump cycle runtime limits', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {
