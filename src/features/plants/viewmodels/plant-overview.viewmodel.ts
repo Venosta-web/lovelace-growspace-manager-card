@@ -13,7 +13,7 @@ import { PlantUtils } from '../../../utils/plant-utils';
 /**
  * Display-friendly timeline event (simplified from PlantTimelineEvent)
  */
-export interface TimelineEvent {
+interface TimelineEvent {
   type: 'milestone' | 'action' | 'note';
   date: string;
   label: string;

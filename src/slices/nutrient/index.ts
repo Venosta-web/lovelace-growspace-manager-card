@@ -21,9 +21,7 @@ export type {
   ECRampCurvesResponse,
 };
 export type { ECRampPoint };
-export type { IPMPreset, ECRampCurve, NutrientStock, NutrientStockType } from './schema';
-export { NUTRIENT_STOCK_TYPES } from './schema';
-
+export type { ECRampCurve, NutrientStock, NutrientStockType } from './schema';
 // ---------------------------------------------------------------------------
 // Atoms
 // ---------------------------------------------------------------------------

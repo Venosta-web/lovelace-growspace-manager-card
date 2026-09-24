@@ -66,7 +66,7 @@ export interface ScheduleSectionVM {
 }
 
 /** A phase chip in the crop-steering legend (label/name/color/target precomputed). */
-export interface CropSteeringPhaseChipVM {
+interface CropSteeringPhaseChipVM {
   id: string;
   label: string;
   name: string;

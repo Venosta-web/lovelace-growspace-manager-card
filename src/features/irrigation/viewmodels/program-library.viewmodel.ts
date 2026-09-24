@@ -52,7 +52,7 @@ export interface ProgramCellVM {
 }
 
 /** One column of the grid. */
-export interface ProgramStageColumnVM {
+interface ProgramStageColumnVM {
   stage: string;
   label: string;
   /** Whether the column may be closed: only while it holds no slot. */
@@ -69,7 +69,7 @@ export interface ProgramGridVM {
 }
 
 /** A recipe the grid's cell pickers can offer. */
-export interface ProgramRecipeOptionVM {
+interface ProgramRecipeOptionVM {
   id: string;
   name: string;
   /** "Crop steering" / "Schedule" — both kinds are offered, see below. */
@@ -77,7 +77,7 @@ export interface ProgramRecipeOptionVM {
 }
 
 /** The delete confirmation for one program. */
-export interface ProgramDeleteConfirmVM {
+interface ProgramDeleteConfirmVM {
   id: string;
   name: string;
 }

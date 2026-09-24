@@ -38,7 +38,7 @@ interface WalkState {
  * Their container keys still participate in the diff. Only their user-sized
  * contents are skipped.
  */
-export const GROWSPACE_OPAQUE_PATHS: ReadonlySet<string> = new Set([
+const GROWSPACE_OPAQUE_PATHS: ReadonlySet<string> = new Set([
   '**.active_events',
   '**.daily_readings',
   '**.irrigation_tanks',

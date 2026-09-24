@@ -176,7 +176,7 @@ const ENVIRONMENT_FIELDS = {
   lstOffset: { owner: 'environment', wireKey: 'lst_offset' },
 } as const satisfies Record<EnvironmentDraftKey, EnvironmentFieldRule>;
 
-export const ENV_ATOMIC_GROUPS: ReadonlyArray<readonly EnvironmentDraftKey[]> = [
+const ENV_ATOMIC_GROUPS: ReadonlyArray<readonly EnvironmentDraftKey[]> = [
   ['soilMoistureMin', 'soilMoistureMax'],
 ];
 

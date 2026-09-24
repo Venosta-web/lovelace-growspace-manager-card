@@ -11,7 +11,7 @@ import { z } from 'zod';
 // Snapshot
 // ---------------------------------------------------------------------------
 
-export const SnapshotSchema = z.object({
+const SnapshotSchema = z.object({
   path: z.string(),
   filename: z.string(),
   timestamp: z.string(),
@@ -61,7 +61,7 @@ export type VisionCheckupConfig = z.infer<typeof VisionCheckupConfigSchema>;
 // Vision checkup result
 // ---------------------------------------------------------------------------
 
-export const VisionCheckupResultSchema = z.object({
+const VisionCheckupResultSchema = z.object({
   timestamp: z.string(),
   check_type: z.enum(['early', 'mid', 'late', 'manual']),
   analysis: z.string(),
@@ -221,7 +221,7 @@ export const VisionCaptureResultSchema = z
 
 export type VisionCaptureResult = z.infer<typeof VisionCaptureResultSchema>;
 
-export const VisionCheckupSchema = z
+const VisionCheckupSchema = z
   .object({
     result_schema: z.literal('evidence_v1'),
     checkup_id: z.string(),
@@ -237,13 +237,11 @@ export const VisionCheckupSchema = z
 
 export type VisionCheckup = z.infer<typeof VisionCheckupSchema>;
 
-export const LegacyVisionCheckupResultSchema = VisionCheckupResultSchema.extend({
+const LegacyVisionCheckupResultSchema = VisionCheckupResultSchema.extend({
   result_schema: z.literal('legacy_cloud_v1'),
 }).strict();
 
-export type LegacyVisionCheckupResult = z.infer<typeof LegacyVisionCheckupResultSchema>;
-
-export const VisionHistoryItemSchema = z.discriminatedUnion('result_schema', [
+const VisionHistoryItemSchema = z.discriminatedUnion('result_schema', [
   VisionCheckupSchema,
   LegacyVisionCheckupResultSchema,
 ]);
@@ -276,8 +274,6 @@ export const ResolvedMediaSchema = z.object({
   url: z.string(),
   mime_type: z.string().optional(),
 });
-
-export type ResolvedMedia = z.infer<typeof ResolvedMediaSchema>;
 
 // ---------------------------------------------------------------------------
 // get_vision_history response

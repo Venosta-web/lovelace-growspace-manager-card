@@ -47,7 +47,6 @@ vi.mock('../../../slices/plant', () => ({
   setVisualTag: vi.fn(),
   movePlantToGrowspace: vi.fn(),
   advancePlantStage: vi.fn().mockResolvedValue('dry'),
-  movePlantPosition: vi.fn(),
   waterGrowspace: vi.fn().mockResolvedValue(undefined),
 }));
 

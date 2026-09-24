@@ -29,7 +29,7 @@ import type {
 import { token } from '../../../styles/variables';
 
 /** The status banner state (color + message text, derived from the draft + last reading). */
-export interface DrainEcStatusVM {
+interface DrainEcStatusVM {
   /** Status dot/border color (CSS color string). */
   color: string;
   /** Status message line. */

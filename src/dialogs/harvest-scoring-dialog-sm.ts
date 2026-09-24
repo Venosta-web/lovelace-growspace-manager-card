@@ -29,7 +29,7 @@ export interface ScoringDraft {
   mold_resistance: number | null;
 }
 
-export interface ScoringTabState {
+interface ScoringTabState {
   draft: ScoringDraft;
   sub: { kind: 'idle' };
 }
@@ -45,21 +45,21 @@ export interface MetricsDraft {
   terpeneProfile: string;
 }
 
-export interface MetricsTabState {
+interface MetricsTabState {
   draft: MetricsDraft;
   sub: { kind: 'idle' };
 }
 
 // ─── Root SM ──────────────────────────────────────────────────────────────────
 
-export interface TabStates {
+interface TabStates {
   scoring: ScoringTabState;
   metrics: MetricsTabState;
 }
 
-export type HarvestMode = 'save' | 'skip';
+type HarvestMode = 'save' | 'skip';
 
-export type Status =
+type Status =
   | { kind: 'idle' }
   | { kind: 'confirming'; mode: HarvestMode }
   | { kind: 'applying'; mode: HarvestMode }

@@ -32,7 +32,6 @@ import {
   type VisionStatus,
   type GetVisionHistoryResponse,
   type GetVisionHistoryV2Response,
-  type ResolvedMedia,
   type TriggerVisionCheckupResponse,
   type UpdateVisionCheckupConfigResponse,
   GetSnapshotsResponseSchema,
@@ -58,7 +57,6 @@ export type {
   VisionStatus,
   GetVisionHistoryResponse,
   GetVisionHistoryV2Response,
-  ResolvedMedia,
   TriggerVisionCheckupResponse,
   UpdateVisionCheckupConfigResponse,
 };

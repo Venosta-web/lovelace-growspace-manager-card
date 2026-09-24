@@ -26,7 +26,7 @@ export const PrintSourceSchema = z.object({
 });
 
 /** One label that reached paper, and everything that authorized it. */
-export const PrintOutcomeSchema = z.object({
+const PrintOutcomeSchema = z.object({
   operation: z.string(),
   source: PrintSourceSchema,
   raster_identity: z.string(),
@@ -38,7 +38,7 @@ export const PrintOutcomeSchema = z.object({
 export type PrintOutcome = z.infer<typeof PrintOutcomeSchema>;
 
 /** The five numbers read off a calibration label, in millimetres. */
-export const PlacementMeasurementSchema = z.object({
+const PlacementMeasurementSchema = z.object({
   top_mm: z.number(),
   right_mm: z.number(),
   bottom_mm: z.number(),
@@ -49,7 +49,7 @@ export const PlacementMeasurementSchema = z.object({
 export type PlacementMeasurement = z.infer<typeof PlacementMeasurementSchema>;
 
 /** The printer, stock and mounting a measurement is of. */
-export const CalibrationScopeSchema = z.object({
+const CalibrationScopeSchema = z.object({
   device_id: z.string(),
   printer_class: z.string(),
   label_size_id: z.string(),
@@ -62,7 +62,7 @@ export const CalibrationScopeSchema = z.object({
  * Unread beyond `scope`: the backend compares it and names what moved in
  * `stale_reasons`, which is the only form the card shows it in.
  */
-export const CalibrationDependenciesSchema = z.object({
+const CalibrationDependenciesSchema = z.object({
   scope: CalibrationScopeSchema,
   feed_axis: z.string(),
   dpi: z.number(),
@@ -91,7 +91,7 @@ export const CalibrationDependenciesSchema = z.object({
 });
 
 /** One immutable Local Calibration record. */
-export const CalibrationRecordSchema = z.object({
+const CalibrationRecordSchema = z.object({
   id: z.string(),
   identity: z.string(),
   recorded_at: z.string(),
@@ -102,7 +102,6 @@ export const CalibrationRecordSchema = z.object({
   printed_density: z.string(),
   notes: z.string().nullable(),
 });
-export type CalibrationRecord = z.infer<typeof CalibrationRecordSchema>;
 
 /**
  * Whether one printer's newest measurement still holds.
@@ -111,7 +110,7 @@ export type CalibrationRecord = z.infer<typeof CalibrationRecordSchema>;
  * newer backend must not blank the card, and the card treats anything other
  * than `current` as "not authorized to print".
  */
-export const CalibrationStatusSchema = z.object({
+const CalibrationStatusSchema = z.object({
   state: z.string(),
   identity: z.string().nullable(),
   /** The dependencies that moved since the measurement. Blocking. */
@@ -124,7 +123,7 @@ export const CalibrationStatusSchema = z.object({
 export type CalibrationStatus = z.infer<typeof CalibrationStatusSchema>;
 
 /** The geometry the five numbers are checked against. */
-export const MeasurementBoundsSchema = z.object({
+const MeasurementBoundsSchema = z.object({
   printable_width_mm: z.number(),
   printable_height_mm: z.number(),
   feed_axis: z.string(),

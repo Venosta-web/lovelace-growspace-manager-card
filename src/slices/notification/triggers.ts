@@ -16,7 +16,7 @@ export const TIMED_NOTIFICATION_TRIGGERS = ['clone', 'veg', 'flower', 'dry'] as 
 export type TimedNotificationTrigger = (typeof TIMED_NOTIFICATION_TRIGGERS)[number];
 
 /** A stored trigger outside the vocabulary, preserved verbatim. */
-export interface UnrecognisedTrigger {
+interface UnrecognisedTrigger {
   raw: string;
 }
 
@@ -28,7 +28,7 @@ export type TimedNotificationTriggerValue = TimedNotificationTrigger | Unrecogni
  * absent: `days_since_germination`, which has no stage counterpart — mapping it
  * would be the silent rewrite this module exists to prevent.
  */
-export const LEGACY_TRIGGER_ALIASES: Readonly<Record<string, TimedNotificationTrigger>> = {
+const LEGACY_TRIGGER_ALIASES: Readonly<Record<string, TimedNotificationTrigger>> = {
   days_since_flip: 'flower',
 };
 

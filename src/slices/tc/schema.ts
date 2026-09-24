@@ -37,7 +37,7 @@ export type TcManifest = z.infer<typeof TcManifestSchema>;
  * dosed in mg/L by some growers and µM by others, and a closed vocabulary would
  * either be wrong for half of them or need a conversion table nobody owns.
  */
-export const MediumComponentSchema = z.object({
+const MediumComponentSchema = z.object({
   name: z.string(),
   amount: z.number(),
   unit: z.string(),
@@ -131,7 +131,7 @@ export const PhenotypeReferenceSchema = z.object({
 });
 
 /** Which of the line's replate intervals a Culture is measured against. */
-export const CultureStageSchema = z.enum(['multiplication', 'rooting']);
+const CultureStageSchema = z.enum(['multiplication', 'rooting']);
 
 /**
  * Where a Culture stands.
@@ -140,10 +140,10 @@ export const CultureStageSchema = z.enum(['multiplication', 'rooting']);
  * Maintenance Actions that own them. A Culture is never deleted, so a board
  * that has been worked for a season still holds every vessel that ever existed.
  */
-export const CultureStatusSchema = z.enum(['active', 'discarded', 'graduated']);
+const CultureStatusSchema = z.enum(['active', 'discarded', 'graduated']);
 
 /** How many days a Culture may sit on one medium, per Culture Stage. */
-export const ReplateIntervalsSchema = z.object({
+const ReplateIntervalsSchema = z.object({
   multiplication: z.number(),
   rooting: z.number(),
 });
@@ -259,7 +259,7 @@ export const DiscardReasonSchema = z.enum(['contamination', 'spent', 'mistake'])
  * transfer — and every further one a Culture the division created, in the order
  * the act asked for them.
  */
-export const ReplateVesselSchema = z.object({
+const ReplateVesselSchema = z.object({
   culture_id: z.string(),
   plantlet_count: z.number().nullable(),
   location: z.string(),
@@ -323,7 +323,7 @@ export type MaintenanceAction = z.infer<typeof MaintenanceActionSchema>;
  * looking at. The wire's "absent means inherit" default exists for callers that
  * have nothing to seed from, which a dialog over a known vessel never is.
  */
-export const ReplateVesselDraftSchema = z.object({
+const ReplateVesselDraftSchema = z.object({
   plantlet_count: z.number().nullable(),
   location: z.string(),
 });
@@ -340,7 +340,7 @@ export type ReplateVesselDraft = z.infer<typeof ReplateVesselDraftSchema>;
 export type ReplateDraft = z.infer<typeof ReplateDraftSchema>;
 
 /** A curated endorsement of a medium itself, never a Medium Version. */
-export const PairingSchema = z.object({
+const PairingSchema = z.object({
   id: z.string(),
   phenotype: PhenotypeReferenceSchema,
   medium_id: z.string(),
@@ -351,11 +351,12 @@ export const PairingSchema = z.object({
 export const PairingsResponseSchema = z.object({ pairings: z.array(PairingSchema) });
 export const PairingMutationSchema = z.object({ pairing: PairingSchema });
 export const PairingDeletionSchema = z.object({ pairing_id: z.string() });
-export const PairingDraftSchema = z.object({
-  phenotype_id: z.string(),
-  phenotype_name: z.string(),
-  medium_id: z.string(),
-  notes: z.string(),
-});
+
 export type Pairing = z.infer<typeof PairingSchema>;
-export type PairingDraft = z.infer<typeof PairingDraftSchema>;
+/** What the pairing form submits. Outbound: the card writes it, nothing parses it. */
+export interface PairingDraft {
+  phenotype_id: string;
+  phenotype_name: string;
+  medium_id: string;
+  notes: string;
+}

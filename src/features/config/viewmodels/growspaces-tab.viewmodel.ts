@@ -26,7 +26,7 @@ import type {
 } from '../../../dialogs/config-dialog-sm';
 
 /** One master-list row. */
-export interface GrowspaceListItem {
+interface GrowspaceListItem {
   id: string;
   name: string;
   /** Highlighted when this growspace is being edited. */
@@ -54,7 +54,7 @@ export interface EnvMultiSelect {
 }
 
 /** The detail-pane state — mirrors `GrowspacesSubState` 1:1. */
-export type GrowspacesDetailState =
+type GrowspacesDetailState =
   | { mode: 'idle' }
   | { mode: 'adding'; draft: GrowspaceDraft }
   | {
@@ -109,7 +109,7 @@ function addConfigured(target: Set<string>, values: Array<string | undefined>): 
 }
 
 /** Count the unique entity assignments that a whole-environment reset disconnects. */
-export function environmentRemovalImpact(draft: EnvironmentDraft): EnvironmentRemovalImpact {
+function environmentRemovalImpact(draft: EnvironmentDraft): EnvironmentRemovalImpact {
   const sensors = new Set<string>();
   addConfigured(sensors, [
     ...draft.temperatureSensors,

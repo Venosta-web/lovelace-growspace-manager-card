@@ -26,12 +26,11 @@ import {
   type RecordPreviewAnswer,
 } from './printing-schema';
 
-export const WS_GET_LABEL_CALIBRATION_STATUS = 'growspace_manager/get_label_calibration_status';
-export const WS_PRINT_LABEL_CALIBRATION_SHEET = 'growspace_manager/print_label_calibration_sheet';
-export const WS_RECORD_LABEL_CALIBRATION = 'growspace_manager/record_label_calibration';
-export const WS_TEST_PRINT_LABEL_TEMPLATE_DRAFT =
-  'growspace_manager/test_print_label_template_draft';
-export const WS_PREVIEW_LABEL_RECORD = 'growspace_manager/preview_label_record';
+const WS_GET_LABEL_CALIBRATION_STATUS = 'growspace_manager/get_label_calibration_status';
+const WS_PRINT_LABEL_CALIBRATION_SHEET = 'growspace_manager/print_label_calibration_sheet';
+const WS_RECORD_LABEL_CALIBRATION = 'growspace_manager/record_label_calibration';
+const WS_TEST_PRINT_LABEL_TEMPLATE_DRAFT = 'growspace_manager/test_print_label_template_draft';
+const WS_PREVIEW_LABEL_RECORD = 'growspace_manager/preview_label_record';
 export const WS_PRINT_LABEL_RECORD = 'growspace_manager/print_label_record';
 
 /** Which printer, and which of its profiles. The pair a calibration is of. */

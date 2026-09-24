@@ -17,10 +17,10 @@ import { viewMode$ } from './index';
 // Types
 // ---------------------------------------------------------------------------
 
-export type LayoutSlot = 'header' | 'grid' | 'chart';
+type LayoutSlot = 'header' | 'grid' | 'chart';
 
 /** Determines which sub-component fills the 'chart' slot. */
-export type ChartType = 'analytics' | 'heatmap';
+type ChartType = 'analytics' | 'heatmap';
 
 export interface LayoutSpec {
   slots: LayoutSlot[];

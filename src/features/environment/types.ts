@@ -1,3 +1,11 @@
+import type {
+  EnvDarkPeriod,
+  EnvGuideBand,
+  EnvGuideLimit,
+  EnvGuideLine,
+  VpdBand,
+} from './env-series';
+
 export interface GraphDataPoint {
   time: number;
   value: number;
@@ -32,18 +40,18 @@ export interface GraphSeries {
   avg?: number;
   path: string;
   fillType: 'gradient' | 'flat' | 'none';
-  vpdBands?: import('./env-series').VpdBand[];
+  vpdBands?: VpdBand[];
   /** The [[Optimal Band]]s to draw over this series, in its own value space. */
-  guideBands?: import('./env-series').EnvGuideBand[];
+  guideBands?: EnvGuideBand[];
   /** The [[Setpoint]]s to draw over this series, in its own value space. */
-  guideLines?: import('./env-series').EnvGuideLine[];
+  guideLines?: EnvGuideLine[];
   /** Limits never widen the value domain; off-scale ones render at its edge. */
-  guideLimits?: import('./env-series').EnvGuideLimit[];
+  guideLimits?: EnvGuideLimit[];
   /**
    * The window's unlit stretches, shaded behind the gridlines. Empty when the
    * growspace reported no light history.
    */
-  darkPeriods?: import('./env-series').EnvDarkPeriod[];
+  darkPeriods?: EnvDarkPeriod[];
   /**
    * The metric's own colour, which a guide mark is drawn in.
    *

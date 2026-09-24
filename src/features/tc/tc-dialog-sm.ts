@@ -33,7 +33,7 @@ import type { TcSurfaceId } from '../../slices/tc';
 export type TcTabId = TcSurfaceId;
 
 /** Empty by construction: every TC draft belongs to the surface that owns it. */
-export type TcTabStates = Record<TcTabId, Record<string, never>>;
+type TcTabStates = Record<TcTabId, Record<string, never>>;
 
 export interface TcDialogSM extends DialogStateMachine<TcTabId, TcTabStates> {
   activeTab: TcTabId;

@@ -16,8 +16,6 @@ const PlantLayoutResponseSchema = z.object({
   ),
 });
 
-export type PlantLayoutResponse = z.infer<typeof PlantLayoutResponseSchema>;
-
 /** Authoritative layout echoed by the backend, translated to 0-based grid indices. */
 export interface CommittedPlantLayout {
   growspaceId: string;

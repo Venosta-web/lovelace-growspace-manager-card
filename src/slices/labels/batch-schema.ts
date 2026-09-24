@@ -27,7 +27,7 @@ import {
 } from './schema';
 
 /** One captured plant and the authoritative raster the preflight produced. */
-export const BatchRecordSchema = z.object({
+const BatchRecordSchema = z.object({
   /** Zero-based, in the order the plants were submitted. */
   index: z.number().int(),
   /** The plant ID this record captured. */
@@ -36,7 +36,6 @@ export const BatchRecordSchema = z.object({
   decision: OperationEligibilitySchema,
   render: RenderResultSchema,
 });
-export type BatchRecord = z.infer<typeof BatchRecordSchema>;
 
 /**
  * One physical label in the plan: one record, one copy.
@@ -45,7 +44,7 @@ export type BatchRecord = z.infer<typeof BatchRecordSchema>;
  * is: a newer backend's word must not blank a batch mid-print. The card
  * treats anything it does not know as not yet printed.
  */
-export const BatchAttemptSchema = z.object({
+const BatchAttemptSchema = z.object({
   id: z.string(),
   /** Zero-based position in the copy-major plan: A1, B1, A2, B2. */
   position: z.number().int(),
@@ -56,10 +55,9 @@ export const BatchAttemptSchema = z.object({
   copy_index: z.number().int(),
   status: z.string(),
 });
-export type BatchAttempt = z.infer<typeof BatchAttemptSchema>;
 
 /** One render diagnostic, attributed to the record it came from. */
-export const BatchDiagnosticSchema = z.object({
+const BatchDiagnosticSchema = z.object({
   record_index: z.number().int(),
   subject: z.string(),
   snapshot_identity: z.string(),
@@ -68,7 +66,7 @@ export const BatchDiagnosticSchema = z.object({
 export type BatchDiagnostic = z.infer<typeof BatchDiagnosticSchema>;
 
 /** The printer settings and calibration the whole batch was judged against. */
-export const BatchPrinterSchema = z.object({
+const BatchPrinterSchema = z.object({
   device_id: z.string(),
   density: z.string(),
   firmware: z.string().nullable(),
@@ -80,7 +78,7 @@ export const BatchPrinterSchema = z.object({
 });
 
 /** The complete, immutable review boundary for one batch. */
-export const BatchPreflightSchema = z.object({
+const BatchPreflightSchema = z.object({
   /** What warning consent is bound to. Any change to the batch changes it. */
   identity: z.string(),
   /** Whether every record authorizes the batch as a whole. */
@@ -113,7 +111,7 @@ export const BatchPreflightAnswerSchema = answer({
 export type BatchPreflightAnswer = z.infer<typeof BatchPreflightAnswerSchema>;
 
 /** One attempt as a job reports it: the plan entry and its latest outcome. */
-export const BatchJobAttemptSchema = BatchAttemptSchema.extend({
+const BatchJobAttemptSchema = BatchAttemptSchema.extend({
   /** The printer's own words when it failed. Shown as detail, never as copy. */
   error: z.string().nullable(),
   /** What reached paper, once it did. */
@@ -123,7 +121,7 @@ export const BatchJobAttemptSchema = BatchAttemptSchema.extend({
 export type BatchJobAttempt = z.infer<typeof BatchJobAttemptSchema>;
 
 /** A whole-batch gate that refused after the job had started. */
-export const BatchJobRefusalSchema = z.object({
+const BatchJobRefusalSchema = z.object({
   operation: z.string(),
   blocked_by: z.array(z.string()),
   reason: z.string(),
@@ -131,7 +129,7 @@ export const BatchJobRefusalSchema = z.object({
 });
 
 /** One print or retry of a held preflight, as it stands right now. */
-export const BatchJobSchema = z.object({
+const BatchJobSchema = z.object({
   id: z.string(),
   preflight_id: z.string(),
   preflight_identity: z.string(),

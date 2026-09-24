@@ -45,7 +45,7 @@ export interface RecipeDraft {
 
 // ─── Status ───────────────────────────────────────────────────────────────────
 
-export type RecipeLibraryStatus =
+type RecipeLibraryStatus =
   | { kind: 'idle' }
   | { kind: 'editing'; draft: RecipeDraft }
   | { kind: 'applying'; draft: RecipeDraft }

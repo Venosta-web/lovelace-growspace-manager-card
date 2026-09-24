@@ -52,14 +52,7 @@ export {
   isSetpoint,
   targetForPeriod,
 } from './metric-targets';
-export type {
-  LimitTarget,
-  MetricTarget,
-  MetricTargetBounds,
-  OptimalBandTarget,
-  OverviewEntitySnapshot,
-  SetpointTarget,
-} from './metric-targets';
+export type { LimitTarget, MetricTarget, OverviewEntitySnapshot } from './metric-targets';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -71,7 +64,7 @@ export type {
  * `'auto'` — scale to the data, with the single-value padding rule applied.
  * `{ min, max }` — fixed bounds (fan scales, light %, binary/step metrics).
  */
-export type MetricAxis = 'auto' | { min: number; max: number };
+type MetricAxis = 'auto' | { min: number; max: number };
 
 /**
  * One sensor backing a metric.

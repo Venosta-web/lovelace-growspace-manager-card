@@ -1,7 +1,7 @@
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
 /** Calendar values in Home Assistant's configured time zone. */
-export function zonedDateParts(
+function zonedDateParts(
   now: Date,
   timeZone?: string
 ): {

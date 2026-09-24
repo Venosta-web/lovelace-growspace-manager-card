@@ -88,14 +88,14 @@ export interface PhaseShotDescriptor {
  * P3 start off the Scheduled P3 Boundary, so the two rows are never the same
  * boundary said twice.
  */
-export interface TimingBoundaryVM {
+interface TimingBoundaryVM {
   id: 'lightsOn' | 'p0End' | 'actualP3' | 'scheduledP3' | 'lightsOff';
   /** `HH:MM`, wrapped past midnight. */
   time: string;
 }
 
 /** One segment of the Timing explainer's day bar, sized as a flex weight. */
-export interface TimingSegmentVM {
+interface TimingSegmentVM {
   id: CropSteeringPhaseId;
   label: string;
   /** Share of the photoperiod. Zero-width windows keep their entry rather than vanish. */
@@ -115,7 +115,7 @@ export interface TimingExplainerVM {
 }
 
 /** Steering Mode option (selector). */
-export interface SteeringModeOption {
+interface SteeringModeOption {
   id: SteeringMode;
   name: string;
   desc: string;

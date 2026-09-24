@@ -47,7 +47,7 @@ export const DEFAULT_DEHUM_THRESHOLDS: StageThresholds = {
   cure: { day: { on: 0.9, off: 1.1 }, night: { on: 0.95, off: 1.15 } },
 };
 
-export const DEFAULT_HUM_THRESHOLDS: StageThresholds = {
+const DEFAULT_HUM_THRESHOLDS: StageThresholds = {
   seedling: { day: { on: 0.7, off: 0.5 }, night: { on: 0.75, off: 0.55 } },
   clone: { day: { on: 0.7, off: 0.5 }, night: { on: 0.75, off: 0.55 } },
   mother: { day: { on: 0.9, off: 0.7 }, night: { on: 0.85, off: 0.65 } },

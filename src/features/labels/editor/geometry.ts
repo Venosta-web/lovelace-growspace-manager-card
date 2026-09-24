@@ -57,7 +57,7 @@ export function quantize(value: number, quantumMm: number = DEFAULT_QUANTUM_MM):
 }
 
 /** Quantize all four edges of a frame at once. */
-export function quantizeFrame(frame: LabelFrame, quantumMm = DEFAULT_QUANTUM_MM): LabelFrame {
+function quantizeFrame(frame: LabelFrame, quantumMm = DEFAULT_QUANTUM_MM): LabelFrame {
   return {
     x_mm: quantize(frame.x_mm, quantumMm),
     y_mm: quantize(frame.y_mm, quantumMm),

@@ -55,7 +55,7 @@ export enum GuideMarkKind {
   LIMIT = 'limit',
 }
 
-export interface MetricTargetBounds {
+interface MetricTargetBounds {
   min: number;
   max: number;
 }

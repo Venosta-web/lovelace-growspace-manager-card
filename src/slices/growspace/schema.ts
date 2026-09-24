@@ -32,7 +32,7 @@ const IrrigationScheduleItemSchema = z
  * `shot_duration_seconds` / `shot_interval_minutes` are the deprecated shared
  * fields; current backends mirror P1 onto them in `__post_serialize__`.
  */
-export const IrrigationStrategySchema = z.object({
+const IrrigationStrategySchema = z.object({
   enabled: z.boolean(),
   lights_on_time: z.string(),
   p0_duration_minutes: z.number(),
@@ -89,7 +89,7 @@ export const IrrigationStrategySchema = z.object({
 
 export type SerializedIrrigationStrategy = z.infer<typeof IrrigationStrategySchema>;
 
-export const IrrigationConfigSchema = z.object({
+const IrrigationConfigSchema = z.object({
   irrigation_pump_entity: z.string().nullable().optional(),
   drain_pump_entity: z.string().nullable().optional(),
   irrigation_duration: z.number().nullable().optional(),
@@ -147,7 +147,7 @@ export const IrrigationConfigSchema = z.object({
 
 export type SerializedIrrigationConfig = z.infer<typeof IrrigationConfigSchema>;
 
-export const DrainConfigSchema = z.object({
+const DrainConfigSchema = z.object({
   enabled: z.boolean(),
   max_ec_delta: z.number(),
   target_runoff_percent: z.number(),
@@ -218,7 +218,7 @@ const ShotCompositionSchema = z.object({
 // fields plus the injected score, Measured Classification, Intent Deviation,
 // and shot composition. Measured fields are nullable (no reading yet); a null
 // ec_trend with ec_trend_available=false drives the card's unlock hint.
-export const SubstrateMetricsSchema = z.object({
+const SubstrateMetricsSchema = z.object({
   overnight_dryback: z.number().nullable().optional(),
   latest_overnight_event: DrybackEventSchema.nullable().optional(),
   incycle_dryback_count: z.number().optional().default(0),
@@ -324,7 +324,7 @@ export type ExhaustFanConfig = z.infer<typeof ExhaustFanConfigSchema>;
 // An AC Infinity actuator bundle (ADR-0022 in the integration). A port exposes no
 // `fan` entity, so it is driven via a mode `select` + speed `number`. Keys stay
 // snake_case end-to-end to match the backend wire shape (no camelCase conversion).
-export const AcInfinityDeviceSchema = z.object({
+const AcInfinityDeviceSchema = z.object({
   mode_entity: z.string(),
   speed_entity: z.string(),
   on_speed: z.number().optional().default(10),
@@ -346,7 +346,7 @@ export type GrowLightConfig = z.infer<typeof GrowLightConfigSchema>;
 // An AC Infinity grow light port (backend ACInfinityGrowLight). Unlike the fan
 // bundle it is a configurator: mode select + on/off `time` entities + on_power,
 // plus the native sunrise switch + duration. Keys stay snake_case end-to-end.
-export const AcInfinityGrowLightSchema = z.object({
+const AcInfinityGrowLightSchema = z.object({
   mode_entity: z.string(),
   on_time_entity: z.string(),
   off_time_entity: z.string(),
@@ -377,7 +377,7 @@ const EnvironmentThresholdsSchema = z.union([
 // schema is the single description of the shape — the wire type below is
 // derived from it, so a field missing here can no longer be "present" in
 // TypeScript while zod strips it at runtime.
-export const WaterUsageSchema = z.object({
+const WaterUsageSchema = z.object({
   total_liters: z.number().optional().default(0),
   cycle_start_date: z.string().optional().default(''),
   // Deliberately left as unknown elements. A stricter element type would make a
@@ -392,8 +392,6 @@ export const WaterUsageSchema = z.object({
   // computed, so the Today's Usage KPI must treat absent and zero differently.
   liters_today: z.number().nullable().optional(),
 });
-
-export type SerializedWaterUsage = z.infer<typeof WaterUsageSchema>;
 
 export const GrowspaceAPIResponseSchema = z.object({
   layout_revision: z.number().int().nonnegative().optional(),

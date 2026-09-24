@@ -56,7 +56,7 @@ export interface RecipeOptionVM {
 }
 
 /** Whether the growspace still holds what its applied recipe stamped. */
-export type RecipeDriftVerdict = 'in-sync' | 'drifted' | 'unknown';
+type RecipeDriftVerdict = 'in-sync' | 'drifted' | 'unknown';
 
 /** The stamp this growspace carries, resolved against the library. */
 export interface AppliedRecipeVM {

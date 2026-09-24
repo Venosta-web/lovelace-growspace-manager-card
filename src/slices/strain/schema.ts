@@ -122,6 +122,3 @@ export const StrainLibraryWrapperSchema = z.object({
   strains: StrainLibrarySchema,
   strain_list: z.array(z.string()).optional(),
 });
-
-export type StrainLibraryResponse = z.infer<typeof StrainLibraryWrapperSchema>;
-export type StrainLibrary = z.infer<typeof StrainLibrarySchema>;

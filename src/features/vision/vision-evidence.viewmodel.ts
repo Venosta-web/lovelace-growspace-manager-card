@@ -48,7 +48,7 @@ import type { TriageAlert } from '../../slices/ai-insight/schema';
  * `calm | watch | alert` is the severity ramp. `quiet` is the absence of
  * evidence, which is never styled as calm. `equipment` is off the ramp entirely.
  */
-export type EvidenceTone = 'calm' | 'watch' | 'alert' | 'quiet' | 'equipment';
+type EvidenceTone = 'calm' | 'watch' | 'alert' | 'quiet' | 'equipment';
 
 /** The non-colour half of a tone. Rendered beside every tinted element. */
 export interface ToneCue {
@@ -65,7 +65,7 @@ const TONE_CUES: Record<EvidenceTone, ToneCue> = {
   equipment: { icon: mdiWrench, label: 'Equipment' },
 };
 
-export function toneCue(tone: EvidenceTone): ToneCue {
+function toneCue(tone: EvidenceTone): ToneCue {
   return TONE_CUES[tone];
 }
 
@@ -97,7 +97,7 @@ export interface GateItemViewModel {
   cue: ToneCue;
 }
 
-export interface GateViewModel {
+interface GateViewModel {
   quality: GateItemViewModel;
   baseline: GateItemViewModel;
   /** Frame Quality Result reasons, in plain language. Empty when accepted. */
@@ -111,7 +111,7 @@ export interface MeasureRow {
   value: string;
 }
 
-export interface TrendPointViewModel {
+interface TrendPointViewModel {
   /** 0–1; `null` when the point carries no score. */
   score: number | null;
   tone: EvidenceTone;
@@ -150,7 +150,7 @@ export interface VisualViewModel {
   imageUnavailable: string | null;
 }
 
-export interface EnvironmentPointViewModel {
+interface EnvironmentPointViewModel {
   risk: boolean;
   title: string;
 }
@@ -171,7 +171,7 @@ export interface EnvironmentViewModel {
   neverVisual: string;
 }
 
-export interface ReportViewModel {
+interface ReportViewModel {
   summary: string;
   observation: { label: string; text: string };
   environmentalRisk: { label: string; text: string };

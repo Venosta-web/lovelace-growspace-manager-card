@@ -269,7 +269,7 @@ function toFields(recipe: IrrigationRecipe, draftValues: Record<string, unknown>
  * refused and never cascades — the slots simply become gaps, which the
  * [[Program Hold]] rule already treats as "change nothing".
  */
-export function referencingPrograms(programs: IrrigationProgram[], recipeId: string): string[] {
+function referencingPrograms(programs: IrrigationProgram[], recipeId: string): string[] {
   return programs
     .filter((program) => program.slots.some((slot) => slot.recipeId === recipeId))
     .map((program) => program.name);

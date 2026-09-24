@@ -286,7 +286,7 @@ function _buildSnapshot(ids: DeviceEntityIds, hassStates: HassStates): DeviceSna
  * frontend's `hass.entities` display map (present at runtime, untyped on
  * custom-card-helpers' HomeAssistant), narrowed to the fields we need.
  */
-export interface EntityRegistryLike {
+interface EntityRegistryLike {
   device_id?: string | null;
   translation_key?: string | null;
 }

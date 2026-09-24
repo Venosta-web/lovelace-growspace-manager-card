@@ -513,45 +513,6 @@ export async function movePlantToGrowspace(
 }
 
 /**
- * Move a plant to a new grid cell (drag-drop onto an empty cell).
- *
- * Optimistic: patches the plant's row/col in plants$.
- * Apply: update_plant with the new row/col.
- * Inverse (failure rollback): restore plants$ locally.
- * Undo after commit: move the plant back to its original cell via the backend.
- */
-export async function movePlantPosition(
-  plantId: string,
-  newRow: number,
-  newCol: number
-): Promise<void> {
-  const originalList = plants$.get();
-  const orig = originalList.find(
-    (p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === plantId
-  );
-  const origRow = orig?.attributes.row;
-  const origCol = orig?.attributes.col;
-  const patched = _patchPlant(plantId, { row: newRow, col: newCol });
-
-  await mutate(
-    {
-      type: 'movePlantPosition',
-      optimistic: () => plants$.set(patched),
-      inverse: () => plants$.set(originalList),
-      undoInverse: () => {
-        if (origRow === undefined || origCol === undefined) return;
-        void updatePlant(plantId, { row: origRow, col: origCol }).catch((e) =>
-          console.error('[Undo move failed]', e)
-        );
-      },
-      apply: () =>
-        wsVoid('growspace_manager/update_plant', { plant_id: plantId, row: newRow, col: newCol }),
-    },
-    _growspaceIdFor(plantId)
-  );
-}
-
-/**
  * Swap the grid positions of two plants.
  *
  * Optimistic: swaps row/col for both plants in plants$.

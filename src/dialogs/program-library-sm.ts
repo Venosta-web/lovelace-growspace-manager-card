@@ -51,7 +51,7 @@ export interface ProgramDraft {
 
 // ─── Status ───────────────────────────────────────────────────────────────────
 
-export type ProgramLibraryStatus =
+type ProgramLibraryStatus =
   | { kind: 'idle' }
   | { kind: 'editing'; draft: ProgramDraft }
   | { kind: 'applying'; draft: ProgramDraft }

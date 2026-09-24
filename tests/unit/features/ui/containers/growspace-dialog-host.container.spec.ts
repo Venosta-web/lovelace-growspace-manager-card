@@ -107,7 +107,6 @@ vi.mock('../../../../../src/slices/plant', () => ({
   waterGrowspace: vi.fn().mockResolvedValue(undefined),
   movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
   advancePlantStage: vi.fn().mockResolvedValue('dry'),
-  movePlantPosition: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../../../src/slices/genetics', () => ({

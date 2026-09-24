@@ -38,7 +38,7 @@ import { PROGRAM_STAGES } from '../../../slices/irrigation/schema';
 import { programSpanLabel, programStageLabel } from './program-library.viewmodel';
 
 /** One option of the assign control. */
-export interface ProgramOptionVM {
+interface ProgramOptionVM {
   id: string;
   name: string;
   /** "Veg 1–4 · Flower 1–8", or null for a plan with no slots yet. */
@@ -46,7 +46,7 @@ export interface ProgramOptionVM {
 }
 
 /** One `(stage, week)` position of the plan, resolved against the library. */
-export interface ProgramPositionVM {
+interface ProgramPositionVM {
   /** "Flower", or null when the growspace has no live plants. */
   stageLabel: string | null;
   week: number;
@@ -57,7 +57,7 @@ export interface ProgramPositionVM {
 }
 
 /** The next instruction the plan holds after the current position. */
-export interface NextInstructionVM {
+interface NextInstructionVM {
   stageLabel: string;
   week: number;
   recipeName: string | null;
@@ -66,7 +66,7 @@ export interface NextInstructionVM {
 }
 
 /** What the program layer is doing, in the card's own words plus the backend's. */
-export interface ProgressionVM {
+interface ProgressionVM {
   state: ProgramProgressionState | null;
   hold: ProgramHold | null;
   /** A short heading naming this answer — one per cause, so they are told apart. */
@@ -76,7 +76,7 @@ export interface ProgressionVM {
 }
 
 /** The recipe a week is offering, while auto-advance is off. */
-export interface AvailableRecipeVM {
+interface AvailableRecipeVM {
   recipeId: string;
   name: string;
   stageLabel: string;
@@ -84,7 +84,7 @@ export interface AvailableRecipeVM {
 }
 
 /** The drift annotation shown beside a `drifted` hold. */
-export interface DriftDetailVM {
+interface DriftDetailVM {
   /**
    * Labels of the fields the card can compare that differ from the applied
    * recipe. Empty when the difference is in a field whose stored unit depends
@@ -96,7 +96,7 @@ export interface DriftDetailVM {
 }
 
 /** The pending confirmation, with the sentence the grower is asked to accept. */
-export interface ProgramConfirmVM {
+interface ProgramConfirmVM {
   kind: ProgramConfirm['kind'];
   title: string;
   message: string;

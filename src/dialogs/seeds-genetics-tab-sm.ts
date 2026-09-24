@@ -15,15 +15,15 @@
 
 // ─── View IDs ─────────────────────────────────────────────────────────────────
 
-export type ViewId = 'list' | 'add-batch' | 'log-pollination' | 'harvest';
+type ViewId = 'list' | 'add-batch' | 'log-pollination' | 'harvest';
 
 // ─── Shared async sub-state ───────────────────────────────────────────────────
 
-export type AsyncSub = { kind: 'idle' } | { kind: 'applying' } | { kind: 'error'; message: string };
+type AsyncSub = { kind: 'idle' } | { kind: 'applying' } | { kind: 'error'; message: string };
 
 // ─── List view ────────────────────────────────────────────────────────────────
 
-export type ListSubState =
+type ListSubState =
   | { kind: 'idle' }
   | { kind: 'confirm-delete-batch'; batchId: string }
   | { kind: 'confirm-delete-pollination'; eventId: string }
@@ -35,7 +35,7 @@ export type ListSubState =
       sub: { kind: 'idle' } | { kind: 'applying' };
     };
 
-export interface ListViewState {
+interface ListViewState {
   sub: ListSubState;
 }
 
@@ -52,7 +52,7 @@ export interface BatchDraft {
   notes: string;
 }
 
-export interface AddBatchViewState {
+interface AddBatchViewState {
   editingBatchId: string | null;
   draft: BatchDraft;
   sub: AsyncSub;
@@ -68,7 +68,7 @@ export interface PollinationDraft {
   donorActivePlantsOnly: boolean;
 }
 
-export interface LogPollinationViewState {
+interface LogPollinationViewState {
   editingEventId: string | null;
   draft: PollinationDraft;
   sub: AsyncSub;
@@ -81,7 +81,7 @@ export interface HarvestDraft {
   notes: string;
 }
 
-export interface HarvestViewState {
+interface HarvestViewState {
   eventId: string;
   draft: HarvestDraft;
   sub: AsyncSub;
@@ -89,7 +89,7 @@ export interface HarvestViewState {
 
 // ─── View state map ───────────────────────────────────────────────────────────
 
-export interface ViewStates {
+interface ViewStates {
   list: ListViewState;
   'add-batch': AddBatchViewState;
   'log-pollination': LogPollinationViewState;

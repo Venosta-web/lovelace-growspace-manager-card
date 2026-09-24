@@ -36,7 +36,7 @@ export function getVpdOptimal(
 }
 
 /** Low/high VPD window for one period (day or night). */
-export interface VpdPeriodTargets {
+interface VpdPeriodTargets {
   low: number;
   high: number;
 }

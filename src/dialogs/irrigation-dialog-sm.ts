@@ -35,13 +35,13 @@ export type TabId =
 
 // ─── Overview tab (read-only crop-steering diagnostics) ─────────────────────────
 
-export interface OverviewTabState {
+interface OverviewTabState {
   sub: { kind: 'idle' };
 }
 
 // ─── Schedules tab ─────────────────────────────────────────────────────────────
 
-export interface SchedulesDraft {
+interface SchedulesDraft {
   irrigationPumpEntity: string;
   drainPumpEntity: string;
   irrigationDuration: number;
@@ -67,19 +67,19 @@ export type SchedulesSubState =
       duration: number;
     };
 
-export interface SchedulesTabState {
+interface SchedulesTabState {
   draft: SchedulesDraft;
   sub: SchedulesSubState;
 }
 
 // ─── Steering tab ──────────────────────────────────────────────────────────────
 
-export type SteeringSubState =
+type SteeringSubState =
   | { kind: 'idle' }
   | { kind: 'confirm-phase'; pending: Phase }
   | { kind: 'confirm-mode'; pending: SteeringMode };
 
-export interface SteeringTabState {
+interface SteeringTabState {
   draft: Partial<IrrigationStrategy>;
   phase: Phase;
   sub: SteeringSubState;
@@ -100,7 +100,7 @@ export interface ConfigDraft {
   haltOnRunoffEcThreshold: number | null;
 }
 
-export interface ConfigTabState {
+interface ConfigTabState {
   draft: ConfigDraft;
   sub: { kind: 'idle' };
 }
@@ -123,15 +123,15 @@ export interface TankDraft {
  * known limitation carried over from the pre-decomposition component state,
  * tracked separately, deliberately not fixed in this refactor.
  */
-export type TanksSubState = { kind: 'idle' } | { kind: 'editing'; index: number; draft: TankDraft };
+type TanksSubState = { kind: 'idle' } | { kind: 'editing'; index: number; draft: TankDraft };
 
-export interface TanksTabState {
+interface TanksTabState {
   sub: TanksSubState;
 }
 
 // ─── Water analytics tab ───────────────────────────────────────────────────────
 
-export interface WaterAnalyticsTabState {
+interface WaterAnalyticsTabState {
   stageAggregates: Record<string, number> | null;
   sub: { kind: 'idle' };
 }
@@ -150,7 +150,7 @@ export interface DrainEcDraft {
 
 export type DrainEcSubState = { kind: 'idle' } | { kind: 'saving' } | { kind: 'logging' };
 
-export interface DrainEcTabState {
+interface DrainEcTabState {
   draft: DrainEcDraft;
   sub: DrainEcSubState;
 }
@@ -168,7 +168,7 @@ export interface SubstrateEcDraft {
   poreEcMax: number | null;
 }
 
-export interface SubstrateEcTabState {
+interface SubstrateEcTabState {
   draft: SubstrateEcDraft;
   sub: { kind: 'idle' };
 }
@@ -189,9 +189,9 @@ export type EcRampCurveDraft = Partial<ECRampCurve>;
  * carries synchronous validation copy (name required, ≥1 valid point); save and
  * remove *rejections* surface as a root toast instead (ADR-0015).
  */
-export type EcRampSubState = { kind: 'list' } | { kind: 'editing'; draft: EcRampCurveDraft };
+type EcRampSubState = { kind: 'list' } | { kind: 'editing'; draft: EcRampCurveDraft };
 
-export interface EcRampTabState {
+interface EcRampTabState {
   sub: EcRampSubState;
   /** Synchronous validation error for the open editor, or null. */
   error: string | null;
@@ -204,7 +204,7 @@ export interface EcRampTabState {
 // So its draft is only the two things the grower types or picks, and the tab
 // takes no part in the dirty guard — there is nothing here to lose.
 
-export interface RecipesDraft {
+interface RecipesDraft {
   /** Name for the recipe the save form will create. */
   name: string;
   /**
@@ -217,7 +217,7 @@ export interface RecipesDraft {
   selectedRecipeId: string | null;
 }
 
-export interface RecipesTabState {
+interface RecipesTabState {
   draft: RecipesDraft;
   /**
    * The notice the backend returned from the last apply, or null.
@@ -250,7 +250,7 @@ export type ProgramConfirm =
    */
   { kind: 'enable-auto-advance' };
 
-export interface ProgramDraft {
+interface ProgramDraft {
   /**
    * The program the grower explicitly picked in the assign control.
    *
@@ -264,7 +264,7 @@ export interface ProgramDraft {
   pickedProgramId: string | null | undefined;
 }
 
-export interface ProgramTabState {
+interface ProgramTabState {
   draft: ProgramDraft;
   /** The pending confirmation, or null. */
   confirm: ProgramConfirm | null;
@@ -273,7 +273,7 @@ export interface ProgramTabState {
 
 // ─── Root SM ───────────────────────────────────────────────────────────────────
 
-export interface TabStates {
+interface TabStates {
   overview: OverviewTabState;
   schedules: SchedulesTabState;
   steering: SteeringTabState;
@@ -288,7 +288,7 @@ export interface TabStates {
 }
 
 /** Root-level overlays (not scoped to a tab). */
-export type DialogStatus =
+type DialogStatus =
   | { kind: 'idle' }
   | { kind: 'confirm-discard'; pendingTab: TabId }
   | { kind: 'applying'; action: string; params: unknown }

@@ -117,7 +117,7 @@ export type SensorGroup = z.infer<typeof SensorGroupSchema>;
 // EnvironmentConfig
 // ---------------------------------------------------------------------------
 
-export const EnvironmentConfigSchema = z.object({
+const EnvironmentConfigSchema = z.object({
   temperature_sensor: z.string().nullish(),
   humidity_sensor: z.string().nullish(),
   vpd_sensor: z.string().nullish(),

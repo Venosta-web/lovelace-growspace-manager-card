@@ -27,7 +27,7 @@
  * `picking` is the modal frame picker: A is chosen, B is not. `pct` is the wipe
  * position as a percentage from the left, where 0 shows all of B and 100 all of A.
  */
-export type CompareState =
+type CompareState =
   | { kind: 'off' }
   | { kind: 'picking'; aPath: string }
   | { kind: 'on'; aPath: string; bPath: string; pct: number };

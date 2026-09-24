@@ -7,10 +7,4 @@
  * Adding one here instead puts it outside the generator, which is the drift
  * ADR 0035 exists to prevent.
  */
-export {
-  variables,
-  portalVariables,
-  cardOnlyTokens,
-  token,
-  type TokenName,
-} from './variables.generated';
+export { variables, portalVariables, token } from './variables.generated';

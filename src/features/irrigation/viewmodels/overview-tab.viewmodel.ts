@@ -42,7 +42,7 @@ export interface OverviewEcTrendCard {
 }
 
 /** One row of the shot-composition breakdown (base × vwc × ec → effective). */
-export interface ShotCompositionRow {
+interface ShotCompositionRow {
   label: string;
   value: string;
 }

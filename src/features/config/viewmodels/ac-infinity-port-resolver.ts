@@ -14,7 +14,7 @@
 import type { AcInfinityDevice, AcInfinityGrowLight } from '../../../slices/growspace/schema';
 
 /** The subset of a frontend `hass.entities[eid]` entry this module reads. */
-export interface AcInfinityRegistryEntry {
+interface AcInfinityRegistryEntry {
   platform?: string;
   device_id?: string;
   translation_key?: string;
@@ -33,10 +33,7 @@ export type AcInfinityRole =
   | 'sunriseDuration';
 
 /** Role → the entity `domain` + `ac_infinity` `translation_key` that identifies it. */
-export const AC_INFINITY_ROLE_MAP: Record<
-  AcInfinityRole,
-  { domain: string; translationKey: string }
-> = {
+const AC_INFINITY_ROLE_MAP: Record<AcInfinityRole, { domain: string; translationKey: string }> = {
   mode: { domain: 'select', translationKey: 'active_mode' },
   power: { domain: 'number', translationKey: 'on_power' },
   onTime: { domain: 'time', translationKey: 'schedule_mode_on_time' },

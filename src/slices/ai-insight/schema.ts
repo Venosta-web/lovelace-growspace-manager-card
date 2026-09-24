@@ -44,14 +44,12 @@ export type SuggestedAction = z.infer<typeof SuggestedActionSchema>;
 // KPI (shared by TriageAlert and AIBriefing)
 // ---------------------------------------------------------------------------
 
-export const KPISchema = z.object({
+const KPISchema = z.object({
   label: z.string(),
   value: z.union([z.number(), z.string()]),
   unit: z.string().optional(),
   delta: z.string().optional(),
 });
-
-export type KPI = z.infer<typeof KPISchema>;
 
 // ---------------------------------------------------------------------------
 // TriageAlert
@@ -112,29 +110,23 @@ export const ResolveAckSchema = z.object({
   alert_id: z.string(),
 });
 
-export type ResolveAck = z.infer<typeof ResolveAckSchema>;
-
 // ---------------------------------------------------------------------------
 // ConversationMessage
 // ---------------------------------------------------------------------------
 
-export const SensorSnapshotItemSchema = z.object({
+const SensorSnapshotItemSchema = z.object({
   label: z.string(),
   value: z.string(),
   unit: z.string(),
   delta: z.string().optional(),
 });
 
-export type SensorSnapshotItem = z.infer<typeof SensorSnapshotItemSchema>;
-
-export const CitationSchema = z.object({
+const CitationSchema = z.object({
   label: z.string(),
   source: z.enum(['sensor', 'logbook']),
 });
 
-export type Citation = z.infer<typeof CitationSchema>;
-
-export const ConversationMessageSchema = z.object({
+const ConversationMessageSchema = z.object({
   role: z.enum(['user', 'ai']),
   text: z.string(),
   timestamp: z.number().nonnegative(),

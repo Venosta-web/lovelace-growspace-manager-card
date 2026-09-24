@@ -85,7 +85,7 @@ export interface VpdBand {
  * is not has a single interval spanning the window. Value and time space only —
  * the chart turns these into geometry.
  */
-export interface EnvGuideBandSegment {
+interface EnvGuideBandSegment {
   startTime: number;
   endTime: number;
   min: number;
@@ -105,14 +105,14 @@ export interface EnvGuideBand {
   current: { min: number; max: number };
 }
 
-export interface EnvGuideLineSegment {
+interface EnvGuideLineSegment {
   startTime: number;
   endTime: number;
   value: number;
 }
 
 /** One time interval of a [[Limit]], in value and time space only. */
-export interface EnvGuideLimitSegment {
+interface EnvGuideLimitSegment {
   startTime: number;
   endTime: number;
   value: number;

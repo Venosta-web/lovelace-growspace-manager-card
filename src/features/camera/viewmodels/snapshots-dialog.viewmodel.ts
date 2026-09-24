@@ -28,7 +28,7 @@ import type { SM } from '../../../dialogs/snapshots-dialog-sm';
 // ─── Public shapes ────────────────────────────────────────────────────────────
 
 /** The vision severity ramp, minus `none`, which renders as "no finding". */
-export type FindingTone = 'critical' | 'high' | 'medium' | 'low';
+type FindingTone = 'critical' | 'high' | 'medium' | 'low';
 
 export interface FrameViewModel {
   path: string;
@@ -44,14 +44,14 @@ export interface FrameViewModel {
   selected: boolean;
 }
 
-export interface TimelineTickViewModel {
+interface TimelineTickViewModel {
   path: string;
   title: string;
   tone: FindingTone | null;
   selected: boolean;
 }
 
-export interface RailDayViewModel {
+interface RailDayViewModel {
   key: string;
   weekday: string;
   date: string;
@@ -60,14 +60,14 @@ export interface RailDayViewModel {
   items: FrameViewModel[];
 }
 
-export interface TimelineDayViewModel {
+interface TimelineDayViewModel {
   key: string;
   /** e.g. `Tue 25`. */
   short: string;
   ticks: TimelineTickViewModel[];
 }
 
-export interface FindingViewModel {
+interface FindingViewModel {
   tone: FindingTone;
   badge: string;
   summary: string;
@@ -86,7 +86,7 @@ export interface HeroViewModel extends FrameViewModel {
   finding: FindingViewModel | null;
 }
 
-export interface CompareViewModel {
+interface CompareViewModel {
   a: FrameViewModel;
   b: FrameViewModel;
   /** Wipe position from the left, 0–100. */
@@ -94,19 +94,19 @@ export interface CompareViewModel {
   label: string;
 }
 
-export interface PickerItemViewModel {
+interface PickerItemViewModel {
   path: string;
   short: string;
   label: string;
   isA: boolean;
 }
 
-export interface PickerViewModel {
+interface PickerViewModel {
   aLabel: string;
   items: PickerItemViewModel[];
 }
 
-export interface LegendEntry {
+interface LegendEntry {
   tone: FindingTone;
   label: string;
 }
@@ -203,7 +203,7 @@ const TONE_BY_SEVERITY: Record<VisionCheckupResult['severity'], FindingTone | nu
   critical: 'critical',
 };
 
-export const SEVERITY_LEGEND: LegendEntry[] = [
+const SEVERITY_LEGEND: LegendEntry[] = [
   { tone: 'critical', label: 'Critical' },
   { tone: 'high', label: 'High' },
   { tone: 'medium', label: 'Medium' },

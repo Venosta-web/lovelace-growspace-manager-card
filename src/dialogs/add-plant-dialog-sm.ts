@@ -15,7 +15,7 @@
 
 // ─── Tab IDs ──────────────────────────────────────────────────────────────────
 
-export type TabId = 'add' | 'clone' | 'seedling';
+type TabId = 'add' | 'clone' | 'seedling';
 
 // ─── Add tab ──────────────────────────────────────────────────────────────────
 
@@ -55,33 +55,33 @@ export type AddSubState =
   | { kind: 'step-source' }
   | { kind: 'step-schedule' };
 
-export interface AddTabState {
+interface AddTabState {
   draft: AddDraft;
   sub: AddSubState;
 }
 
 // ─── Transplant tabs (clone + seedling share this shape) ──────────────────────
 
-export interface TransplantDraft {
+interface TransplantDraft {
   selectedPlantId: string | null;
   row: number;
   col: number;
 }
 
-export interface TransplantTabState {
+interface TransplantTabState {
   draft: TransplantDraft;
   sub: { kind: 'idle' };
 }
 
 // ─── Root SM ──────────────────────────────────────────────────────────────────
 
-export interface TabStates {
+interface TabStates {
   add: AddTabState;
   clone: TransplantTabState;
   seedling: TransplantTabState;
 }
 
-export type Status =
+type Status =
   | { kind: 'idle' }
   | { kind: 'applying' }
   | { kind: 'done' }
