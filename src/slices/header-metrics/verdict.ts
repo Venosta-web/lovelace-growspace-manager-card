@@ -17,7 +17,7 @@ import type { HeaderChip } from './index';
 import { StatusLevel, toStatusLevel } from '../../features/environment/constants';
 
 /** One named dimension of the verdict. */
-export interface VerdictLine {
+interface VerdictLine {
   scope: 'plants' | 'environment';
   level: StatusLevel;
   summary: string;
