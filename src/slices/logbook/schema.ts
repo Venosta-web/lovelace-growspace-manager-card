@@ -2,8 +2,8 @@
  * Logbook slice — zod schemas for WebSocket response validation.
  *
  * Consolidates the GrowspaceEvent interface from
- * `src/features/environment/types.ts` and the NotePayload from
- * `src/services/timeline-service.ts`.
+ * `src/features/environment/types.ts` and the note payload the retired
+ * timeline service used to send.
  */
 
 import { z } from 'zod';

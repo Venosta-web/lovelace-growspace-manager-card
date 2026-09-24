@@ -94,7 +94,7 @@ export class GrowspaceStore {
     nutrientPresets: NutrientPresetsResponse;
   }>;
 
-  /** Combined atom for growspace-view-standard. */
+  /** Combined atom for growspace-view. */
   public readonly $viewStandardState!: ReadableAtom<{
     devices: import('../../types').GrowspaceDevice[];
   }>;

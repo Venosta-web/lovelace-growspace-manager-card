@@ -6,27 +6,6 @@ import { GrowspaceLogbookCard } from '../../../src/cards/growspace-logbook-card'
 import { setDevices } from '../../../src/slices/grid';
 import { aHass, aGrowspaceDevice } from '../../fixtures';
 
-// Mock the timeline service so growspace-logbook renders empty events instead of fetching
-vi.mock('../../../src/services/timeline-service', () => ({
-  getTimelineService: () => ({
-    fetchGrowspaceEvents: async () => [
-      {
-        category: 'watering',
-        sensor_type: 'watering',
-        growspace_id: 'test_tent',
-        timestamp: '2026-05-20T10:00:00Z',
-        data: { amount_ml: 500 },
-      },
-      {
-        category: 'training',
-        sensor_type: 'lst',
-        growspace_id: 'test_tent',
-        timestamp: '2026-05-19T14:00:00Z',
-        data: {},
-      },
-    ],
-  }),
-}));
 vi.mock('../../../src/cards/editors/growspace-logbook-card-editor', () => ({}));
 vi.mock('../../../src/slices/growspace', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();

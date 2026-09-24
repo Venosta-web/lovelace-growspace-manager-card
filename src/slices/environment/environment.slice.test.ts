@@ -17,7 +17,6 @@ import {
   setSubareaEnvSnapshot,
   subareaEnvSnapshots$,
 } from './index';
-import { EnvSnapshotSchema } from './schema';
 import type { Subarea } from '../subarea/schema';
 
 // ---------------------------------------------------------------------------
@@ -747,24 +746,6 @@ describe('computeEnvSnapshot — additional branch coverage', () => {
   });
 });
 
-const NULL_SENSOR_FIELDS = {
-  temperatureReadings: null,
-  humidityReadings: null,
-  vpdReadings: null,
-  co2Readings: null,
-  soilMoisture: null,
-  substrateTemperature: null,
-  ph: null,
-  feedEc: null,
-  bulkEc: null,
-  poreEc: null,
-  runoffEc: null,
-  drainVolume: null,
-  irrigationFlow: null,
-  power: null,
-  energy: null,
-};
-
 // ---------------------------------------------------------------------------
 // Cycle N — substrate / medium sensors and irrigation monitoring sensors
 // ---------------------------------------------------------------------------
@@ -885,92 +866,6 @@ describe('computeEnvSnapshot — irrigation monitoring sensors', () => {
     expect(snapshot.irrigationFlow!.avg).toBe(12.0);
     expect(snapshot.power!.avg).toBe(450);
     expect(snapshot.energy!.avg).toBe(3.2);
-  });
-});
-
-describe('EnvSnapshotSchema', () => {
-  it('validates a valid EnvSnapshot payload', () => {
-    const validPayload = {
-      temperature: 24.5,
-      humidity: 58,
-      vpd: 1.2,
-      vpdStatus: 'optimal',
-      co2: 800,
-      isLightsOn: true,
-      hasLightSensor: true,
-      dli: 22.4,
-      optimalConditions: {
-        isOptimal: true,
-        reasons: ['optimal temperature'],
-      },
-      ...NULL_SENSOR_FIELDS,
-    };
-    const parsed = EnvSnapshotSchema.parse(validPayload);
-    expect(parsed).toEqual(validPayload);
-  });
-
-  it('allows nullable and optional fields', () => {
-    const minimalPayload = {
-      temperature: null,
-      humidity: null,
-      vpd: null,
-      vpdStatus: null,
-      co2: null,
-      isLightsOn: null,
-      hasLightSensor: false,
-      dli: null,
-      optimalConditions: null,
-      ...NULL_SENSOR_FIELDS,
-    };
-    const parsed = EnvSnapshotSchema.parse(minimalPayload);
-    expect(parsed).toEqual(minimalPayload);
-  });
-
-  it('validates SensorReadings fields when present', () => {
-    const payload = {
-      temperature: null,
-      humidity: null,
-      vpd: null,
-      vpdStatus: null,
-      co2: null,
-      isLightsOn: null,
-      hasLightSensor: false,
-      dli: null,
-      optimalConditions: null,
-      ...NULL_SENSOR_FIELDS,
-      soilMoisture: { avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
-      substrateTemperature: {
-        avg: null,
-        sum: null,
-        perSensor: [null, null],
-        entityIds: ['sensor.st_1', 'sensor.st_2'],
-      },
-    };
-    const parsed = EnvSnapshotSchema.parse(payload);
-    expect(parsed.soilMoisture).toEqual({
-      avg: 42.5,
-      sum: 42.5,
-      perSensor: [42.5],
-      entityIds: ['sensor.sm_1'],
-    });
-    expect(parsed.substrateTemperature!.avg).toBeNull();
-  });
-
-  it('fails validation on invalid payloads', () => {
-    const invalidPayload = {
-      temperature: 'invalid',
-      humidity: null,
-      vpd: null,
-      vpdStatus: 'invalid_status',
-      co2: null,
-      isLightsOn: null,
-      hasLightSensor: false,
-      dli: null,
-      optimalConditions: null,
-      ...NULL_SENSOR_FIELDS,
-    };
-    const result = EnvSnapshotSchema.safeParse(invalidPayload);
-    expect(result.success).toBe(false);
   });
 });
 

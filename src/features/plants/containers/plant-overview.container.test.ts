@@ -37,7 +37,6 @@ const mockElements = [
   'plant-actions-tab',
   'plant-timeline-tab',
   'plant-harvest-tab',
-  'plant-genetics-tab',
   'md3-select',
   'md3-number-input',
 ];
