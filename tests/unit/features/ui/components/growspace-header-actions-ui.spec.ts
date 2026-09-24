@@ -152,7 +152,7 @@ describe('GrowspaceHeaderActionsUI', () => {
     expect(handler).toHaveBeenCalledOnce();
   });
 
-  it('shows Water Selected in menu when plants are selected', async () => {
+  it('shows Water selected (N) in menu when plants are selected', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui
         .selectedPlants=${new Set(['p1', 'p2'])}
@@ -160,16 +160,16 @@ describe('GrowspaceHeaderActionsUI', () => {
     `);
     const menuItems = el.shadowRoot!.querySelectorAll('.menu-item-label');
     const labels = Array.from(menuItems).map((i) => i.textContent);
-    expect(labels.some((l) => l?.includes('Water Selected'))).toBe(true);
+    expect(labels).toContain('Water selected (2)');
   });
 
-  it('shows Water Growspace in menu when no plants are selected', async () => {
+  it('shows Water now in menu when no plants are selected', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
       <growspace-header-actions-ui .selectedPlants=${new Set()}></growspace-header-actions-ui>
     `);
     const menuItems = el.shadowRoot!.querySelectorAll('.menu-item-label');
     const labels = Array.from(menuItems).map((i) => i.textContent);
-    expect(labels.some((l) => l?.includes('Water Growspace'))).toBe(true);
+    expect(labels).toContain('Water now');
   });
 
   it('dispatches chip-drag-start when chip is dragged', async () => {
@@ -447,7 +447,7 @@ describe('GrowspaceHeaderActionsUI', () => {
       const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(
         (l) => l.textContent
       );
-      expect(labels).toContain('Water Selected');
+      expect(labels).toContain('Water selected (1)');
       expect(labels).toContain('Apply IPM to Selected');
       expect(labels).toContain('Train Selected');
 
@@ -457,7 +457,7 @@ describe('GrowspaceHeaderActionsUI', () => {
       const newLabels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(
         (l) => l.textContent
       );
-      expect(newLabels).toContain('Water Growspace');
+      expect(newLabels).toContain('Water now');
       expect(newLabels).toContain('Log / Manage IPM');
       expect(newLabels).toContain('Log Training');
     });

@@ -12,8 +12,7 @@ test.describe('Plant Actions - menu dialogs', () => {
   });
 
   test('watering dialog opens from menu', async ({ page }) => {
-    // No plants selected → label is "Water Growspace"
-    await growspaceCard.clickMenuItem(/water growspace/i);
+    await growspaceCard.clickMenuAction('water');
     const dialog = new WateringDialog(page);
     await dialog.waitForOpen();
   });

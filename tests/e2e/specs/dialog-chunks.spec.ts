@@ -51,8 +51,7 @@ const DIALOGS = [
   {
     name: 'water',
     chunk: 'nutrient-dialogs',
-    // No plants selected, so the entry reads "Water Growspace".
-    open: (card: GrowspaceCard) => card.clickMenuItem(/water growspace/i),
+    open: (card: GrowspaceCard) => card.clickMenuAction('water'),
     waitForOpen: (page: Page) => new WateringDialog(page).waitForOpen(),
   },
 ];

@@ -393,7 +393,7 @@ describe('growspace-header-ui', () => {
     expect(meta3!.textContent).not.toContain('attention');
   });
 
-  it('combines mobile readings into one deck and handles forwarded events', async () => {
+  it('hands mobile readings and equipment to the deck separately and forwards events', async () => {
     const toggleHandler = vi.fn();
     const dragHandler = vi.fn();
     const dropHandler = vi.fn();
@@ -423,7 +423,8 @@ describe('growspace-header-ui', () => {
     expect(heroComponents.length).toBe(1);
 
     const mobileHero = heroComponents[0];
-    expect(mobileHero.additionalChips).toEqual([...secondaryChips, ...deviceChips]);
+    expect(mobileHero.additionalChips).toEqual(secondaryChips);
+    expect(mobileHero.deviceChips).toEqual(deviceChips);
 
     mobileHero.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'vpd' } }));
     expect(toggleHandler).toHaveBeenCalledWith(

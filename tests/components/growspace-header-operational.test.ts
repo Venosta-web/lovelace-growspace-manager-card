@@ -97,7 +97,7 @@ describe('growspace header operational priority', () => {
     expect(action.dataset.action).toBe('add_plant');
   });
 
-  it('organizes every overflow destination under the three intent groups', async () => {
+  it('organizes every overflow destination under the Do, Review and Manage groups', async () => {
     const header = await renderHeader(deviceWithPlants(2));
     const actions = actionsFor(header);
     const groupLabels = Array.from(actions.shadowRoot!.querySelectorAll('.menu-header')).map(
@@ -107,7 +107,7 @@ describe('growspace header operational priority', () => {
       actions.shadowRoot!.querySelectorAll<HTMLButtonElement>('.menu-item')
     ).map((button) => button.dataset.action);
 
-    expect(groupLabels).toEqual(['Plant care', 'Setup', 'Insights']);
+    expect(groupLabels).toEqual(['Do', 'Review', 'Manage']);
     expect(destinations).toEqual(
       expect.arrayContaining([
         'select_plants',

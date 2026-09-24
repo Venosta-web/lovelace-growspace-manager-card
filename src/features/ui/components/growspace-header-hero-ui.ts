@@ -11,7 +11,7 @@ import { MetricKey, STATUS_CUES, toStatusLevel } from '../../../features/environ
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { RawHistoryDataPoint } from '../../../adapters/hass-types';
 import type { HomeAssistant } from 'custom-card-helpers';
-import { mdiChevronDown } from '@mdi/js';
+import { mdiChevronDown, mdiWater } from '@mdi/js';
 import './growspace-phase-hero-card';
 
 @customElement('growspace-header-hero-ui')
@@ -20,6 +20,12 @@ export class GrowspaceHeaderHeroUI extends LitElement {
   @property({ attribute: false }) public device!: GrowspaceDevice;
   @property({ attribute: false }) public chips: HeaderChip[] = [];
   @property({ attribute: false }) public additionalChips: HeaderChip[] = [];
+  /**
+   * Equipment state — light, exhaust, fans, humidifier, dehumidifier. On mobile
+   * these render as a compact strip above the readings instead of joining the
+   * carousel, so the first screen says what the tent is doing (card#972).
+   */
+  @property({ attribute: false }) public deviceChips: HeaderChip[] = [];
   @property({ type: Boolean }) public isMobile = false;
   @property({ type: Boolean }) public mobileLink = false;
   @property({ attribute: false }) public historyCache: any = {};
@@ -180,6 +186,77 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     this._goToReading(next);
   }
 
+  private _renderEquipmentStrip() {
+    if (this.deviceChips.length === 0) return nothing;
+
+    return html`
+      <ul class="equipment-strip" aria-label="Equipment">
+        ${repeat(
+          this.deviceChips,
+          (chip) => chip.key,
+          (chip) => {
+            const value =
+              chip.multiValues && chip.multiValues.length > 0
+                ? chip.multiValues.join(' · ')
+                : chip.value;
+            return html`
+              <li>
+                <button
+                  class="equipment-item ${chip.active ? 'active' : ''}"
+                  type="button"
+                  data-key=${chip.key}
+                  aria-label="${chip.label}: ${value}. Toggle graph"
+                  aria-pressed=${chip.active}
+                  title=${chip.tooltip || nothing}
+                  @click=${() => this._toggleEnvGraph(chip.key)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${chip.icon}></path></svg>
+                  <span class="equipment-label">${chip.label}</span>
+                  <span class="equipment-value">${value}</span>
+                </button>
+              </li>
+            `;
+          }
+        )}
+      </ul>
+    `;
+  }
+
+  /**
+   * One line for where irrigation stands: the crop-steering phase when steering
+   * runs, otherwise the next scheduled irrigation, plus the next drain. The
+   * values are the header chips' own, so the line and the tiles cannot disagree.
+   */
+  private _renderIrrigationLine() {
+    const all = [...this.chips, ...this.additionalChips];
+    const byKey = (key: string) => all.find((chip) => chip.key === key);
+    const phase = byKey(MetricKey.STEERING_PHASE);
+    const next = byKey(MetricKey.IRRIGATION);
+    const drain = byKey(MetricKey.DRAIN);
+
+    const parts = [
+      phase ? { label: 'Phase', value: phase.value } : null,
+      !phase && next ? { label: 'Next irrigation', value: next.value } : null,
+      drain ? { label: 'Next drain', value: drain.value } : null,
+    ].filter((part): part is { label: string; value: string } => part !== null);
+    if (parts.length === 0) return nothing;
+
+    return html`
+      <p class="irrigation-line" data-testid="irrigation-line">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${mdiWater}></path></svg>
+        ${parts.map(
+          (part, index) => html`
+            ${index > 0 ? html`<span class="irrigation-sep" aria-hidden="true">·</span>` : nothing}
+            <span class="irrigation-part">
+              <span class="irrigation-label">${part.label}</span>
+              <strong>${part.value}</strong>
+            </span>
+          `
+        )}
+      </p>
+    `;
+  }
+
   private _renderDeck() {
     const primaryChips = this._primaryMobileChips;
     const moreChips = this._moreMobileChips;
@@ -187,6 +264,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
     return html`
       <section class="mobile-reading-flow" aria-labelledby="mobile-readings-heading">
+        ${this._renderEquipmentStrip()} ${this._renderIrrigationLine()}
         <div class="deck-heading-row">
           <h2 id="mobile-readings-heading">Readings</h2>
           <span class="reading-position" aria-live="polite" aria-atomic="true">
@@ -537,6 +615,88 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           display: flex;
           flex-direction: column;
           gap: 12px;
+        }
+
+        .equipment-strip {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+
+        .equipment-item {
+          min-height: 32px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+          border-radius: var(--border-radius-full, 9999px);
+          background: var(--secondary-background-color, rgba(255, 255, 255, 0.06));
+          color: var(--primary-text-color, #fff);
+          font: inherit;
+          font-size: 0.75rem;
+          line-height: 1.2;
+          cursor: pointer;
+        }
+
+        .equipment-item.active {
+          border-color: var(--gm-primary-color, var(--primary-color));
+        }
+
+        .equipment-item:focus-visible {
+          outline: 2px solid var(--gm-primary-color, var(--primary-color));
+          outline-offset: 2px;
+        }
+
+        .equipment-item svg {
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          fill: currentColor;
+        }
+
+        .equipment-label {
+          color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        }
+
+        .equipment-value {
+          font-weight: 600;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .irrigation-line {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 4px 8px;
+          margin: 0;
+          color: var(--primary-text-color, #fff);
+          font-size: 0.8125rem;
+          line-height: 1.35;
+        }
+
+        .irrigation-line svg {
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          fill: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        }
+
+        .irrigation-label {
+          color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+          margin-right: 4px;
+        }
+
+        .irrigation-line strong {
+          font-weight: 600;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .irrigation-sep {
+          opacity: 0.4;
         }
 
         .deck-heading-row {

@@ -593,6 +593,26 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     `;
   }
 
+  /**
+   * A named group of menu items. The heading is the group's accessible name —
+   * `aria-labelledby` resolves hidden text, so the heading is hidden from the
+   * menu's own item list without leaving the group unnamed.
+   */
+  private _menuGroup(id: string, heading: string, items: unknown[]) {
+    return html`
+      <div class="menu-divider" role="separator"></div>
+      <div class="menu-group" role="group" aria-labelledby="menu-group-${id}" data-group=${id}>
+        <div class="menu-header" id="menu-group-${id}" aria-hidden="true">${heading}</div>
+        ${items}
+      </div>
+    `;
+  }
+
+  /**
+   * The menu is layered by intent (card#972): the two things done most often
+   * sit on top as direct actions, then Do (act on plants), Review (look back),
+   * and Manage (configure), with Ask AI kept apart as its own entry point.
+   */
   private _renderMenu() {
     const selectedCount = this.selectedPlants?.size || 0;
     return html`
@@ -606,77 +626,75 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         @keydown=${this._handleMenuKeydown}
       >
         <div class="drag-handle" aria-hidden="true"></div>
-        <div class="menu-header" aria-hidden="true">Plant care</div>
-        ${this._menuItem(
-          mdiCheckboxMultipleMarkedOutline,
-          localizeWithParams('tasks.select_plants', {}, this.language),
-          'select_plants',
-          {
-            disabled: this.activeTask !== 'idle' || (this.device?.plants?.length ?? 0) === 0,
-            active: this.activeTask === 'select_plants',
-          }
-        )}
-        ${this._menuItem(mdiPlus, 'Add Plant', 'add_plant')}
         ${this._menuItem(
           mdiWaterPlus,
-          selectedCount > 0 ? 'Water Selected' : 'Water Growspace',
+          selectedCount > 0 ? `Water selected (${selectedCount})` : 'Water now',
           'water'
         )}
-        ${this._menuItem(
-          mdiBug,
-          selectedCount > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM',
-          'ipm'
-        )}
-        ${this._menuItem(
-          mdiDumbbell,
-          selectedCount > 0 ? 'Train Selected' : 'Log Training',
-          'training'
-        )}
-
+        ${this._menuItem(mdiPlus, 'Add plant', 'add_plant')}
+        ${this._menuGroup('do', 'Do', [
+          this._menuItem(
+            mdiBug,
+            selectedCount > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM',
+            'ipm'
+          ),
+          this._menuItem(
+            mdiDumbbell,
+            selectedCount > 0 ? 'Train Selected' : 'Log Training',
+            'training'
+          ),
+          this._menuItem(
+            mdiDragVariant,
+            localizeWithParams('tasks.arrange', {}, this.language),
+            'arrange',
+            {
+              disabled: this.activeTask !== 'idle' || !this.canArrange,
+              active: this.activeTask === 'arrange',
+              title: this.canArrange
+                ? localizeWithParams('tasks.arrange_help', {}, this.language)
+                : localizeWithParams('tasks.arrange_unavailable', {}, this.language),
+            }
+          ),
+          this._menuItem(
+            mdiCheckboxMultipleMarkedOutline,
+            localizeWithParams('tasks.select_plants', {}, this.language),
+            'select_plants',
+            {
+              disabled: this.activeTask !== 'idle' || (this.device?.plants?.length ?? 0) === 0,
+              active: this.activeTask === 'select_plants',
+            }
+          ),
+        ])}
+        ${this._menuGroup('review', 'Review', [
+          this._menuItem(
+            mdiChartMultiple,
+            localizeWithParams('tasks.compare', {}, this.language),
+            'compare',
+            {
+              disabled: this.activeTask !== 'idle' || !this.canCompare,
+              active: this.activeTask === 'compare',
+              title: this.canCompare
+                ? localizeWithParams('tasks.compare_help', {}, this.language)
+                : localizeWithParams('tasks.compare_unavailable', {}, this.language),
+            }
+          ),
+          this._menuItem(mdiClipboardTextClock, 'Logbook', 'logbook'),
+          this._menuItem(mdiCamera, 'Camera Snapshots', 'snapshots'),
+          this.isMobile ? this._menuItem(mdiCube, '3D Heatmap', 'heatmap') : nothing,
+        ])}
+        ${this._menuGroup('manage', 'Manage', [
+          this.isMobile ? this._menuItem(mdiCog, 'Settings', 'config') : nothing,
+          this._menuItem(mdiWater, 'Irrigation', 'irrigation'),
+          this._menuItem(mdiBookmarkMultipleOutline, 'Irrigation Recipes', 'irrigation-recipes'),
+          this._menuItem(mdiCalendarClock, 'Irrigation Programs', 'irrigation-programs'),
+          this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients'),
+          this._menuItem(mdiDna, 'Strains', 'strains'),
+          this.tcAvailable ? this._menuItem(mdiFlaskOutline, 'Tissue Culture', 'tc') : nothing,
+          this.labelTemplatesAvailable
+            ? this._menuItem(mdiLabelOutline, 'Label Templates', 'label-templates')
+            : nothing,
+        ])}
         <div class="menu-divider" role="separator"></div>
-
-        <div class="menu-header" aria-hidden="true">Setup</div>
-        ${this._menuItem(
-          mdiDragVariant,
-          localizeWithParams('tasks.arrange', {}, this.language),
-          'arrange',
-          {
-            disabled: this.activeTask !== 'idle' || !this.canArrange,
-            active: this.activeTask === 'arrange',
-            title: this.canArrange
-              ? localizeWithParams('tasks.arrange_help', {}, this.language)
-              : localizeWithParams('tasks.arrange_unavailable', {}, this.language),
-          }
-        )}
-        ${this.isMobile ? this._menuItem(mdiCog, 'Settings', 'config') : nothing}
-        ${this._menuItem(mdiWater, 'Irrigation', 'irrigation')}
-        ${this._menuItem(mdiBookmarkMultipleOutline, 'Irrigation Recipes', 'irrigation-recipes')}
-        ${this._menuItem(mdiCalendarClock, 'Irrigation Programs', 'irrigation-programs')}
-        ${this._menuItem(mdiBottleTonicPlus, 'Nutrients', 'nutrients')}
-        ${this._menuItem(mdiDna, 'Strains', 'strains')}
-        ${this.tcAvailable ? this._menuItem(mdiFlaskOutline, 'Tissue Culture', 'tc') : nothing}
-        ${this.labelTemplatesAvailable
-          ? this._menuItem(mdiLabelOutline, 'Label Templates', 'label-templates')
-          : nothing}
-
-        <div class="menu-divider" role="separator"></div>
-
-        <div class="menu-header" aria-hidden="true">Insights</div>
-        ${this._menuItem(
-          mdiChartMultiple,
-          localizeWithParams('tasks.compare', {}, this.language),
-          'compare',
-          {
-            disabled: this.activeTask !== 'idle' || !this.canCompare,
-            active: this.activeTask === 'compare',
-            title: this.canCompare
-              ? localizeWithParams('tasks.compare_help', {}, this.language)
-              : localizeWithParams('tasks.compare_unavailable', {}, this.language),
-          }
-        )}
-        ${this.isMobile ? this._menuItem(mdiCube, '3D Heatmap', 'heatmap') : nothing}
-        ${this._menuItem(mdiClipboardTextClock, 'Logbook', 'logbook')}
-        ${this._menuItem(mdiCamera, 'Camera Snapshots', 'snapshots')}
         ${this._menuItem(mdiBrain, 'Ask AI', 'ai')}
       </div>
     `;

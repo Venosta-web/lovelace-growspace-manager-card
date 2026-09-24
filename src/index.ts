@@ -50,6 +50,13 @@ declare global {
   }
 }
 
+// A preview renders the card from its getStubConfig() inside the picker. The
+// growspace cards' stubs leave default_growspace empty, which the bootstrap
+// resolves to the first growspace, so they preview real data and fetch nothing
+// a dashboard would not (the AI card only calls the backend on a click).
+// The rest stay off: Subarea needs a subarea_id no stub can guess, Carousel's
+// stub has no growspaces to cycle, and TC is not a growspace card and hides
+// itself without the TC integration — all three would preview an empty box.
 window.customCards = window.customCards || [];
 window.customCards.push(
   {
@@ -57,32 +64,32 @@ window.customCards.push(
     name: 'Growspace Manager',
     description:
       'Full growspace management dashboard with environment monitoring, plant tracking, and irrigation control.',
-    preview: false,
+    preview: true,
   },
   {
     type: 'growspace-grid-card',
     name: 'Growspace Grid',
     description: 'Compact grid view of all plants in a growspace.',
-    preview: false,
+    preview: true,
   },
   {
     type: 'growspace-analytics-card',
     name: 'Growspace Analytics',
     description: 'Environment analytics and historical charts for a growspace.',
-    preview: false,
+    preview: true,
   },
   {
     type: 'growspace-ai-insight-card',
     name: 'Growspace AI Insight',
     description: 'AI-powered cultivation insights and recommendations.',
-    preview: false,
+    preview: true,
   },
   {
     type: 'growspace-tank-card',
     name: 'Growspace Tank',
     description:
       'Live irrigation tank levels with fill visualization, depletion status, and time remaining.',
-    preview: false,
+    preview: true,
   },
   {
     type: 'growspace-subarea-card',
@@ -94,7 +101,7 @@ window.customCards.push(
     type: 'growspace-logbook-card',
     name: 'Growspace Logbook',
     description: 'Events logbook with list and timeline views for a growspace.',
-    preview: false,
+    preview: true,
   },
   {
     type: 'growspace-carousel-card',
