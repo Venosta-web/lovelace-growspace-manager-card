@@ -13,6 +13,7 @@
 
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
 import type { AcInfinityGrowLight } from '../../../slices/growspace/schema';
+import type { LightLeakConfig } from '../../../slices/subarea/schema';
 import type { PortDeviceOption } from './ac-infinity-port-resolver';
 import { buildDuplicatePortWarnings, acInfinityRoleLists } from './ac-infinity-conflicts';
 
@@ -27,6 +28,8 @@ export interface GrowlightTabViewModel {
   growlightEntities: string[];
   /** Plain grow light actuators: `light.*` (dimmable) and `switch.*` (on/off). */
   growlightEntityOptions: string[];
+  lightLeakConfig: LightLeakConfig;
+  illuminanceSensorOptions: string[];
   acInfinityDevices: AcInfinityGrowLight[];
   /** `select.*` entities for the Active Mode picker. */
   modeOptions: string[];
@@ -75,6 +78,7 @@ export function createGrowlightTabViewModel(
 ): GrowlightTabViewModel {
   const d = sm.environmentDraft;
   const cfg = d.growlightConfig;
+  const preferredLuxSensors = deps.entityOptions(['sensor'], 'illuminance');
   return {
     enabled: cfg.enabled,
     power: cfg.power,
@@ -83,6 +87,13 @@ export function createGrowlightTabViewModel(
     disabled: !cfg.enabled,
     growlightEntities: d.growlightEntities,
     growlightEntityOptions: deps.entityOptions(PLAIN_GROWLIGHT_DOMAINS, null),
+    lightLeakConfig: d.lightLeakConfig,
+    illuminanceSensorOptions: [
+      ...preferredLuxSensors,
+      ...deps
+        .entityOptions(['sensor'], null)
+        .filter((entity) => !preferredLuxSensors.includes(entity)),
+    ],
     acInfinityDevices: d.growlightAcInfinityDevices,
     modeOptions: deps.entityOptions(['select'], null),
     timeOptions: deps.entityOptions(['time'], null),

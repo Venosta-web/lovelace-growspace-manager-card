@@ -194,6 +194,7 @@ export class GrowspaceAdapter {
       growlightEntities: environment?.growlight_entities,
       growlightAcInfinityDevices: environment?.growlight_ac_infinity_devices,
       growlightConfig: environment?.growlight_config,
+      lightLeakConfig: environment?.light_leak_config,
       vpd: environment?.vpd ?? undefined,
       soilMoistureValue: environment?.soil_moisture_value ?? undefined,
       // `?? null` not `?? undefined`: null is the meaningful "inherited" state

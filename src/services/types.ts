@@ -1,5 +1,5 @@
 import type { PlantEntity, RawPlantData, GrowspaceType } from '../features/plants/types';
-import type { SensorGroup } from '../slices/subarea/schema';
+import type { LightLeakConfig, SensorGroup } from '../slices/subarea/schema';
 import type { TimedNotificationTriggerValue } from '../slices/notification/triggers';
 import type { VisionCheckupConfig } from '../lib/types/dialog';
 import type {
@@ -411,6 +411,7 @@ export interface EnvironmentAttributes {
   growlightEntities?: string[];
   growlightAcInfinityDevices?: AcInfinityGrowLight[];
   growlightConfig?: GrowLightConfig;
+  lightLeakConfig?: LightLeakConfig;
   irrigationPumpState?: string;
   drainPumpState?: string;
   vpd?: string;

@@ -111,6 +111,27 @@ describe('createInitialSM', () => {
     expect(sm.environmentDraft.dehumidifierControlEnabled).toBe(true);
   });
 
+  it('reopens with the saved light leak settings and defaults older devices', () => {
+    const saved = {
+      enabled: false,
+      illuminance_sensor: 'sensor.tent_lux',
+      threshold_lux: 2,
+      debounce_seconds: 30,
+      switch_off_lights: true,
+      all_stages: true,
+    };
+    const device = makeDevice({ environmentAttributes: { lightLeakConfig: saved } });
+    expect(createInitialSM(device).environmentDraft.lightLeakConfig).toEqual(saved);
+    expect(createInitialSM(makeDevice()).environmentDraft.lightLeakConfig).toEqual({
+      enabled: true,
+      illuminance_sensor: null,
+      threshold_lux: 1,
+      debounce_seconds: 120,
+      switch_off_lights: false,
+      all_stages: false,
+    });
+  });
+
   it('seeds environment draft from device', () => {
     const device = makeDevice({
       environmentAttributes: {
