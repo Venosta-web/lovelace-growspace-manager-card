@@ -529,6 +529,7 @@
           ]
         },
         "set_irrigation_settings": {
+          "sensor_stale_after_minutes": 0,
           "irrigation_pump_entity": "switch.sim_e2e_vwc_veg_irrigation_pump",
           "drain_pump_entity": "switch.sim_e2e_vwc_veg_drain_pump"
         }
@@ -608,6 +609,7 @@
           ]
         },
         "set_irrigation_settings": {
+          "sensor_stale_after_minutes": 0,
           "irrigation_pump_entity": "switch.sim_e2e_vwc_flower_irrigation_pump",
           "drain_pump_entity": "switch.sim_e2e_vwc_flower_drain_pump"
         }
