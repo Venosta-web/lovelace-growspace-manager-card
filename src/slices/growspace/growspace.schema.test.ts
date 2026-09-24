@@ -407,6 +407,26 @@ describe('Growspace Zod Schemas', () => {
         expect(parsed.irrigation.irrigation_config.startup_grace_minutes).toBeUndefined();
       });
 
+      it('keeps the Unknown Tank Level grace period', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { tank_unknown_grace_minutes: 10 },
+          },
+        });
+
+        expect(parsed.irrigation.irrigation_config.tank_unknown_grace_minutes).toBe(10);
+      });
+
+      it('accepts a backend that predates the Unknown Tank Level grace period', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { irrigation_duration: 30 },
+          },
+        });
+
+        expect(parsed.irrigation.irrigation_config.tank_unknown_grace_minutes).toBeUndefined();
+      });
+
       it('keeps the pump cycle runtime limits', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {
