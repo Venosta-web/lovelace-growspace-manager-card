@@ -1142,3 +1142,52 @@ describe('light_leak_config (Light Leak Guard, GSM#794)', () => {
     expect(parsed.subareas?.[0]?.environment_config.light_leak_config).toBeUndefined();
   });
 });
+
+describe('climate_fail_safe_config (Climate Fail-Safe, GSM#792)', () => {
+  // The golden fixture's shape: every key the backend's ClimateFailSafeConfig emits.
+  const climateFailSafeConfig = {
+    sensor_timeout_minutes: 10,
+    sensor_stale_after_minutes: 30,
+    humidifier_safe_state: 'off',
+    dehumidifier_safe_state: 'off',
+    exhaust_fallback_speed: 50,
+    humidifier_max_runtime_minutes: 0,
+    dehumidifier_max_runtime_minutes: 0,
+  };
+
+  it('keeps every key of the growspace environment config', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      environment: {
+        climate_fail_safe_config: { ...climateFailSafeConfig, dehumidifier_safe_state: 'on' },
+      },
+    });
+    expect(parsed.environment.climate_fail_safe_config).toEqual({
+      ...climateFailSafeConfig,
+      dehumidifier_safe_state: 'on',
+    });
+  });
+
+  it('keeps every key of a subarea environment config', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      subareas: [
+        {
+          id: 'sa1',
+          name: 'Left',
+          environment_config: { climate_fail_safe_config: climateFailSafeConfig },
+        },
+      ],
+    });
+    expect(parsed.subareas?.[0]?.environment_config.climate_fail_safe_config).toEqual(
+      climateFailSafeConfig
+    );
+  });
+
+  it('leaves it undefined when an older backend does not send it', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      environment: {},
+      subareas: [{ id: 'sa1', name: 'Left', environment_config: {} }],
+    });
+    expect(parsed.environment.climate_fail_safe_config).toBeUndefined();
+    expect(parsed.subareas?.[0]?.environment_config.climate_fail_safe_config).toBeUndefined();
+  });
+});

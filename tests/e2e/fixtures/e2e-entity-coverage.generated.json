@@ -932,6 +932,9 @@
           "temperature_sensors": [
             "input_number.e2e_climate_plain_temperature"
           ],
+          "climate_fail_safe_config": {
+            "sensor_stale_after_minutes": 0
+          },
           "humidity_sensors": [
             "input_number.e2e_climate_plain_humidity"
           ],
@@ -1058,6 +1061,9 @@
           "temperature_sensors": [
             "input_number.e2e_ac_infinity_temperature"
           ],
+          "climate_fail_safe_config": {
+            "sensor_stale_after_minutes": 0
+          },
           "humidity_sensors": [
             "input_number.e2e_ac_infinity_humidity"
           ],

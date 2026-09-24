@@ -79,6 +79,21 @@ export const LightLeakConfigSchema = z.object({
 
 export type LightLeakConfig = z.infer<typeof LightLeakConfigSchema>;
 
+// The Climate Fail-Safe settings (GSM#792): what the humidifier, dehumidifier
+// and exhaust controllers do once their control sensors cannot be read.
+export const ClimateFailSafeConfigSchema = z.object({
+  sensor_timeout_minutes: z.number(),
+  sensor_stale_after_minutes: z.number(),
+  // 'off', 'on' or 'hold' today; a string, so a new state never fails the parse.
+  humidifier_safe_state: z.string(),
+  dehumidifier_safe_state: z.string(),
+  exhaust_fallback_speed: z.number(),
+  humidifier_max_runtime_minutes: z.number(),
+  dehumidifier_max_runtime_minutes: z.number(),
+});
+
+export type ClimateFailSafeConfig = z.infer<typeof ClimateFailSafeConfigSchema>;
+
 const StageThresholdsSchema = z
   .record(z.string(), z.object({ target: z.number(), tolerance: z.number() }))
   .optional();
@@ -150,6 +165,8 @@ const EnvironmentConfigSchema = z.object({
   growlight_config: GrowLightConfigSchema.optional(),
   // Optional: backends before GSM#813 do not send it.
   light_leak_config: LightLeakConfigSchema.optional(),
+  // Optional: backends before GSM#792 do not send it.
+  climate_fail_safe_config: ClimateFailSafeConfigSchema.optional(),
   sensor_coordinates: z
     .record(
       z.string(),
