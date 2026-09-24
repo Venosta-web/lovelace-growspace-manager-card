@@ -10,6 +10,13 @@ import { ResizeController } from '../../../controllers/resize-controller';
 import { headerStyles } from '../../../styles/header.styles';
 import { statusTokens } from '../../../styles/status.styles';
 import { STATUS_CUES, StatusLevel } from '../../environment/constants';
+import { deriveHeaderVerdict } from '../../../slices/header-metrics/verdict';
+
+const VERDICT_TONE: Record<StatusLevel, string> = {
+  [StatusLevel.OPTIMAL]: 'stable',
+  [StatusLevel.WARNING]: 'attention',
+  [StatusLevel.DANGER]: 'critical',
+};
 
 import './growspace-header-actions-ui';
 import './growspace-header-hero-ui';
@@ -150,64 +157,41 @@ export class GrowspaceHeaderUI extends LitElement {
     `;
   }
 
+  /**
+   * The header verdict. Plants and environment come from the same sources as the
+   * tiles beneath it — the triage list and each tile's own status — so it cannot
+   * call the growspace on track beside a tile marked critical (card#972).
+   */
   private _renderOperationalSummary() {
-    if (!Array.isArray(this.device?.plants)) {
-      return html`
-        <div class="operational-summary unavailable" role="status">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="${STATUS_CUES[StatusLevel.WARNING].icon}"></path>
-          </svg>
-          <span>
-            <strong>Plant status unavailable</strong>
-            <span class="operational-detail">Status data has not loaded yet.</span>
-          </span>
-        </div>
-      `;
-    }
-
-    const plantCount = this.device.plants.length;
-    const alertCount = this.problemPlants.length;
-    if (plantCount === 0) {
-      return html`
-        <div class="operational-summary empty" role="status">
-          <span>
-            <strong>Ready for plants</strong>
-            <span class="operational-detail">No plants are assigned to this growspace.</span>
-          </span>
-        </div>
-      `;
-    }
-
-    if (alertCount > 0) {
-      const visibleNames = this.problemPlants.slice(0, 2).join(', ');
-      const remaining = alertCount - Math.min(alertCount, 2);
-      const attentionSummary = `${alertCount} plant${alertCount === 1 ? '' : 's'} ${
-        alertCount === 1 ? 'needs' : 'need'
-      } attention`;
-      return html`
-        <div class="operational-summary attention" role="status">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="${STATUS_CUES[StatusLevel.WARNING].icon}"></path>
-          </svg>
-          <span>
-            <strong>${attentionSummary}</strong>
-            <span class="operational-detail">
-              ${visibleNames}${remaining > 0 ? ` +${remaining} more` : ''}
-            </span>
-          </span>
-        </div>
-      `;
-    }
+    const verdict = deriveHeaderVerdict({
+      plants: this.device?.plants,
+      problemPlants: this.problemPlants,
+      tiles: [...this.heroChips, ...this.secondaryChips, ...this.deviceChips],
+    });
+    const tone =
+      verdict.kind === 'unavailable'
+        ? 'unavailable'
+        : verdict.kind === 'empty' && verdict.level === StatusLevel.OPTIMAL
+          ? 'empty'
+          : VERDICT_TONE[verdict.level];
 
     return html`
-      <div class="operational-summary stable" role="status">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="${STATUS_CUES[StatusLevel.OPTIMAL].icon}"></path>
-        </svg>
-        <span>
-          <strong>All ${plantCount} plant${plantCount === 1 ? '' : 's'} on track</strong>
-          <span class="operational-detail">No plant issues reported.</span>
-        </span>
+      <div class="operational-summary ${tone}" role="status">
+        ${verdict.lines.map(
+          (line) => html`
+            <div class="verdict-line status-${line.level}" data-scope=${line.scope}>
+              ${verdict.kind === 'empty' && line.scope === 'plants'
+                ? nothing
+                : html`<svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="${STATUS_CUES[line.level].icon}"></path>
+                  </svg>`}
+              <span>
+                <strong>${line.summary}</strong>
+                <span class="operational-detail">${line.detail}</span>
+              </span>
+            </div>
+          `
+        )}
       </div>
     `;
   }
@@ -315,7 +299,8 @@ export class GrowspaceHeaderUI extends LitElement {
               <growspace-header-hero-ui
                 .hass=${this.hass}
                 .chips=${this.heroChips}
-                .additionalChips=${[...this.secondaryChips, ...this.deviceChips]}
+                .additionalChips=${this.secondaryChips}
+                .deviceChips=${this.deviceChips}
                 .device=${this.device}
                 .isMobile=${this._resizeController.isMobile}
                 .historyCache=${this.historyCache}

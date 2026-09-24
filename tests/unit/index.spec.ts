@@ -32,6 +32,32 @@ describe('index registration', () => {
     }
   });
 
+  it('previews the growspace cards whose stub renders against the first growspace', () => {
+    const previewed = (window.customCards ?? []).filter((c) => c.preview).map((c) => c.type);
+    expect(previewed).toEqual([
+      'growspace-manager-card',
+      'growspace-grid-card',
+      'growspace-analytics-card',
+      'growspace-ai-insight-card',
+      'growspace-tank-card',
+      'growspace-logbook-card',
+    ]);
+  });
+
+  it('accepts its own stub config on every previewed card', () => {
+    for (const { type } of (window.customCards ?? []).filter((c) => c.preview)) {
+      const ctor = customElements.get(type) as unknown as {
+        getStubConfig(): Record<string, unknown>;
+      };
+      const stub = ctor.getStubConfig();
+      const card = document.createElement(type) as HTMLElement & {
+        setConfig(config: unknown): void;
+      };
+      expect(() => card.setConfig(stub), type).not.toThrow();
+      expect(stub.default_growspace, type).toBe('');
+    }
+  });
+
   it('exports PlantUtils', async () => {
     const { PlantUtils } = await import('../../src/index');
     expect(PlantUtils).toBeDefined();

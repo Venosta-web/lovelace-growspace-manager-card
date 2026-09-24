@@ -122,15 +122,21 @@ export const headerStyles = css`
 
   .operational-summary {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: column;
+    gap: 4px;
     max-width: 34rem;
     color: var(--primary-text-color, #fff);
     font-size: 0.875rem;
     line-height: 1.35;
   }
 
-  .operational-summary > span {
+  .verdict-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .verdict-line > span {
     display: flex;
     flex-wrap: wrap;
     gap: 2px 8px;
@@ -147,13 +153,18 @@ export const headerStyles = css`
     fill: currentColor;
   }
 
-  .operational-summary.stable svg {
+  /* Each line carries its own level: the environment can be critical while the
+     plants beside it are fine, and the icons must not agree for them. */
+  .verdict-line.status-optimal svg {
     color: var(--gm-status-optimal, var(--success-color, #4caf50));
   }
 
-  .operational-summary.attention svg,
-  .operational-summary.unavailable svg {
+  .verdict-line.status-warning svg {
     color: var(--gm-status-warning, var(--warning-color, #ffa726));
+  }
+
+  .verdict-line.status-danger svg {
+    color: var(--gm-status-danger, var(--error-color, #f44336));
   }
 
   .operational-detail {
@@ -285,7 +296,7 @@ export const headerStyles = css`
       align-self: stretch;
     }
 
-    .operational-summary > span {
+    .verdict-line > span {
       flex-direction: column;
       gap: 2px;
     }
