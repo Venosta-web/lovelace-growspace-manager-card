@@ -141,6 +141,11 @@ const IrrigationConfigSchema = z.object({
   // Inhibit, GSM#786). Declared so the contract completeness check passes; the
   // card neither shows nor edits it. Optional because older backends omit it.
   startup_grace_minutes: z.number().optional(),
+  // Minutes a tank's level may be unknown (unavailable, stale or implausible)
+  // before the Pump Cycle Gate refuses on it and the Tank Offline Alert goes
+  // out (GSM#790, ADR-0050). Declared for the contract; the card neither shows
+  // nor edits it yet. Optional because older backends omit it.
+  tank_unknown_grace_minutes: z.number().optional(),
   active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
   phase_changed_at: z.string().nullable().optional(),
 });

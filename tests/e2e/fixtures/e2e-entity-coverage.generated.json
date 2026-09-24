@@ -505,7 +505,8 @@
             {
               "name": "Tank 1",
               "sensor_entity": "input_number.e2e_vwc_veg_irrigation_tank",
-              "volume_liters": 50
+              "volume_liters": 50,
+              "stale_after_minutes": 0
             }
           ],
           "light_sensors": [
@@ -583,7 +584,8 @@
             {
               "name": "Tank 1",
               "sensor_entity": "input_number.e2e_vwc_flower_irrigation_tank",
-              "volume_liters": 50
+              "volume_liters": 50,
+              "stale_after_minutes": 0
             }
           ],
           "light_sensors": [
@@ -800,12 +802,14 @@
             {
               "name": "Tank 1",
               "sensor_entity": "input_number.e2e_irrigation_tanks_irrigation_tank_1",
-              "volume_liters": 50
+              "volume_liters": 50,
+              "stale_after_minutes": 0
             },
             {
               "name": "Tank 2",
               "sensor_entity": "input_number.e2e_irrigation_tanks_irrigation_tank_2",
-              "volume_liters": 50
+              "volume_liters": 50,
+              "stale_after_minutes": 0
             }
           ],
           "light_sensors": [
