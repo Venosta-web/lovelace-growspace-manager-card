@@ -11,6 +11,7 @@ import { headerStyles } from '../../../styles/header.styles';
 import { statusTokens } from '../../../styles/status.styles';
 import { STATUS_CUES, StatusLevel } from '../../environment/constants';
 import { deriveHeaderVerdict } from '../../../slices/header-metrics/verdict';
+import type { SafetyView } from '../../../slices/safety';
 
 const VERDICT_TONE: Record<StatusLevel, string> = {
   [StatusLevel.OPTIMAL]: 'stable',
@@ -21,6 +22,7 @@ const VERDICT_TONE: Record<StatusLevel, string> = {
 import './growspace-header-actions-ui';
 import './growspace-header-hero-ui';
 import './growspace-header-secondary-ui';
+import '../../safety/components/growspace-safety-chip';
 
 @customElement('growspace-header-ui')
 export class GrowspaceHeaderUI extends LitElement {
@@ -52,6 +54,8 @@ export class GrowspaceHeaderUI extends LitElement {
   @property({ type: Boolean }) tcAvailable = false;
   /** Whether the backend published the complete Label Template capability. */
   @property({ type: Boolean }) labelTemplatesAvailable = false;
+  /** The irrigation controller's state; `null` on a backend that has none. */
+  @property({ attribute: false }) safety: SafetyView | null = null;
 
   private _resizeController = new ResizeController(this, () => {});
 
@@ -231,6 +235,14 @@ export class GrowspaceHeaderUI extends LitElement {
                     </select>
                   </div>`
                 : html`<h1 class="gs-title">${this.device.name}</h1>`}
+              ${this.safety
+                ? html`<growspace-safety-chip
+                    .view=${this.safety}
+                    .isAdmin=${(this.hass as { user?: { is_admin?: boolean } } | undefined)?.user
+                      ?.is_admin === true}
+                    .language=${this.hass?.language ?? 'en'}
+                  ></growspace-safety-chip>`
+                : nothing}
             </div>
             ${this._renderOperationalSummary()} ${this._renderMetaRow()}
           </div>

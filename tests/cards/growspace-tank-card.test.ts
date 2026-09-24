@@ -332,7 +332,7 @@ describe('GrowspaceTankCard', () => {
       handle.unmount();
     });
 
-    test('fillLevel null shows N/A text in percentage-text', async () => {
+    test('fillLevel null says the level is unknown, in words', async () => {
       const handle = await renderWithTanks([
         {
           name: 'Empty Data Tank',
@@ -346,7 +346,54 @@ describe('GrowspaceTankCard', () => {
         },
       ]);
       const percentageText = handle.element.shadowRoot?.querySelector('.percentage-text');
-      expect(percentageText?.textContent).toContain('N/A');
+      expect(percentageText?.textContent).toContain('Level unknown');
+      expect(percentageText?.classList).toContain('unknown');
+      handle.unmount();
+    });
+
+    test('says irrigation is held, and why, when the controller holds it on a tank', async () => {
+      const handle = await renderWithTanks([
+        {
+          name: 'Main',
+          fillLevel: null as any,
+          isWarning: false,
+          hoursRemaining: null as any,
+          volumeLiters: 100,
+          depletionStatus: undefined as any,
+          warningLevel: 20,
+          sensorEntity: 'sensor.main_tank',
+        },
+      ]);
+      const detail = "Irrigation skipped — tank 'Main' level is unknown (unavailable)";
+      handle.element.hass = {
+        ...hass,
+        states: {
+          ...hass.states,
+          'sensor.gs_irrigation_controller': {
+            state: 'inhibited',
+            attributes: {
+              reasons: [{ code: 'tank_unknown', detail, since: '2026-09-24T10:00:00Z' }],
+              fault_id: null,
+              requires_ack: false,
+              since: '2026-09-24T10:00:00Z',
+            },
+          },
+        },
+        entities: {
+          'sensor.gs_irrigation_controller': {
+            platform: 'growspace_manager',
+            device_id: 'dev-gs',
+            translation_key: 'irrigation_controller',
+          },
+        },
+        devices: { 'dev-gs': { identifiers: [['growspace_manager', growspace.growspaceId]] } },
+      } as any;
+      await handle.element.updateComplete;
+
+      const note = handle.element.shadowRoot?.querySelector('.hold-note[data-code="tank_unknown"]');
+      expect(note?.textContent).toContain('Irrigation held');
+      expect(note?.textContent).toContain('Tank level unknown');
+      expect(note?.textContent).toContain(detail);
       handle.unmount();
     });
 

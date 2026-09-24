@@ -90,8 +90,16 @@ export const headerStyles = css`
 
   .header-title-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 6px 10px;
+    max-width: 100%;
+  }
+
+  /* The name keeps its width; the safety chip wraps below it rather than
+     squeezing it onto two lines. */
+  .header-title-row > :first-child {
+    flex-shrink: 0;
     max-width: 100%;
   }
 
