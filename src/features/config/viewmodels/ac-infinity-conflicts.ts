@@ -26,7 +26,7 @@ export function buildAcInfinityConflicts(
 }
 
 /** Stable env-draft field name → the display label the Duplicate Port Warning names. */
-export const AC_INFINITY_ROLE_LABELS: Record<string, string> = {
+const AC_INFINITY_ROLE_LABELS: Record<string, string> = {
   exhaustFanAcInfinityDevices: 'Exhaust Fan',
   circulationFanAcInfinityDevices: 'Circulation Fan',
   humidifierAcInfinityDevices: 'Humidifier',

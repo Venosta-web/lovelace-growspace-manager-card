@@ -159,7 +159,7 @@ function renderVariables(groups) {
       out.push(`  '${t.css}': '${t.value.replace(/'/g, "\\'")}',`);
     }
   }
-  out.push('} as const;', '', 'export type TokenName = keyof typeof token;', '');
+  out.push('} as const;', '');
   return out.join('\n');
 }
 

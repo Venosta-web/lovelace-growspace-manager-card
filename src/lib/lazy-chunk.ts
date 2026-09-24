@@ -231,7 +231,7 @@ export const LAZY_CHUNKS = {
 } as const satisfies Record<string, LazyChunk>;
 
 /** The dist file the chunk is emitted as, with its content hash left open. */
-export function lazyChunkFile(chunk: LazyChunk): string {
+function lazyChunkFile(chunk: LazyChunk): string {
   return `growspace-${chunk.name}-*.js`;
 }
 

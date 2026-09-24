@@ -11,7 +11,6 @@ import {
   anAIBriefing,
 } from '.';
 import { PlantStage, PlantSex } from '../../src/features/plants/types';
-import { EnvSnapshotSchema } from '../../src/slices/environment/schema';
 import { AIBriefingSchema, RecommendationSchema } from '../../src/slices/ai-insight/schema';
 
 describe('aPlant', () => {
@@ -50,10 +49,6 @@ describe('aGrowspace', () => {
 });
 
 describe('anEnvSnapshot', () => {
-  it('produces a snapshot that passes Zod schema validation', () => {
-    expect(() => EnvSnapshotSchema.parse(anEnvSnapshot())).not.toThrow();
-  });
-
   it('defaults substrate sensor group to realistic readings', () => {
     const snap = anEnvSnapshot();
     expect(snap.soilMoisture).toEqual({
@@ -83,7 +78,7 @@ describe('anEnvSnapshot', () => {
     expect(snap.energy?.avg).toBe(5.6);
   });
 
-  it('merges overrides and still passes schema', () => {
+  it('merges overrides', () => {
     const snap = anEnvSnapshot({
       temperature: 28,
       vpdStatus: 'warning',
@@ -92,7 +87,6 @@ describe('anEnvSnapshot', () => {
     expect(snap.temperature).toBe(28);
     expect(snap.vpdStatus).toBe('warning');
     expect(snap.soilMoisture?.avg).toBe(45);
-    expect(() => EnvSnapshotSchema.parse(snap)).not.toThrow();
   });
 });
 

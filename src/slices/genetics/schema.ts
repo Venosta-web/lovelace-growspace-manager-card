@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const SeedBatchSchema = z.object({
+const SeedBatchSchema = z.object({
   batch_id: z.string(),
   strain_name: z.string(),
   breeder: z.string(),
@@ -17,7 +17,7 @@ export const SeedBatchSchema = z.object({
 
 export type SeedBatch = z.infer<typeof SeedBatchSchema>;
 
-export const PollinationEventSchema = z.object({
+const PollinationEventSchema = z.object({
   event_id: z.string(),
   date: z.string(),
   donor_plant_id: z.string(),
@@ -78,5 +78,3 @@ export const GeneticsDataSchema = z.object({
   seed_batches: z.record(z.string(), SeedBatchSchema).default({}),
   pollination_events: z.record(z.string(), PollinationEventSchema).default({}),
 });
-
-export type GeneticsDataResponse = z.infer<typeof GeneticsDataSchema>;

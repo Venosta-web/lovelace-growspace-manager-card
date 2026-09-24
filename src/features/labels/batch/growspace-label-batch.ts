@@ -78,7 +78,7 @@ interface TemplateOption {
 }
 
 /** How often a running job is read back. */
-export const BATCH_POLL_MS = 750;
+const BATCH_POLL_MS = 750;
 
 @customElement('growspace-label-batch')
 export class GrowspaceLabelBatch extends LitElement {

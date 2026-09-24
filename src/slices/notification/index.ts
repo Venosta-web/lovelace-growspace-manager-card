@@ -14,15 +14,10 @@ import { hassCall } from '../../services/hass-call';
 import {
   type NotificationSettingsPayload,
   type SaveNotificationSettingsResponse,
-  type TimedNotificationWire,
   SaveNotificationSettingsResponseSchema,
 } from './schema';
 
-export type {
-  NotificationSettingsPayload,
-  SaveNotificationSettingsResponse,
-  TimedNotificationWire,
-};
+export type { NotificationSettingsPayload, SaveNotificationSettingsResponse };
 
 /**
  * Persist notification timing settings and the ai_auto_alerts toggle atomically.

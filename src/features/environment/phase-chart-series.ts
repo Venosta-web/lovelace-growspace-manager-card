@@ -23,7 +23,7 @@ import type { CropSteeringPhases, VwcSample } from './crop-steering-model';
 // ---------------------------------------------------------------------------
 
 /** The wall-clock window the chart spans, taken from the history itself. */
-export interface PhaseChartWindow {
+interface PhaseChartWindow {
   startMs: number;
   /** Always ≥ 1, so a single-instant window cannot divide by zero downstream. */
   spanMs: number;

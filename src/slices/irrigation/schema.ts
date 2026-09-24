@@ -68,8 +68,6 @@ export const SetIrrigationStrategyPayloadSchema = growspaceIdPayload
   })
   .strict();
 
-export type SetIrrigationStrategyPayload = z.infer<typeof SetIrrigationStrategyPayloadSchema>;
-
 export const SteeringModeSchema = z.enum(['vegetative', 'balanced', 'generative']);
 export type SteeringMode = z.infer<typeof SteeringModeSchema>;
 
@@ -78,8 +76,6 @@ export const ApplySteeringModeResultSchema = z.object({
   growspace_id: z.string(),
   declared_steering_mode: SteeringModeSchema,
 });
-
-export type ApplySteeringModeResult = z.infer<typeof ApplySteeringModeResultSchema>;
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -116,8 +112,6 @@ export const SaveIrrigationSettingsPayloadSchema = growspaceIdPayload
   })
   .strict();
 
-export type SaveIrrigationSettingsPayload = z.infer<typeof SaveIrrigationSettingsPayloadSchema>;
-
 /**
  * The manual phase override (ADR-0012) — its own action, because the phase is
  * the backend steering machine's to decide and a settings save must not be
@@ -130,8 +124,6 @@ export const SetSteeringPhasePayloadSchema = growspaceIdPayload
   })
   .strict();
 
-export type SetSteeringPhasePayload = z.infer<typeof SetSteeringPhasePayloadSchema>;
-
 /**
  * The Steering Mode stamp names a mode and nothing else (ADR-0012): the preset
  * values are the server's to write, so a payload that spelled one out would be
@@ -143,8 +135,6 @@ export const ApplySteeringModePayloadSchema = growspaceIdPayload
   })
   .strict();
 
-export type ApplySteeringModePayload = z.infer<typeof ApplySteeringModePayloadSchema>;
-
 // ---------------------------------------------------------------------------
 // Schedule
 // ---------------------------------------------------------------------------
@@ -154,26 +144,18 @@ export const AddIrrigationTimePayloadSchema = growspaceIdPayload.extend({
   duration: z.number().int().optional(),
 });
 
-export type AddIrrigationTimePayload = z.infer<typeof AddIrrigationTimePayloadSchema>;
-
 export const RemoveIrrigationTimePayloadSchema = growspaceIdPayload.extend({
   time: z.string(),
 });
-
-export type RemoveIrrigationTimePayload = z.infer<typeof RemoveIrrigationTimePayloadSchema>;
 
 export const AddDrainTimePayloadSchema = growspaceIdPayload.extend({
   time: z.string(),
   duration: z.number().int().optional(),
 });
 
-export type AddDrainTimePayload = z.infer<typeof AddDrainTimePayloadSchema>;
-
 export const RemoveDrainTimePayloadSchema = growspaceIdPayload.extend({
   time: z.string(),
 });
-
-export type RemoveDrainTimePayload = z.infer<typeof RemoveDrainTimePayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Drain monitoring
@@ -186,15 +168,11 @@ export const LogDrainReadingPayloadSchema = growspaceIdPayload.extend({
   drain_volume_ml: z.number().optional(),
 });
 
-export type LogDrainReadingPayload = z.infer<typeof LogDrainReadingPayloadSchema>;
-
 export const ConfigureDrainMonitoringPayloadSchema = growspaceIdPayload.extend({
   enabled: z.boolean().optional(),
   max_ec_delta: z.number().optional(),
   target_runoff_percent: z.number().optional(),
 });
-
-export type ConfigureDrainMonitoringPayload = z.infer<typeof ConfigureDrainMonitoringPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Cycle
@@ -203,8 +181,6 @@ export type ConfigureDrainMonitoringPayload = z.infer<typeof ConfigureDrainMonit
 export const RunIrrigationCyclePayloadSchema = growspaceIdPayload.extend({
   duration: z.number().int().optional(),
 });
-
-export type RunIrrigationCyclePayload = z.infer<typeof RunIrrigationCyclePayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Phase windows (derived type — not a service payload)
@@ -219,8 +195,6 @@ export const PhaseWindowSchema = z.object({
   color: z.string(),
   target: z.string(),
 });
-
-export type PhaseWindow = z.infer<typeof PhaseWindowSchema>;
 
 export const PhaseWindowsSchema = z.object({
   lightsOnMin: z.number().int(),
@@ -260,7 +234,7 @@ export type ActiveEvent = z.infer<typeof ActiveEventSchema>;
  * `tank_water_tracker.py:242-246`). Only refills are shipped, so the
  * `growth_stage` the tracker adds on the consumption branch cannot appear here.
  */
-export const TankWaterEventSchema = z.object({
+const TankWaterEventSchema = z.object({
   timestamp: z.string(),
   event_type: z.enum(['consumption', 'refill']),
   pct_delta: z.number(),
@@ -270,7 +244,7 @@ export const TankWaterEventSchema = z.object({
 export type TankWaterEvent = z.infer<typeof TankWaterEventSchema>;
 
 /** One day of the 7-day summary (`growspace_view_model.py:95-99`). */
-export const TankDailyEntrySchema = z.object({
+const TankDailyEntrySchema = z.object({
   date: z.string(),
   consumed: z.number(),
   refilled: z.number(),
@@ -279,7 +253,7 @@ export const TankDailyEntrySchema = z.object({
 export type TankDailyEntry = z.infer<typeof TankDailyEntrySchema>;
 
 /** A 15-minute consumption bucket (`tank_water_tracker.py:118`). */
-export const TankConsumptionBucketSchema = z.object({
+const TankConsumptionBucketSchema = z.object({
   /** ISO-8601 start of the bucket. */
   ts: z.string(),
   /** Liters consumed in this bucket. */
@@ -296,7 +270,7 @@ export type TankConsumptionBucket = z.infer<typeof TankConsumptionBucketSchema>;
  * They were declared here as "kept for forward compatibility"; nothing reads
  * them and the backend has no branch that emits them, so they are gone.
  */
-export const TankWaterHistorySchema = z.object({
+const TankWaterHistorySchema = z.object({
   buckets_24h: z.array(TankConsumptionBucketSchema).optional(),
   daily_7d: z.array(TankDailyEntrySchema).optional(),
   recent_refills: z.array(TankWaterEventSchema).optional(),
@@ -304,12 +278,7 @@ export const TankWaterHistorySchema = z.object({
 
 export type TankWaterHistory = z.infer<typeof TankWaterHistorySchema>;
 
-export const TankDepletionStatusSchema = z.enum([
-  'depleting',
-  'refilling',
-  'static',
-  'insufficient_data',
-]);
+const TankDepletionStatusSchema = z.enum(['depleting', 'refilling', 'static', 'insufficient_data']);
 
 export type TankDepletionStatus = z.infer<typeof TankDepletionStatusSchema>;
 
@@ -371,7 +340,7 @@ const RecipeScheduleItemSchema = z.object({
   duration_seconds: z.number().nullable().optional(),
 });
 
-export const IrrigationRecipeKindSchema = z.enum(['crop_steering', 'schedule']);
+const IrrigationRecipeKindSchema = z.enum(['crop_steering', 'schedule']);
 export type IrrigationRecipeKind = z.infer<typeof IrrigationRecipeKindSchema>;
 
 /**
@@ -383,7 +352,7 @@ export type IrrigationRecipeKind = z.infer<typeof IrrigationRecipeKindSchema>;
  * plants. `stage` stays a bare string rather than an enum because the backend
  * types it as one — a new live stage must not fail the whole payload parse.
  */
-export const RecipeProvenanceSchema = z.object({
+const RecipeProvenanceSchema = z.object({
   media_type: z.enum(['coco', 'rockwool', 'soil']),
   liters_per_pot: z.number(),
   pump_flow_rate_ml_per_sec: z.number(),
@@ -391,15 +360,13 @@ export const RecipeProvenanceSchema = z.object({
   week: z.number(),
 });
 
-export type RecipeProvenance = z.infer<typeof RecipeProvenanceSchema>;
-
 /**
  * The crop-steering half of a recipe. Declared complete per ADR-0031 and
  * **unread by the card**: applying is a server-side stamp, so these setpoints
  * only ever travel through GSM. Shot sizes are percents of substrate volume,
  * never pump seconds ([[Substrate-Relative Shot Storage]]).
  */
-export const CropSteeringRecipeSchema = z.object({
+const CropSteeringRecipeSchema = z.object({
   lights_on_time: z.string(),
   p0_duration_minutes: z.number(),
   p2_stop_before_lights_off_minutes: z.number(),
@@ -427,7 +394,7 @@ export type CropSteeringRecipeValues = z.infer<typeof CropSteeringRecipeSchema>;
  * The time-schedule half of a recipe. Declared complete per ADR-0031 and
  * unread by the card, for the same reason as its crop-steering twin.
  */
-export const ScheduleRecipeSchema = z.object({
+const ScheduleRecipeSchema = z.object({
   irrigation_times: z.array(RecipeScheduleItemSchema),
   drain_times: z.array(RecipeScheduleItemSchema),
   irrigation_duration: z.number().nullable(),
@@ -457,15 +424,6 @@ export const IrrigationRecipeSchema = z.object({
 
 export type SerializedIrrigationRecipe = z.infer<typeof IrrigationRecipeSchema>;
 
-/**
- * The global library as it rides every growspace payload at
- * `irrigation.recipes`, keyed by recipe id. Global, not per-growspace: a recipe
- * saved from one tent is listed from every other.
- */
-export const IrrigationRecipeLibrarySchema = z.record(z.string(), IrrigationRecipeSchema);
-
-export type IrrigationRecipeLibrary = z.infer<typeof IrrigationRecipeLibrarySchema>;
-
 export const SaveIrrigationRecipePayloadSchema = z.strictObject({
   growspace_id: z.string(),
   name: z.string(),
@@ -474,32 +432,10 @@ export const SaveIrrigationRecipePayloadSchema = z.strictObject({
   recipe_id: z.string().optional(),
 });
 
-export type SaveIrrigationRecipePayload = z.infer<typeof SaveIrrigationRecipePayloadSchema>;
-
-/**
- * The sparse edit payload for `update_irrigation_recipe`.
- *
- * Everything but the id is optional and an unnamed field keeps what the recipe
- * stores, so a rename carries no values and a value correction carries no name.
- * The half must be the one the recipe's `kind` holds; neither `kind` itself nor
- * any [[Recipe Provenance]] field is writable, because provenance records where
- * the recipe came from rather than what it should say.
- */
-export const UpdateIrrigationRecipePayloadSchema = z.strictObject({
-  recipe_id: z.string(),
-  name: z.string().optional(),
-  crop_steering: CropSteeringRecipeSchema.partial().optional(),
-  schedule: ScheduleRecipeSchema.partial().optional(),
-});
-
-export type UpdateIrrigationRecipePayload = z.infer<typeof UpdateIrrigationRecipePayloadSchema>;
-
 export const ApplyIrrigationRecipePayloadSchema = z.strictObject({
   growspace_id: z.string(),
   recipe_id: z.string(),
 });
-
-export type ApplyIrrigationRecipePayload = z.infer<typeof ApplyIrrigationRecipePayloadSchema>;
 
 /**
  * Result of the apply_irrigation_recipe WS command (the server stamps the
@@ -534,20 +470,17 @@ export type ApplyIrrigationRecipeResult = z.infer<typeof ApplyIrrigationRecipeRe
  * slot comes next.
  */
 export const PROGRAM_STAGES = ['seedling', 'clone', 'mother', 'veg', 'flower'] as const;
-export type ProgramStage = (typeof PROGRAM_STAGES)[number];
 
 /**
  * One `(stage, week)` slot. `recipe_id` may name a recipe the library no longer
  * holds — deleting a recipe empties slots rather than cascading — so a reader
  * resolves it and treats a miss as a gap rather than as an error.
  */
-export const ProgramSlotSchema = z.object({
+const ProgramSlotSchema = z.object({
   stage: z.string(),
   week: z.number(),
   recipe_id: z.string(),
 });
-
-export type SerializedProgramSlot = z.infer<typeof ProgramSlotSchema>;
 
 /** One [[Irrigation Program]] as the backend emits it, slots already in run order. */
 export const IrrigationProgramSchema = z.object({
@@ -560,15 +493,6 @@ export const IrrigationProgramSchema = z.object({
 export type SerializedIrrigationProgram = z.infer<typeof IrrigationProgramSchema>;
 
 /**
- * The global program library as it rides every growspace payload at
- * `irrigation.programs`, keyed by program id — global exactly as the recipe
- * library beside it is.
- */
-export const IrrigationProgramLibrarySchema = z.record(z.string(), IrrigationProgramSchema);
-
-export type IrrigationProgramLibrary = z.infer<typeof IrrigationProgramLibrarySchema>;
-
-/**
  * Why a [[Program Hold]] is holding — the backend's `ProgramHold` values.
  *
  * Declared as a list the card narrows against rather than as a `z.enum` on the
@@ -578,7 +502,7 @@ export type IrrigationProgramLibrary = z.infer<typeof IrrigationProgramLibrarySc
  * growspace payload. An unrecognised cause degrades to the backend's own
  * `detail` sentence, which is written for the grower anyway.
  */
-export const PROGRAM_HOLDS = [
+const PROGRAM_HOLDS = [
   'no_position',
   'no_slot',
   'program_complete',
@@ -590,7 +514,7 @@ export const PROGRAM_HOLDS = [
 export type ProgramHold = (typeof PROGRAM_HOLDS)[number];
 
 /** What the program layer will do about a growspace's position, same caveat. */
-export const PROGRAM_PROGRESSION_STATES = ['up_to_date', 'available', 'due', 'held'] as const;
+const PROGRAM_PROGRESSION_STATES = ['up_to_date', 'available', 'due', 'held'] as const;
 
 export type ProgramProgressionState = (typeof PROGRAM_PROGRESSION_STATES)[number];
 
@@ -628,8 +552,6 @@ export const GrowspaceProgramStateSchema = z.object({
   }),
 });
 
-export type SerializedGrowspaceProgramState = z.infer<typeof GrowspaceProgramStateSchema>;
-
 /**
  * `save_irrigation_program` replaces the program's whole slot list rather than
  * merging into it, so the editor always sends the plan it is showing.
@@ -644,26 +566,14 @@ export const SaveIrrigationProgramPayloadSchema = z.strictObject({
   program_id: z.string().optional(),
 });
 
-export type SaveIrrigationProgramPayload = z.infer<typeof SaveIrrigationProgramPayloadSchema>;
-
-export const RemoveIrrigationProgramPayloadSchema = z.strictObject({
-  program_id: z.string(),
-});
-
-export type RemoveIrrigationProgramPayload = z.infer<typeof RemoveIrrigationProgramPayloadSchema>;
-
 /** Omitting `program_id` unbinds. Binding writes that one id and no setpoint. */
 export const AssignIrrigationProgramPayloadSchema = z.strictObject({
   growspace_id: z.string(),
   program_id: z.string().nullable().optional(),
 });
 
-export type AssignIrrigationProgramPayload = z.infer<typeof AssignIrrigationProgramPayloadSchema>;
-
 /** Result of the assign command — what the growspace now holds. */
 export const AssignIrrigationProgramResultSchema = z.object({
   growspace_id: z.string(),
   irrigation_program_id: z.string().nullable(),
 });
-
-export type AssignIrrigationProgramResult = z.infer<typeof AssignIrrigationProgramResultSchema>;

@@ -107,7 +107,7 @@ export const PlantSlotSchema = z
 // Grid dimensions — physical size metadata for a growspace grid
 // ---------------------------------------------------------------------------
 
-export const GridDimensionsSchema = z
+const GridDimensionsSchema = z
   .object({
     length: z.number().optional(),
     // The backend's default dimensions use `depth`, not `length`; the adapter
@@ -139,4 +139,3 @@ export const GridApiSchema = z
   .prefault({});
 
 export type PlantSlot = z.infer<typeof PlantSlotSchema>;
-export type GridApi = z.infer<typeof GridApiSchema>;

@@ -28,7 +28,7 @@ import type { LabelDiagnostic } from '../../../slices/labels/schema';
 export type Severity = 'error' | 'warning' | 'info';
 
 /** Where a user goes to clear one diagnostic. */
-export type Destination =
+type Destination =
   /** Select the element and focus the named control. */
   | 'element'
   /** Change what the element shows: its binding or its text. */

@@ -154,7 +154,7 @@ export interface EnvironmentRemovalImpact {
   controllerCount: number;
 }
 
-export type GrowspacesSubState =
+type GrowspacesSubState =
   | { kind: 'idle' }
   | {
       kind: 'adding';
@@ -174,7 +174,7 @@ export type GrowspacesSubState =
       editing: EditingGrowspaceSubState;
     } & EnvironmentRemovalImpact);
 
-export interface GrowspacesTabState {
+interface GrowspacesTabState {
   sub: GrowspacesSubState;
 }
 
@@ -184,11 +184,7 @@ export interface GrowspacesTabState {
 // schema; re-exported here because the tab types and ViewModel read it from the
 // SM. A stored trigger outside the vocabulary arrives as `UnrecognisedTrigger`
 // and stays that way until the user picks a stage.
-export type {
-  TimedNotificationTrigger,
-  TimedNotificationTriggerValue,
-  UnrecognisedTrigger,
-} from '../slices/notification/triggers';
+export type { TimedNotificationTrigger } from '../slices/notification/triggers';
 
 export interface TimedNotification {
   id: string;
@@ -221,7 +217,7 @@ export type NotificationsTabSub =
   | { kind: 'editing'; id: string; draft: TimedNotificationDraft }
   | { kind: 'confirm-delete'; id: string };
 
-export interface NotificationsTabState {
+interface NotificationsTabState {
   draft: NotificationsDraft;
   timedNotifications: TimedNotification[];
   sub: NotificationsTabSub;
@@ -230,7 +226,7 @@ export interface NotificationsTabState {
 // ─── Env-group tabs (sensors / climate / humidity / irrigation / vision) ──────
 // These tabs share environmentDraft at the SM root — their per-tab state is minimal.
 
-export interface EnvTabState {
+interface EnvTabState {
   sub: { kind: 'idle' };
 }
 
@@ -243,38 +239,38 @@ export type TankDraftFields = {
   warningLevel: number;
 };
 
-export type TanksSubState =
+type TanksSubState =
   | { kind: 'idle' }
   | ({ kind: 'adding' } & TankDraftFields)
   | ({ kind: 'editing'; index: number } & TankDraftFields);
 
-export interface TanksTabState {
+interface TanksTabState {
   sub: TanksSubState;
 }
 
 // ─── Heatmap tab ─────────────────────────────────────────────────────────────
 
-export type HeatmapSubState = { kind: 'idle' } | { kind: 'editing-group'; group?: SensorGroup };
+type HeatmapSubState = { kind: 'idle' } | { kind: 'editing-group'; group?: SensorGroup };
 
-export interface HeatmapTabState {
+interface HeatmapTabState {
   sub: HeatmapSubState;
 }
 
 // ─── Subareas tab ─────────────────────────────────────────────────────────────
 
-export type SubareasSubState =
+type SubareasSubState =
   | { kind: 'idle' }
   | { kind: 'adding'; name: string }
   | { kind: 'confirm-delete'; subareaId: string }
   | { kind: 'editing-subarea'; subarea: Subarea };
 
-export interface SubareasTabState {
+interface SubareasTabState {
   sub: SubareasSubState;
 }
 
 // ─── Root SM ──────────────────────────────────────────────────────────────────
 
-export interface ConfigTabStates {
+interface ConfigTabStates {
   growspaces: GrowspacesTabState;
   notifications: NotificationsTabState;
   sensors: EnvTabState;
@@ -291,7 +287,7 @@ export interface ConfigTabStates {
 
 type SharedDialogStatus = DialogStateMachine<ConfigTabId, ConfigTabStates>['status'];
 
-export type ConfigDialogStatus =
+type ConfigDialogStatus =
   | SharedDialogStatus
   | { kind: 'confirm-discard'; pendingAction: 'close' }
   | { kind: 'confirm-discard'; pendingAction: 'change-growspace'; growspaceId: string };

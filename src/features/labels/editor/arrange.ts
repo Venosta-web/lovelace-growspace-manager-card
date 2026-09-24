@@ -41,7 +41,7 @@ export interface Bounds {
 }
 
 /** The elements a selection names, in document order. Unknown ids are dropped. */
-export function selectedElements(document: LabelDocument, ids: readonly string[]): LabelElement[] {
+function selectedElements(document: LabelDocument, ids: readonly string[]): LabelElement[] {
   return document.elements.filter((element) => ids.includes(element.id));
 }
 
@@ -221,7 +221,7 @@ export function reorder(
 }
 
 /** How far a duplicate lands from its original, so the copy is visibly a copy. */
-export const DUPLICATE_OFFSET_MM = 1;
+const DUPLICATE_OFFSET_MM = 1;
 
 /**
  * Copy elements, offset, and select the copies.
@@ -280,7 +280,7 @@ export function addElement(document: LabelDocument, element: LabelElement): Labe
 // ---------------------------------------------------------------------------
 
 /** How close a dragged edge has to come, in millimetres, before it snaps. */
-export const SNAP_TOLERANCE_MM = 0.6;
+const SNAP_TOLERANCE_MM = 0.6;
 
 /** One line a frame can snap to, and what it is a line of. */
 export interface SnapLine {

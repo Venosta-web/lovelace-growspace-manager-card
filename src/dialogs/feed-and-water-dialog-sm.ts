@@ -37,7 +37,7 @@ export interface NutrientStockDraft {
 
 // ─── Per-tab sub-states ───────────────────────────────────────────────────────
 
-export type WateringSub = { kind: 'idle' } | { kind: 'submitting' };
+type WateringSub = { kind: 'idle' } | { kind: 'submitting' };
 
 export type InventorySub =
   | { kind: 'idle' }
@@ -69,23 +69,23 @@ export interface WateringDraft {
 
 const DEFAULT_WATERING_DRAFT: WateringDraft = { volume: 1.0, presetId: '' };
 
-export interface WateringTabState {
+interface WateringTabState {
   sub: WateringSub;
   draft: WateringDraft;
   adHocOpen: boolean;
 }
 
-export interface InventoryTabState {
+interface InventoryTabState {
   selectedId: string | null;
   sub: InventorySub;
 }
 
-export interface PresetsTabState {
+interface PresetsTabState {
   selectedId: string | null;
   sub: PresetsSub;
 }
 
-export interface TabStates {
+interface TabStates {
   watering: WateringTabState;
   inventory: InventoryTabState;
   presets: PresetsTabState;
@@ -93,7 +93,7 @@ export interface TabStates {
 
 // ─── Root SM ──────────────────────────────────────────────────────────────────
 
-export type Status = { kind: 'idle' } | { kind: 'confirm-discard'; pendingTab: TabId };
+type Status = { kind: 'idle' } | { kind: 'confirm-discard'; pendingTab: TabId };
 
 export interface SM extends DialogStateMachine<TabId, TabStates> {
   activeTab: TabId;

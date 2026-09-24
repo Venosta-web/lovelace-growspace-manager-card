@@ -20,7 +20,7 @@ export interface LayoutNode {
   rank: number;
 }
 
-export interface LayoutBand {
+interface LayoutBand {
   kind: 'rank' | 'breeder';
   label: string;
   x: number;
@@ -30,7 +30,7 @@ export interface LayoutBand {
   count?: number;
 }
 
-export interface TreeEdge {
+interface TreeEdge {
   from: string;
   to: string;
   kind: 'mother' | 'father' | 'clone';

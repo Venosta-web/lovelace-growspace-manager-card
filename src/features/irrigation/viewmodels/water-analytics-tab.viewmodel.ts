@@ -48,7 +48,7 @@ export interface WaterAnalyticsScheduleRow {
 }
 
 /** Crop-steering schedule summary (shown when steering is enabled). */
-export interface WaterAnalyticsCropSteeringSummary {
+interface WaterAnalyticsCropSteeringSummary {
   /** Shots/day from the pure `computeCropSteeringCycle` over the steering draft. */
   shots: CropSteeringShot[];
   /** Drain event rows (first 5 shown by the component). */
@@ -58,7 +58,7 @@ export interface WaterAnalyticsCropSteeringSummary {
 }
 
 /** Non-steering schedule summary (irrigation + drain event counts). */
-export interface WaterAnalyticsScheduleSummary {
+interface WaterAnalyticsScheduleSummary {
   totalIrrig: number;
   totalDrain: number;
   irrigDuration: number;
@@ -68,7 +68,7 @@ export interface WaterAnalyticsScheduleSummary {
 }
 
 /** Per-tank fill bar + warning state for the Tank Levels card. */
-export interface WaterAnalyticsTankRow {
+interface WaterAnalyticsTankRow {
   name: string;
   fillLevel: number | null;
   isWarning: boolean;
@@ -76,7 +76,7 @@ export interface WaterAnalyticsTankRow {
 }
 
 /** One volume-history table row, derived from a drain reading with volumes. */
-export interface WaterAnalyticsVolumeRow {
+interface WaterAnalyticsVolumeRow {
   timestamp: string;
   feedVolumeMl: number;
   drainVolumeMl: number;

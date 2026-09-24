@@ -251,9 +251,9 @@ export class GrowspaceGridContainer extends LitElement {
   }
 
   /**
-   * Drag-drop between grid cells: swap two plants, or move one to an empty cell.
-   * The optimistic grid update + undo now live in the Plant slice mutators
-   * (`swapPlants` / `movePlantPosition`); this just routes and refreshes.
+   * Drag-drop between grid cells. Only the Arrange task acts on it: the drop
+   * places the dragged plant in the arrangement being edited, and nothing is
+   * written until that arrangement is applied.
    */
   private async _handlePlantDrop(
     targetRow: number,

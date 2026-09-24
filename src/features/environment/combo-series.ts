@@ -25,7 +25,7 @@ import type { MetricDescriptor } from '../../slices/metric-descriptors';
 import type { SensorHistories } from './types';
 
 /** One bucket of an [[Interval Metric]], in time space and percent of full scale. */
-export interface ComboIntervalBar {
+interface ComboIntervalBar {
   startTime: number;
   endTime: number;
   /** Duty over the bucket: 0 is idle, 100 is pinned at the metric's full scale. */

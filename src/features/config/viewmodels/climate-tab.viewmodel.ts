@@ -127,7 +127,7 @@ export interface ClimateStageVpdVM {
   stages: ClimateStageVpdStageVM[];
 }
 
-export interface ClimateUnitsVM {
+interface ClimateUnitsVM {
   temperature: string;
   pressure: string;
   currentTemperature: string;

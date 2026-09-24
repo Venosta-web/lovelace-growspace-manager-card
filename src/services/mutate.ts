@@ -42,7 +42,7 @@ export interface Action {
 }
 
 /** Payload passed to the commit listener after each successful mutate. */
-export type CommitInfo = { type: string; label: string | undefined };
+type CommitInfo = { type: string; label: string | undefined };
 
 /** Callback invoked after each successful commit. */
 export type MutateListener = (info: CommitInfo, growspaceId: string) => void;

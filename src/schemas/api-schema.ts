@@ -8,7 +8,7 @@ import type {
   GrowspaceAPICollection,
 } from '../slices/growspace/schema';
 
-export { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema };
+export { GrowspaceAPIResponseSchema };
 export type {
   GrowspaceAPISchemaResponse,
   GrowspaceAPICollection,
@@ -20,51 +20,22 @@ export type {
 export {
   StrainPhenotypeSchema,
   StrainDataSchema,
-  StrainLibrarySchema,
   StrainLibraryWrapperSchema,
 } from '../slices/strain/schema';
 
 export {
   VisionStatusSchema,
-  VisionCaptureResultSchema,
-  VisionCheckupSchema,
-  LegacyVisionCheckupResultSchema,
-  VisionHistoryItemSchema,
   GetVisionHistoryV2ResponseSchema,
   TriggerVisionCheckupResponseSchema,
 } from '../slices/camera/schema';
-export type {
-  VisionStatus,
-  VisionCaptureResult,
-  VisionCheckup,
-  LegacyVisionCheckupResult,
-  VisionHistoryItem,
-  GetVisionHistoryV2Response,
-  TriggerVisionCheckupResponse,
-} from '../slices/camera/schema';
-export type { StrainLibrary, StrainLibraryResponse } from '../slices/strain/schema';
-
 // Nutrient schemas live in the Nutrient slice — re-exported here for backwards compatibility.
 export {
   NutrientPresetsSchema,
-  IPMPresetSchema,
   IPMPresetsSchema,
   ECRampPointSchema,
-  ECRampCurveSchema,
   ECRampCurvesSchema,
-  NutrientStockSchema,
-  NutrientInventorySchema,
 } from '../slices/nutrient/schema';
-export type {
-  NutrientPresetsResponse,
-  IPMPreset,
-  IPMPresetsResponse,
-  ECRampPoint,
-  ECRampCurve,
-  ECRampCurvesResponse,
-  NutrientStock,
-  NutrientInventoryResponse,
-} from '../slices/nutrient/schema';
+export type { ECRampPoint, ECRampCurve } from '../slices/nutrient/schema';
 
 /**
  * A point from Home Assistant's own compact history API — not a GSM shape, so
@@ -82,7 +53,6 @@ export const HistoryPointSchema = z.object({
 });
 
 export const HistoryStatsResponseSchema = z.record(z.string(), z.array(HistoryPointSchema));
-export type HistoryStatsResponse = z.infer<typeof HistoryStatsResponseSchema>;
 
 /**
  * API Validation Helpers - Corrupted data firewall at API boundary
@@ -147,4 +117,3 @@ export const CropSteeringHistorySchema = z.object({
 });
 
 export type CropSteeringHistory = z.infer<typeof CropSteeringHistorySchema>;
-export type CropSteeringBucket = z.infer<typeof CropSteeringBucketSchema>;

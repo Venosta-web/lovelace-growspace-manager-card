@@ -52,18 +52,6 @@ import { DIALOG_CHUNKS } from '../../../../../src/features/ui/containers/growspa
 // itself is src/features/ui/containers/growspace-dialog-host.chunks.test.ts.
 beforeAll(() => Promise.all(Object.values(DIALOG_CHUNKS).map(({ load }) => load())));
 
-const { mockFeatureFlags } = vi.hoisted(() => ({
-  mockFeatureFlags: {
-    USE_NEW_DIALOGS: true,
-    USE_EVENT_BUS: true,
-  },
-}));
-
-vi.mock('../../../../../src/features/shared/config/feature-flags', () => ({
-  FEATURE_FLAGS: mockFeatureFlags,
-  isFeatureEnabled: vi.fn((flag: string) => (mockFeatureFlags as any)[flag]),
-}));
-
 vi.mock('../../../../../src/features/genetics/state/genetics.actions', () => ({
   loadAllGenetics: vi.fn().mockResolvedValue(true),
 }));
@@ -119,7 +107,6 @@ vi.mock('../../../../../src/slices/plant', () => ({
   waterGrowspace: vi.fn().mockResolvedValue(undefined),
   movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
   advancePlantStage: vi.fn().mockResolvedValue('dry'),
-  movePlantPosition: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../../../src/slices/genetics', () => ({
@@ -2002,7 +1989,6 @@ describe('GrowspaceDialogHostContainer', () => {
     });
 
     it('should handle events from plant-overview-container', async () => {
-      mockFeatureFlags.USE_NEW_DIALOGS = true;
       mockStore.ui.$activeDialog.set({
         type: 'PLANT_OVERVIEW' as any,
         payload: { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} },

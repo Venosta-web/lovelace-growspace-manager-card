@@ -33,12 +33,12 @@ import {
 } from './draft-schema';
 import { gated } from './gated';
 
-export const WS_GET_LABEL_TEMPLATE_LIBRARY = 'growspace_manager/get_label_template_library';
-export const WS_OPEN_LABEL_TEMPLATE_DRAFT = 'growspace_manager/open_label_template_draft';
-export const WS_AUTOSAVE_LABEL_TEMPLATE_DRAFT = 'growspace_manager/autosave_label_template_draft';
-export const WS_PREVIEW_LABEL_TEMPLATE_DRAFT = 'growspace_manager/preview_label_template_draft';
-export const WS_PUBLISH_LABEL_TEMPLATE_DRAFT = 'growspace_manager/publish_label_template_draft';
-export const WS_DISCARD_LABEL_TEMPLATE_DRAFT = 'growspace_manager/discard_label_template_draft';
+const WS_GET_LABEL_TEMPLATE_LIBRARY = 'growspace_manager/get_label_template_library';
+const WS_OPEN_LABEL_TEMPLATE_DRAFT = 'growspace_manager/open_label_template_draft';
+const WS_AUTOSAVE_LABEL_TEMPLATE_DRAFT = 'growspace_manager/autosave_label_template_draft';
+const WS_PREVIEW_LABEL_TEMPLATE_DRAFT = 'growspace_manager/preview_label_template_draft';
+const WS_PUBLISH_LABEL_TEMPLATE_DRAFT = 'growspace_manager/publish_label_template_draft';
+const WS_DISCARD_LABEL_TEMPLATE_DRAFT = 'growspace_manager/discard_label_template_draft';
 
 /**
  * Which draft a command addresses.

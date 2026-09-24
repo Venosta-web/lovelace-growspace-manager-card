@@ -77,7 +77,7 @@ export const RENDER_TIMEOUT_MS = 10_000;
 export const PREVIEW_TIMEOUT = 'label_template.preview_timeout';
 
 /** How deep the undo stack goes. Editing is not version control. */
-export const UNDO_LIMIT = 100;
+const UNDO_LIMIT = 100;
 
 /** What the raster on screen is of, relative to what the user has. */
 export type RasterStanding =
@@ -726,7 +726,7 @@ export class DraftSession {
   /**
    * Publish, once the work is saved, valid, current and not overtaken.
    *
-   * The gate is {@link publishable}, and every clause of it is a different
+   * The gate is {@link publishBlockedBy}, and every clause of it is a different
    * sentence to the user rather than one disabled button.
    */
   async publish(): Promise<{ templateId: string; name: string } | null> {
@@ -838,10 +838,6 @@ export function publishBlockedBy(state: SessionState): string | null {
   return null;
 }
 
-export function publishable(state: SessionState): boolean {
-  return publishBlockedBy(state) === null;
-}
-
 /**
  * The test print a settled raster authorizes, or nothing.
  *
@@ -857,7 +853,7 @@ export function testPrintApproval(state: SessionState): DraftApproval | null {
 }
 
 /** The code of a thrown transport failure, shaped as a refusal. */
-export const TRANSPORT_FAILED = 'label_template.transport_failed';
+const TRANSPORT_FAILED = 'label_template.transport_failed';
 
 function isRenderRefusal(refusal: LabelRefusal | null): boolean {
   return refusal?.recovery === 'retry_preview';
@@ -880,5 +876,3 @@ function asRefusal(error: unknown, recovery: 'retry_save' | 'retry_preview'): La
     current: { family: '', major: 0, minor: 0, generation: 0 },
   };
 }
-
-export { DRAFT_VERSION_CONFLICT };

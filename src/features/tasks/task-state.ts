@@ -2,7 +2,7 @@ import type { GrowspaceViewMode, PlantEntity } from '../../types';
 
 export type CardTaskKind = 'arrange' | 'compare' | 'select_plants';
 
-export interface PlantPlacement {
+interface PlantPlacement {
   row: number;
   col: number;
 }
@@ -10,7 +10,7 @@ export interface PlantPlacement {
 /** Placements are 0-based grid indices; the backend stores them 1-based. */
 export type PlantLayout = Record<string, PlantPlacement>;
 
-export interface ArrangeTaskState {
+interface ArrangeTaskState {
   kind: 'arrange';
   previousViewMode: GrowspaceViewMode;
   expectedLayoutRevision: number;
@@ -21,7 +21,7 @@ export interface ArrangeTaskState {
   error: string | null;
 }
 
-export interface CompareTaskState {
+interface CompareTaskState {
   kind: 'compare';
   comparisonId: string | null;
   originalMetrics: string[];
@@ -31,7 +31,7 @@ export interface CompareTaskState {
   error: string | null;
 }
 
-export interface SelectPlantsTaskState {
+interface SelectPlantsTaskState {
   kind: 'select_plants';
 }
 
@@ -41,7 +41,7 @@ export type CardTaskState =
   | CompareTaskState
   | SelectPlantsTaskState;
 
-export function plantIdOf(plant: PlantEntity): string {
+function plantIdOf(plant: PlantEntity): string {
   return plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
 }
 

@@ -57,7 +57,8 @@ npm test             # vitest unit tests (alias: test:unit)
 npm run test:unit:watch
 npm run test:coverage
 npm run test:e2e     # build + Playwright e2e against HA (see AGENTS.md)
-npm run lint         # eslint src/**/*.{ts,js}
+npm run lint         # eslint src/**/*.{ts,js}, then lint:unused
+npm run lint:unused  # knip: modules nothing ships, exports nothing imports (knip.config.ts)
 npm run format       # prettier --write over src/, tests/ and root config
 npm run format:check # same scope, read-only (.prettierignore excludes markdown)
 ```
@@ -174,4 +175,8 @@ This card is the frontend for the **`growspace_manager`** integration (sibling v
   error — prefix with `_` to intentionally ignore. `no-explicit-any` is a warning; avoid `any`
   in shipped code. Test files (`*.{test,spec}.ts`) are exempt from `no-explicit-any` — they may
   use `any` to reach component internals (`(el as any)._private`) and build partial mocks.
+- **No dead code**: `npm run lint:unused` fails on a module that nothing the card ships
+  reaches (a spec alone does not keep it alive) and on an export nothing imports (a spec
+  does count there). Delete what it finds, or record a real exception in `knip.config.ts`
+  with its reason; don't silence findings with tags or flags.
 - TypeScript `strict` mode, Lit decorators (`experimentalDecorators`, `useDefineForClassFields: false`).

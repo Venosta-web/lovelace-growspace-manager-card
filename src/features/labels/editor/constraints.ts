@@ -143,7 +143,7 @@ export interface LogoControls {
   minimumEffectiveDpi: number;
 }
 
-export const LOGO_FITS: readonly string[] = ['contain'];
+const LOGO_FITS: readonly string[] = ['contain'];
 
 export function logoControls(
   capability: LabelTemplateCapability | undefined,
@@ -172,7 +172,7 @@ export function qrControls(profile: CapabilityProfile | null): QrControls {
 }
 
 /** The document language's four levels, for a stock no profile governs. */
-export const QR_ERROR_CORRECTION: readonly string[] = ['low', 'medium', 'quartile', 'high'];
+const QR_ERROR_CORRECTION: readonly string[] = ['low', 'medium', 'quartile', 'high'];
 
 export interface DividerControls {
   /** Thinner than this and the printhead cannot be relied on to lay any ink. */
@@ -180,7 +180,7 @@ export interface DividerControls {
   fill: readonly string[];
 }
 
-export const DIVIDER_FILLS: readonly string[] = ['black'];
+const DIVIDER_FILLS: readonly string[] = ['black'];
 
 export function dividerControls(profile: CapabilityProfile | null): DividerControls {
   return {
@@ -203,17 +203,6 @@ export function bindingsFor(
   return (capability?.catalogues.bindings ?? []).filter((binding) => binding.kinds.includes(kind));
 }
 
-/** The binding catalogue entry an element is currently bound to, if it is bound at all. */
-export function bindingOf(
-  capability: LabelTemplateCapability | undefined,
-  element: LabelElement
-): LabelTemplateCapability['catalogues']['bindings'][number] | undefined {
-  if (element.kind === 'divider') return undefined;
-  const content = element.content;
-  if (!('binding' in content)) return undefined;
-  return (capability?.catalogues.bindings ?? []).find((entry) => entry.id === content.binding);
-}
-
 // ---------------------------------------------------------------------------
 // Making one
 // ---------------------------------------------------------------------------
@@ -230,7 +219,7 @@ const NEW_ELEMENT_FRACTION = 0.4;
  * a user cannot see happening, and the snapping and alignment tools exist to
  * move it from a known starting point to wherever it belongs.
  */
-export function newElementFrame(stock: StockMm, square: boolean): LabelFrame {
+function newElementFrame(stock: StockMm, square: boolean): LabelFrame {
   const side = Math.min(stock.widthMm, stock.heightMm) * NEW_ELEMENT_FRACTION;
   return {
     x_mm: round(stock.widthMm * 0.1),
@@ -350,7 +339,7 @@ export function newElement(options: {
  * the parameter's default and fills an omitted one with exactly that — so a
  * document written here and one written by the backend agree.
  */
-export function defaultParameters(
+function defaultParameters(
   binding: LabelTemplateCapability['catalogues']['bindings'][number]
 ): Record<string, string> {
   const parameters: Record<string, string> = {};
@@ -379,7 +368,7 @@ export function isRequiredElement(element: LabelElement): boolean {
 }
 
 /** The binding the backend requires exactly one text element to carry. */
-export const REQUIRED_BINDING = 'strain.name';
+const REQUIRED_BINDING = 'strain.name';
 
 /** Whether removing these elements would leave the layout without its required one. */
 export function wouldDropRequired(document: LabelDocument, removing: readonly string[]): boolean {

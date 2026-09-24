@@ -11,7 +11,7 @@ import {
   TakeCloneEvent,
   MoveCloneEvent,
   LibraryExportReadyEvent,
-} from '../../src/events';
+} from '../../src/lib/events';
 import { PlantEntity } from '../../src/types';
 
 // Mock DragEvent for jsdom

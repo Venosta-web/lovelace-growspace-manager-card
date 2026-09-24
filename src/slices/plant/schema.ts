@@ -40,8 +40,6 @@ export const AddPlantPayloadSchema = z
   })
   .merge(optionalDates);
 
-export type AddPlantPayload = z.infer<typeof AddPlantPayloadSchema>;
-
 // ---------------------------------------------------------------------------
 // Batch add plants
 // ---------------------------------------------------------------------------
@@ -55,8 +53,6 @@ export const AddPlantsPayloadSchema = z
     phenotype: z.string().optional(),
   })
   .merge(optionalDates);
-
-export type AddPlantsPayload = z.infer<typeof AddPlantsPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Update plant
@@ -99,8 +95,6 @@ export const UpdatePlantPayloadSchema = plantIdPayload
   // than travel to the backend (ADR 0031).
   .strict();
 
-export type UpdatePlantPayload = z.infer<typeof UpdatePlantPayloadSchema>;
-
 /** What a caller hands `updatePlant`: the payload before parsing, minus the ID. */
 export type UpdatePlantUpdates = Omit<z.input<typeof UpdatePlantPayloadSchema>, 'plant_id'>;
 
@@ -121,14 +115,11 @@ export const UpdatePlantRequestContractSchema = z
   })
   .strict();
 
-export type UpdatePlantRequestContract = z.infer<typeof UpdatePlantRequestContractSchema>;
-
 // ---------------------------------------------------------------------------
 // Remove plant
 // ---------------------------------------------------------------------------
 
 export const RemovePlantPayloadSchema = plantIdPayload;
-export type RemovePlantPayload = z.infer<typeof RemovePlantPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Harvest plant
@@ -144,8 +135,6 @@ export const HarvestPlantPayloadSchema = plantIdPayload.extend({
   terpene_profile: z.string().nullable().optional(),
 });
 
-export type HarvestPlantPayload = z.infer<typeof HarvestPlantPayloadSchema>;
-
 // ---------------------------------------------------------------------------
 // Move plant / move clone
 // ---------------------------------------------------------------------------
@@ -155,8 +144,6 @@ export const MovePlantPayloadSchema = plantIdPayload.extend({
   transition_date: z.string().optional(),
 });
 
-export type MovePlantPayload = z.infer<typeof MovePlantPayloadSchema>;
-
 // ---------------------------------------------------------------------------
 // Swap plants
 // ---------------------------------------------------------------------------
@@ -165,8 +152,6 @@ export const SwapPlantsPayloadSchema = z.object({
   plant1_id: z.string(),
   plant2_id: z.string(),
 });
-
-export type SwapPlantsPayload = z.infer<typeof SwapPlantsPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Take clone
@@ -178,8 +163,6 @@ export const TakeClonePayloadSchema = z.object({
   target_growspace_id: z.string().optional(),
 });
 
-export type TakeClonePayload = z.infer<typeof TakeClonePayloadSchema>;
-
 // ---------------------------------------------------------------------------
 // Water plant
 // ---------------------------------------------------------------------------
@@ -189,8 +172,6 @@ export const WaterPlantPayloadSchema = plantIdPayload.extend({
   nutrients: z.record(z.string(), z.number()).optional(),
   preset_id: z.string().optional(),
 });
-
-export type WaterPlantPayload = z.infer<typeof WaterPlantPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Print label
@@ -208,8 +189,6 @@ export const PrintLabelPayloadSchema = z.object({
   base_url: z.string().optional(),
 });
 
-export type PrintLabelPayload = z.infer<typeof PrintLabelPayloadSchema>;
-
 // ---------------------------------------------------------------------------
 // Update harvest metrics
 // ---------------------------------------------------------------------------
@@ -222,8 +201,6 @@ export const UpdateHarvestMetricsPayloadSchema = plantIdPayload.extend({
   cbd_percentage: z.number().nullable().optional(),
   terpene_profile: z.string().nullable().optional(),
 });
-
-export type UpdateHarvestMetricsPayload = z.infer<typeof UpdateHarvestMetricsPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Score plant
@@ -243,8 +220,6 @@ export const ScorePlantPayloadSchema = plantIdPayload.extend({
   notes: z.string().nullable().optional(),
 });
 
-export type ScorePlantPayload = z.infer<typeof ScorePlantPayloadSchema>;
-
 // ---------------------------------------------------------------------------
 // Log drying weight
 // ---------------------------------------------------------------------------
@@ -253,8 +228,6 @@ export const LogDryingWeightPayloadSchema = plantIdPayload.extend({
   weight_grams: z.number().positive(),
   date: z.string().optional(),
 });
-
-export type LogDryingWeightPayload = z.infer<typeof LogDryingWeightPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Log moisture reading
@@ -265,8 +238,6 @@ export const LogMoistureReadingPayloadSchema = plantIdPayload.extend({
   date: z.string().optional(),
 });
 
-export type LogMoistureReadingPayload = z.infer<typeof LogMoistureReadingPayloadSchema>;
-
 // ---------------------------------------------------------------------------
 // Set visual tag
 // ---------------------------------------------------------------------------
@@ -274,5 +245,3 @@ export type LogMoistureReadingPayload = z.infer<typeof LogMoistureReadingPayload
 export const SetVisualTagPayloadSchema = plantIdPayload.extend({
   visual_tag: z.string().nullable(),
 });
-
-export type SetVisualTagPayload = z.infer<typeof SetVisualTagPayloadSchema>;

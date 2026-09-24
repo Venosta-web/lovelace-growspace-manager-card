@@ -4,13 +4,13 @@ import { z } from 'zod';
 // Nutrient Presets
 // ---------------------------------------------------------------------------
 
-export const NutrientItemSchema = z.object({
+const NutrientItemSchema = z.object({
   nutrient_id: z.string(),
   dose_ml_l: z.number(),
   name: z.string().optional(),
 });
 
-export const NutrientPresetSchema = z.object({
+const NutrientPresetSchema = z.object({
   id: z.string(),
   name: z.string(),
   nutrients: z.array(NutrientItemSchema),
@@ -48,9 +48,9 @@ export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
 // IPM Presets
 // ---------------------------------------------------------------------------
 
-export const IPMTypeSchema = z.enum(['foliar', 'drench', 'beneficials']);
+const IPMTypeSchema = z.enum(['foliar', 'drench', 'beneficials']);
 
-export const IPMItemSchema = z.object({
+const IPMItemSchema = z.object({
   name: z.string(),
   dose_amount: z.number(),
   dose_unit: z.string(),
@@ -104,7 +104,7 @@ export const ECRampPointSchema = z
  * required because curves stored before the binding existed carry no owner —
  * they are inert, and Home Assistant raises a repair asking for a re-save.
  */
-export const ECRampCurveSchema = z.object({
+const ECRampCurveSchema = z.object({
   id: z.string(),
   growspace_id: z.string().optional().default(''),
   name: z.string(),
@@ -125,18 +125,11 @@ export type ECRampCurvesResponse = Record<string, ECRampCurve>;
 // Nutrient Inventory
 // ---------------------------------------------------------------------------
 
-export const NUTRIENT_STOCK_TYPES = [
-  'base',
-  'bloom',
-  'calmag',
-  'root',
-  'additive',
-  'microbe',
-] as const;
+const NUTRIENT_STOCK_TYPES = ['base', 'bloom', 'calmag', 'root', 'additive', 'microbe'] as const;
 
 export type NutrientStockType = (typeof NUTRIENT_STOCK_TYPES)[number];
 
-export const NutrientStockSchema = z.object({
+const NutrientStockSchema = z.object({
   nutrient_id: z.string(),
   name: z.string(),
   current_ml: z.number(),

@@ -34,7 +34,7 @@ export interface TriggerOption {
 }
 
 /** A render-ready growspace choice for the timed-notification multi-select. */
-export interface GrowspaceOption {
+interface GrowspaceOption {
   id: string;
   name: string;
 }

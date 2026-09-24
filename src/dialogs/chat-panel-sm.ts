@@ -12,21 +12,15 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /** A tag attached to a composed message providing contextual scope for the Conversation Agent. */
-export interface ContextChip {
+interface ContextChip {
   id: string;
   label: string;
   type: 'growspace' | 'time-range' | 'sensor';
 }
 
-export type ChatStatus =
-  | { kind: 'idle' }
-  | { kind: 'sending' }
-  | { kind: 'error'; message: string };
+type ChatStatus = { kind: 'idle' } | { kind: 'sending' } | { kind: 'error'; message: string };
 
-export type AgentStatus =
-  | { kind: 'idle' }
-  | { kind: 'saving' }
-  | { kind: 'error'; message: string };
+type AgentStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
 
 export interface ChatSM {
   activeThreadId: string | null;

@@ -15,13 +15,11 @@ import {
   type BatchPreflightAnswer,
 } from './batch-schema';
 
-export const WS_PREFLIGHT_LABEL_BATCH = 'growspace_manager/preflight_label_batch';
+const WS_PREFLIGHT_LABEL_BATCH = 'growspace_manager/preflight_label_batch';
 export const WS_PRINT_LABEL_BATCH = 'growspace_manager/print_label_batch';
-export const WS_GET_LABEL_BATCH_JOB = 'growspace_manager/get_label_batch_job';
+const WS_GET_LABEL_BATCH_JOB = 'growspace_manager/get_label_batch_job';
 export const WS_RETRY_LABEL_BATCH = 'growspace_manager/retry_label_batch';
 
-/** The backend's bounds on one preflight. */
-export const MAX_BATCH_RECORDS = 100;
 export const MAX_BATCH_COPIES = 10;
 
 /** What to print, for which plants, on what. */

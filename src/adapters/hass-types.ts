@@ -10,13 +10,6 @@ import { HassEntity } from 'home-assistant-js-websocket';
 import { GrowspaceOverviewEntity, PlantEntity } from '../types';
 
 /**
- * Type-safe HASS wrapper with Growspace-specific entity access
- */
-export interface GrowspaceHASS extends Omit<HomeAssistant, 'states'> {
-  states: Record<string, HassEntity | GrowspaceOverviewEntity | PlantEntity>;
-}
-
-/**
  * Type guard to check if an entity is a Growspace Overview entity
  */
 export function isGrowspaceOverviewEntity(
@@ -64,11 +57,6 @@ export interface RawHistoryDataPoint {
 }
 
 /**
- * Type-safe history response for a single entity
- */
-export type EntityHistory = RawHistoryDataPoint[];
-
-/**
  * Normalized history point with parsed numeric value
  */
 export interface NormalizedHistoryPoint {
@@ -78,25 +66,4 @@ export interface NormalizedHistoryPoint {
   value: number;
   /** Optional metadata from attributes */
   meta?: unknown;
-}
-
-/**
- * Event handler type for Custom Events
- */
-export interface CustomEventDetail<T = unknown> {
-  detail: T;
-}
-
-/**
- * Input event type for form elements
- */
-export interface InputEvent extends Event {
-  target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-}
-
-/**
- * Change event type for form elements
- */
-export interface ChangeEvent extends Event {
-  target: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 }

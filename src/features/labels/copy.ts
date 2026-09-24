@@ -34,7 +34,7 @@ export function refusalKey(code: string): string {
 }
 
 /** Whether the labels catalogue holds `key` in `language` or English. */
-export function hasLabelCopy(key: string, language = 'en'): boolean {
+function hasLabelCopy(key: string, language = 'en'): boolean {
   return localize(`labels.${key}`, '', '', language) !== `labels.${key}`;
 }
 

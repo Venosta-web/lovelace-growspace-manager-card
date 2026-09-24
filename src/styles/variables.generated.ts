@@ -1070,5 +1070,3 @@ export const token = {
   '--severity-critical': '#b71c1c',
   '--on-current-stage-chip': '#ffb74d',
 } as const;
-
-export type TokenName = keyof typeof token;

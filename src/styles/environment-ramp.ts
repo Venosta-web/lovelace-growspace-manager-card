@@ -74,7 +74,7 @@ let normalizer: CanvasRenderingContext2D | null | undefined;
  *
  * Four of the five stops resolve to `rgb()` already; only a derived stop pays for this.
  */
-export function normalizeColor(value: string): string {
+function normalizeColor(value: string): string {
   if (/^rgba?\(/.test(value)) return value;
   if (normalizer === undefined) {
     normalizer = document.createElement('canvas').getContext('2d');

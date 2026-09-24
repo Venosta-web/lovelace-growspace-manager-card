@@ -29,13 +29,9 @@ export const TimedNotificationSchema = z.object({
   growspace_ids: z.array(z.string()),
 });
 
-export type TimedNotificationWire = z.infer<typeof TimedNotificationSchema>;
-
-/** Settings persisted by `saveNotificationSettings`. Outbound, so strict. */
-export const NotificationSettingsPayloadSchema = z.strictObject({
-  notification_settings: z.record(z.string(), z.number()),
-  ai_auto_alerts: z.boolean(),
-  timed_notifications: z.array(TimedNotificationSchema).optional(),
-});
-
-export type NotificationSettingsPayload = z.infer<typeof NotificationSettingsPayloadSchema>;
+/** Settings persisted by `saveNotificationSettings`. Outbound: the card writes it, nothing parses it. */
+export interface NotificationSettingsPayload {
+  notification_settings: Record<string, number>;
+  ai_auto_alerts: boolean;
+  timed_notifications?: z.infer<typeof TimedNotificationSchema>[];
+}

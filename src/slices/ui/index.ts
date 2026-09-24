@@ -60,8 +60,7 @@ import { WSError } from '../../services/errors';
 
 /**
  * @deprecated View mode is owned per-card by `GrowspaceUIStore.$viewMode`, not
- * page-globally. This module-level atom (and `setViewMode` / `toggleHeaderExpansion`
- * / `layoutSpec$`) is retained only for the slice's own unit tests. Production code
+ * page-globally. This module-level atom (and `setViewMode` / `layoutSpec$`) is retained only for the slice's own unit tests. Production code
  * must read/write view mode through the per-card store (`store.ui`), otherwise
  * every card on a dashboard shares one view mode again.
  */
@@ -183,11 +182,6 @@ export function setViewMode(mode: GrowspaceViewMode): void {
  */
 export function setGridOverlayMode(mode: GridOverlayMode): void {
   gridOverlayMode$.set(mode);
-}
-
-/** Toggle the header-expanded view: HEADER ⇄ STANDARD. */
-export function toggleHeaderExpansion(): void {
-  viewMode$.set(viewMode$.get() === ViewMode.HEADER ? ViewMode.STANDARD : ViewMode.HEADER);
 }
 
 /** Toggle the loading state. */
@@ -422,10 +416,3 @@ export {
   openTcDialog,
   openLabelTemplatesDialog,
 } from './dialogs';
-
-export {
-  mountedDialogPortals$,
-  registerDialogPortal,
-  unregisterDialogPortal,
-  portalOwnsDialog,
-} from './dialog-portals';

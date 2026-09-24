@@ -41,7 +41,7 @@ import { PlantUtils } from '../../utils/plant-utils';
 // Types
 // ---------------------------------------------------------------------------
 
-export interface GridLayout {
+interface GridLayout {
   effectiveRows: number;
   grid: (PlantEntity | null)[][];
 }

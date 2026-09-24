@@ -15,7 +15,7 @@ import type { SuggestedAction } from '../slices/ai-insight/schema';
 
 export type InboxFilter = 'all' | 'action' | 'watch';
 
-export type InboxStatus =
+type InboxStatus =
   | { kind: 'idle' }
   | { kind: 'adding-note'; text: string }
   | { kind: 'confirming'; action: SuggestedAction }

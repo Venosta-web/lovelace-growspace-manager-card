@@ -2,8 +2,8 @@
  * Logbook slice — zod schemas for WebSocket response validation.
  *
  * Consolidates the GrowspaceEvent interface from
- * `src/features/environment/types.ts` and the NotePayload from
- * `src/services/timeline-service.ts`.
+ * `src/features/environment/types.ts` and the note payload the retired
+ * timeline service used to send.
  */
 
 import { z } from 'zod';
@@ -12,7 +12,7 @@ import { z } from 'zod';
 // LogbookEntry (a.k.a. GrowspaceEvent in legacy code)
 // ---------------------------------------------------------------------------
 
-export const LogbookEntrySchema = z.object({
+const LogbookEntrySchema = z.object({
   // Required for all entries
   growspace_id: z.string(),
   category: z.string(),
@@ -44,8 +44,6 @@ export type LogbookEntry = z.infer<typeof LogbookEntrySchema>;
  * The key is either growspace_id or plant_id depending on the call.
  */
 export const LogResponseSchema = z.record(z.string(), z.array(LogbookEntrySchema));
-
-export type LogResponse = z.infer<typeof LogResponseSchema>;
 
 /** remove_timeline_event returns nothing meaningful. */
 export const DeleteEventResponseSchema = z.unknown();

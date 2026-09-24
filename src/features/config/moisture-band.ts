@@ -56,7 +56,7 @@ export function isCompleteValidBand(draft: BandDraft): boolean {
 }
 
 /** Whether the pair is the deliberate "inherit the default" clear. */
-export function isCleared(draft: BandDraft): boolean {
+function isCleared(draft: BandDraft): boolean {
   return draft.min === null && draft.max === null;
 }
 
