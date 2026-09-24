@@ -1,0 +1,59 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      lit:
+        patterns:
+          - lit
+          - "@lit/*"
+          - "@lit-labs/*"
+      vitest:
+        patterns:
+          - vitest
+          - "@vitest/*"
+      playwright:
+        patterns:
+          - playwright
+          - "@playwright/test"
+      rollup:
+        patterns:
+          - rollup
+          - "@rollup/*"
+          - "rollup-plugin-*"
+      lint:
+        patterns:
+          - eslint
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "eslint-*"
+          - globals
+          - prettier
+      release:
+        patterns:
+          - semantic-release
+          - "@semantic-release/*"
+      typescript:
+        patterns:
+          - typescript
+          - "@typescript/*"
+          - tslib
+          - "@types/*"
+
+  - package-ecosystem: github-actions
+    # / covers workflows; the second path covers nested composite actions.
+    directories:
+      - /
+      - "/.github/actions/*"
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "chore(deps)"
