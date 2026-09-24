@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { userEvent } from 'vitest/browser';
 import { StrainLibraryDialog } from '../../../src/dialogs/strain-library-dialog';
 import { StrainEntry } from '../../../src/types';
 
@@ -61,11 +62,11 @@ describe('Strain Library accessibility', () => {
 
   describe('workspace switch (AC 2)', () => {
     it('exposes tab-list, tab and selected-state semantics', async () => {
-      const tablist = element.shadowRoot?.querySelector('.main-tab-bar');
+      const tablist = element.shadowRoot?.querySelector('[role="tablist"]');
       expect(tablist?.getAttribute('role')).toBe('tablist');
       expect(tablist?.getAttribute('aria-label')).toBeTruthy();
 
-      const tabs = Array.from(element.shadowRoot?.querySelectorAll('.tab-btn') ?? []);
+      const tabs = Array.from(element.shadowRoot?.querySelectorAll('[role="tab"]') ?? []);
       expect(tabs).toHaveLength(3);
       expect(tabs.every((t) => t.getAttribute('role') === 'tab')).toBe(true);
       expect(tabs.every((t) => t.tagName)).toBeTruthy();
@@ -79,7 +80,7 @@ describe('Strain Library accessibility', () => {
       const panel = element.shadowRoot?.querySelector('[role="tabpanel"]');
       expect(panel).toBeTruthy();
 
-      const tabs = Array.from(element.shadowRoot?.querySelectorAll('.tab-btn') ?? []);
+      const tabs = Array.from(element.shadowRoot?.querySelectorAll('[role="tab"]') ?? []);
       const selected = tabs.find((t) => t.getAttribute('aria-selected') === 'true')!;
       const unselected = tabs.filter((t) => t.getAttribute('aria-selected') === 'false');
 
@@ -91,21 +92,21 @@ describe('Strain Library accessibility', () => {
 
     it('moves the selected state when another tab is activated', async () => {
       const tabs = Array.from(
-        element.shadowRoot?.querySelectorAll('.tab-btn') ?? []
+        element.shadowRoot?.querySelectorAll('[role="tab"]') ?? []
       ) as HTMLElement[];
       const treeTab = tabs.find((t) => t.textContent?.includes('Tree View'))!;
       treeTab.click();
       await element.updateComplete;
 
       expect(treeTab.getAttribute('aria-selected')).toBe('true');
-      expect(element.shadowRoot?.querySelectorAll('.tab-btn[aria-selected="true"]')).toHaveLength(
-        1
-      );
+      expect(
+        element.shadowRoot?.querySelectorAll('[role="tab"][aria-selected="true"]')
+      ).toHaveLength(1);
     });
 
     it('names the maximize control and exposes its pressed state', async () => {
       const tabs = Array.from(
-        element.shadowRoot?.querySelectorAll('.tab-btn') ?? []
+        element.shadowRoot?.querySelectorAll('[role="tab"]') ?? []
       ) as HTMLElement[];
       tabs.find((t) => t.textContent?.includes('Tree View'))!.click();
       await element.updateComplete;
@@ -120,6 +121,43 @@ describe('Strain Library accessibility', () => {
       const after = element.shadowRoot?.querySelector('.tab-maximize-btn');
       expect(after?.getAttribute('aria-pressed')).toBe('true');
       expect(after?.getAttribute('aria-label')).toBe('Restore tree view');
+    });
+  });
+
+  describe('workspace Tab Strip keyboard', () => {
+    it('is one Tab stop whose arrows select the workspace, keeping the panel labelled', async () => {
+      const tabs = Array.from(
+        element.shadowRoot!.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+      );
+      expect(tabs.filter((t) => t.tabIndex === 0).map((t) => t.id)).toEqual([
+        'workspace-tab-strains',
+      ]);
+
+      tabs[0].focus();
+      await userEvent.keyboard('{End}');
+      await element.updateComplete;
+
+      expect(element.shadowRoot!.activeElement?.id).toBe('workspace-tab-tree');
+      const panel = element.shadowRoot!.querySelector('[role="tabpanel"]')!;
+      expect(panel.id).toBe('workspace-panel-tree');
+      expect(panel.getAttribute('aria-labelledby')).toBe('workspace-tab-tree');
+      expect(tabs[2].getAttribute('aria-controls')).toBe('workspace-panel-tree');
+
+      await userEvent.keyboard('{ArrowRight}');
+      await element.updateComplete;
+      expect(element.shadowRoot!.activeElement?.id).toBe('workspace-tab-strains');
+      expect(element.shadowRoot!.querySelector('[role="tabpanel"]')!.id).toBe(
+        'workspace-panel-strains'
+      );
+    });
+
+    it('keeps the maximize control out of the tablist', async () => {
+      (element as unknown as { _activeMainTab: string })._activeMainTab = 'tree';
+      await element.updateComplete;
+
+      const maximize = element.shadowRoot!.querySelector('.tab-maximize-btn');
+      expect(maximize).not.toBeNull();
+      expect(maximize!.closest('[role="tablist"]')).toBeNull();
     });
   });
 

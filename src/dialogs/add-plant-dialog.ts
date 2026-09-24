@@ -13,6 +13,8 @@ import '../features/shared/ui/md3-select';
 import '../features/shared/ui/md3-date-input';
 import '../features/shared/ui/md3-switch';
 import '../features/shared/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-tab-strip';
+import type { TabStripTab } from '../features/shared/ui/gs-tab-strip';
 import {
   createInitialSM,
   transition,
@@ -20,6 +22,12 @@ import {
   type SM,
   type AddSubState,
 } from './add-plant-dialog-sm';
+
+const ADD_PLANT_TABS: TabStripTab[] = [
+  { value: 'add', label: 'New Plant', iconPath: mdiSprout },
+  { value: 'clone', label: 'Transplant Clone', iconPath: mdiContentCopy },
+  { value: 'seedling', label: 'Transplant Seedling', iconPath: mdiSprout },
+];
 
 const STAGE_OPTIONS = [
   { value: 'seedling', label: 'Seedling' },
@@ -120,45 +128,8 @@ export class AddPlantDialog extends LitElement {
         }
       }
 
-      /* Tab bar styles */
-      .tab-bar {
-        display: flex;
-        gap: 4px;
-        padding: 8px 16px;
-        background: rgba(255, 255, 255, 0.03);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .tab {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 8px;
-        background: transparent;
-        border: none;
-        border-radius: var(--border-radius-sm, 8px);
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.85rem;
-        font-family: inherit;
-      }
-
-      .tab:hover {
-        background: rgba(255, 255, 255, 0.05);
-      }
-
-      .tab.active {
-        background: rgba(var(--rgb-primary-color), 0.15);
-        color: var(--primary-color);
-      }
-
-      .tab svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
+      gs-tab-strip {
+        padding: 0 24px;
       }
 
       /* Wizard step indicator */
@@ -538,36 +509,14 @@ export class AddPlantDialog extends LitElement {
             </button>
           </div>
 
-          <!-- TAB BAR -->
-          <div class="tab-bar">
-            <button
-              class="tab ${activeTab === 'add' ? 'active' : ''}"
-              @click=${() => {
-                this._sm = transition(this._sm, { type: 'TabSelected', tab: 'add' });
-              }}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-              New Plant
-            </button>
-            <button
-              class="tab ${activeTab === 'clone' ? 'active' : ''}"
-              @click=${() => {
-                this._sm = transition(this._sm, { type: 'TabSelected', tab: 'clone' });
-              }}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-              Transplant Clone
-            </button>
-            <button
-              class="tab ${activeTab === 'seedling' ? 'active' : ''}"
-              @click=${() => {
-                this._sm = transition(this._sm, { type: 'TabSelected', tab: 'seedling' });
-              }}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-              Transplant Seedling
-            </button>
-          </div>
+          <gs-tab-strip
+            .tabs=${ADD_PLANT_TABS}
+            .selected=${activeTab}
+            label="Add plant"
+            @tab-selected=${(event: CustomEvent<{ value: SM['activeTab'] }>) => {
+              this._sm = transition(this._sm, { type: 'TabSelected', tab: event.detail.value });
+            }}
+          ></gs-tab-strip>
 
           <!-- WIZARD STEP INDICATOR (add tab only) -->
           ${activeTab === 'add' ? this._renderWizardSteps(addSub) : nothing}

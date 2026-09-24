@@ -1,5 +1,6 @@
 import { expect, test, describe, vi, beforeEach, afterEach } from 'vitest';
 import { fixture } from '@open-wc/testing-helpers';
+import { userEvent } from 'vitest/browser';
 
 import './tc-dialog';
 import type { TcDialog } from './tc-dialog';
@@ -43,13 +44,14 @@ async function open(options: {
 const view = (element: TcDialog) => element.shadowRoot?.querySelector('growspace-tc-view');
 
 const tabs = (element: TcDialog): string[] =>
-  [...(element.shadowRoot?.querySelectorAll('.tab-bar button') ?? [])].map(
+  [...(element.shadowRoot?.querySelectorAll('[role="tab"]') ?? [])].map(
     (button) => button.getAttribute('data-tab') ?? ''
   );
 
 const activeTab = (element: TcDialog): string | undefined =>
-  element.shadowRoot?.querySelector('.tab-bar button.active')?.getAttribute('data-tab') ??
-  undefined;
+  element.shadowRoot
+    ?.querySelector('[role="tab"][aria-selected="true"]')
+    ?.getAttribute('data-tab') ?? undefined;
 
 async function untilView(element: TcDialog): Promise<Element> {
   await vi.waitFor(() => expect(view(element)).not.toBeNull());
@@ -105,6 +107,24 @@ describe('TcDialog — the frame opens before the chunk', () => {
   });
 });
 
+describe('TcDialog — its Tab Strip', () => {
+  test('is named for the dialog, and selects the surface its arrows move to', async () => {
+    const element = await open({});
+    const rendered = await untilView(element);
+    expect(element.shadowRoot?.querySelector('[role="tablist"]')?.getAttribute('aria-label')).toBe(
+      'Tissue culture'
+    );
+
+    element.shadowRoot!.querySelector<HTMLButtonElement>('[data-tab="worklist"]')!.focus();
+    await userEvent.keyboard('{End}');
+    await element.updateComplete;
+
+    expect(activeTab(element)).toBe('pairings');
+    expect(rendered).toHaveProperty('surface', 'pairings');
+    expect(element.shadowRoot!.activeElement?.getAttribute('data-tab')).toBe('pairings');
+  });
+});
+
 describe('TcDialog — which tab it lands on', () => {
   test('leads with the worklist when the payload names no tab', async () => {
     const element = await open({});
@@ -136,7 +156,7 @@ describe('TcDialog — which tab it lands on', () => {
   test('renders no tab bar for a featureless manifest, and the view says why', async () => {
     const element = await open({ features: [] });
 
-    expect(element.shadowRoot?.querySelector('.tab-bar')).toBeNull();
+    expect(element.shadowRoot?.querySelector('gs-tab-strip')).toBeNull();
     const rendered = await untilView(element);
     expect(rendered.shadowRoot?.textContent).toContain('No supported Tissue Culture features');
   });

@@ -840,7 +840,7 @@ describe('StrainLibraryDialog', () => {
 
       // Click the Strains tab manually
       const tabButtons = Array.from(
-        element.shadowRoot?.querySelectorAll('.main-tab-bar .tab-btn') || []
+        element.shadowRoot?.querySelectorAll('[role="tablist"] [role="tab"]') || []
       ) as HTMLElement[];
       const strainsTabBtn = tabButtons.find((b) => b.textContent?.includes('Strains'));
       expect(strainsTabBtn).toBeTruthy();

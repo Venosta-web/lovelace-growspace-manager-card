@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { userEvent } from 'vitest/browser';
 import { LogbookDialog } from '../../../src/dialogs/logbook-dialog';
 import '../../../src/dialogs/logbook-dialog';
 
@@ -136,7 +137,7 @@ describe('LogbookDialog', () => {
     });
 
     it('should switch to timeline view when timeline tab is clicked', async () => {
-      const tabs = element.shadowRoot?.querySelectorAll('.tab');
+      const tabs = element.shadowRoot?.querySelectorAll('[role="tab"]');
       const timelineTab = Array.from(tabs || []).find((t) => t.textContent?.includes('Timeline'));
       expect(timelineTab).toBeTruthy();
 
@@ -144,14 +145,14 @@ describe('LogbookDialog', () => {
       await element.updateComplete;
 
       expect((element as any)._activeTab).toBe('timeline');
-      expect(timelineTab?.classList.contains('active')).toBe(true);
+      expect(timelineTab?.getAttribute('aria-selected') === 'true').toBe(true);
     });
 
     it('should switch back to list view', async () => {
       (element as any)._activeTab = 'timeline';
       await element.updateComplete;
 
-      const tabs = element.shadowRoot?.querySelectorAll('.tab');
+      const tabs = element.shadowRoot?.querySelectorAll('[role="tab"]');
       const listTab = Array.from(tabs || []).find((t) => t.textContent?.includes('List View'));
       expect(listTab).toBeTruthy();
 
@@ -159,7 +160,33 @@ describe('LogbookDialog', () => {
       await element.updateComplete;
 
       expect((element as any)._activeTab).toBe('list');
-      expect(listTab?.classList.contains('active')).toBe(true);
+      expect(listTab?.getAttribute('aria-selected') === 'true').toBe(true);
+    });
+  });
+
+  describe('Tab Strip', () => {
+    beforeEach(async () => {
+      element.open = true;
+      await element.updateComplete;
+    });
+
+    it('names its tablist and each tab', () => {
+      const tablist = element.shadowRoot!.querySelector('[role="tablist"]')!;
+      expect(tablist.getAttribute('aria-label')).toBe('Logbook view');
+      expect(
+        Array.from(element.shadowRoot!.querySelectorAll('[role="tab"]')).map((t) =>
+          t.textContent?.trim()
+        )
+      ).toEqual(['List View', 'Timeline', 'Report']);
+    });
+
+    it('selects the view it moves to with the arrow keys', async () => {
+      element.shadowRoot!.querySelector<HTMLButtonElement>('[data-tab="list"]')!.focus();
+      await userEvent.keyboard('{ArrowRight}');
+      await element.updateComplete;
+
+      expect((element as any)._activeTab).toBe('timeline');
+      expect(element.shadowRoot!.activeElement?.getAttribute('data-tab')).toBe('timeline');
     });
   });
 
@@ -276,7 +303,7 @@ describe('LogbookDialog', () => {
       mockFetchGrowReport.mockResolvedValue(mockReportData);
 
       const tabs = element.shadowRoot
-        ? Array.from(element.shadowRoot.querySelectorAll('.tab'))
+        ? Array.from(element.shadowRoot.querySelectorAll('[role="tab"]'))
         : [];
       const reportTab = tabs.find((t) => t.textContent?.includes('Report'));
       expect(reportTab).toBeTruthy();
@@ -324,7 +351,7 @@ describe('LogbookDialog', () => {
 
       // Click Report tab
       const tabs = element.shadowRoot
-        ? Array.from(element.shadowRoot.querySelectorAll('.tab'))
+        ? Array.from(element.shadowRoot.querySelectorAll('[role="tab"]'))
         : [];
       const reportTab = tabs.find((t) => t.textContent?.includes('Report'));
       expect(reportTab).toBeTruthy();
@@ -404,7 +431,7 @@ describe('LogbookDialog', () => {
 
       // Click Report tab
       const tabs = element.shadowRoot
-        ? Array.from(element.shadowRoot.querySelectorAll('.tab'))
+        ? Array.from(element.shadowRoot.querySelectorAll('[role="tab"]'))
         : [];
       const reportTab = tabs.find((t) => t.textContent?.includes('Report'));
       expect(reportTab).toBeTruthy();

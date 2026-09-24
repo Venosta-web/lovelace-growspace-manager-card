@@ -1,7 +1,7 @@
 /**
  * The Tissue Culture dialog.
  *
- * The chrome and nothing else: the `gs-dialog` frame, a tab bar built from
+ * The chrome and nothing else: the `gs-dialog` frame, a Tab Strip built from
  * `tcSurfaces(manifest)`, and a content pane holding the shared
  * `growspace-tc-view`. Every surface inside that view belongs to the
  * `growspace-tc` chunk and to the standalone card as much as to this dialog,
@@ -38,6 +38,7 @@ import {
   type TcTabId,
 } from '../features/tc/tc-dialog-sm';
 import '../features/shared/ui/gs-dialog';
+import '../features/shared/ui/gs-tab-strip';
 import '../features/shared/ui/lazy-chunk-error';
 
 type ChunkState = 'loading' | 'ready' | 'missing';
@@ -76,53 +77,11 @@ export class TcDialog extends LitElement {
         padding: 16px 24px;
       }
 
-      .tab-bar {
-        display: flex;
-        gap: 8px;
+      gs-tab-strip {
         margin-bottom: 16px;
-        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        padding-bottom: 2px;
-        flex-shrink: 0;
-        overflow-x: auto;
       }
 
-      .tab {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        min-height: 44px;
-        padding: 8px 16px;
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid transparent;
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        cursor: pointer;
-        transition:
-          color var(--transition-fast),
-          background var(--transition-fast),
-          border-color var(--transition-fast);
-        font-size: var(--font-size-sm);
-        font-family: inherit;
-        white-space: nowrap;
-      }
-
-      .tab:hover {
-        color: var(--primary-text-color, #fff);
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-      }
-
-      .tab:focus-visible {
-        outline: 2px solid var(--primary-color, #4caf50);
-        outline-offset: -4px;
-      }
-
-      .tab.active {
-        color: var(--primary-color, #4caf50);
-        border-bottom-color: var(--primary-color, #4caf50);
-      }
-
-      /* The pane scrolls; the header and the tab bar stay put. The view declares
+      /* The pane scrolls; the header and the Tab Strip stay put. The view declares
          no height and no overflow of its own, which is what lets it live in an
          ha-card and in here. */
       /* The gutter keeps a classic scrollbar off the rows' right edges. */
@@ -258,22 +217,16 @@ export class TcDialog extends LitElement {
       >
         <div class="content-wrapper">
           ${surfaces.length
-            ? html`<div class="tab-bar" role="tablist" aria-label=${this._t('view_title')}>
-                ${surfaces.map(
-                  (surface) => html`
-                    <button
-                      type="button"
-                      class="tab ${this._sm.activeTab === surface ? 'active' : ''}"
-                      role="tab"
-                      data-tab=${surface}
-                      aria-selected=${this._sm.activeTab === surface}
-                      @click=${() => this._select(surface)}
-                    >
-                      <span>${this._t(TAB_LABEL_KEYS[surface])}</span>
-                    </button>
-                  `
-                )}
-              </div>`
+            ? html`<gs-tab-strip
+                .tabs=${surfaces.map((surface) => ({
+                  value: surface,
+                  label: this._t(TAB_LABEL_KEYS[surface]),
+                }))}
+                .selected=${this._sm.activeTab}
+                .label=${this._t('view_title')}
+                @tab-selected=${(event: CustomEvent<{ value: TcTabId }>) =>
+                  this._select(event.detail.value)}
+              ></gs-tab-strip>`
             : nothing}
           <div class="pane">${this._renderPane()}</div>
         </div>

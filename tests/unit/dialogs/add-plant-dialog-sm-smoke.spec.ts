@@ -5,6 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { userEvent } from 'vitest/browser';
 import { AddPlantDialog } from '../../../src/dialogs/add-plant-dialog';
 import '../../../src/dialogs/add-plant-dialog';
 import { aPlant, aGrowspace } from '../../fixtures';
@@ -39,9 +40,34 @@ describe('AddPlantDialog — SM wiring smoke test', () => {
     element.setInitialState(0, 0);
     await element.updateComplete;
 
-    const tabs = element.shadowRoot?.querySelectorAll('.tab');
-    expect(tabs?.[0].classList.contains('active')).toBe(true);
-    expect(tabs?.[1].classList.contains('active')).toBe(false);
+    const tabs = element.shadowRoot?.querySelectorAll('[role="tab"]');
+    expect(tabs?.[0].getAttribute('aria-selected') === 'true').toBe(true);
+    expect(tabs?.[1].getAttribute('aria-selected') === 'true').toBe(false);
+  });
+
+  it('moves between tabs with the arrow keys, selecting each one', async () => {
+    const element = await fixture<AddPlantDialog>(html`<add-plant-dialog></add-plant-dialog>`);
+    element.hass = {} as any;
+    element.strainLibrary = [];
+    element.open = true;
+    element.setInitialState(0, 0);
+    await element.updateComplete;
+
+    const tabs = Array.from(
+      element.shadowRoot!.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    );
+    expect(tabs.map((t) => t.textContent?.trim())).toEqual([
+      'New Plant',
+      'Transplant Clone',
+      'Transplant Seedling',
+    ]);
+
+    tabs[0].focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    await element.updateComplete;
+
+    expect((element as any)._sm.activeTab).toBe('seedling');
+    expect(element.shadowRoot!.activeElement).toBe(tabs[2]);
   });
 
   it('SM step-identity sub drives wizard step indicator to step 1', async () => {

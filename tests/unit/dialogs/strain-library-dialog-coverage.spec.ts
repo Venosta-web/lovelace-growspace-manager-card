@@ -544,9 +544,9 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
     });
 
     it('switches main tab to tree view on click', async () => {
-      const treeTabBtn = Array.from(element.shadowRoot?.querySelectorAll('.tab-btn') || []).find(
-        (b) => b.textContent?.includes('Tree View')
-      ) as HTMLElement | undefined;
+      const treeTabBtn = Array.from(
+        element.shadowRoot?.querySelectorAll('[role="tab"]') || []
+      ).find((b) => b.textContent?.includes('Tree View')) as HTMLElement | undefined;
       expect(treeTabBtn).toBeTruthy();
 
       treeTabBtn?.click();

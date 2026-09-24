@@ -10,6 +10,8 @@ import {
 import { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/gs-dialog';
+import '../features/shared/ui/gs-tab-strip';
+import type { TabStripTab } from '../features/shared/ui/gs-tab-strip';
 import '../features/shared/ui/growspace-logbook';
 import '../features/shared/ui/growspace-timeline';
 import '../features/shared/ui/gs-help-tooltip';
@@ -23,6 +25,12 @@ import { withToast } from '../slices/ui';
 import { GrowspaceStore } from '../store/core/growspace-store';
 
 type LogbookTab = 'list' | 'timeline' | 'report';
+
+const LOGBOOK_TABS: TabStripTab[] = [
+  { value: 'list', label: 'List View', iconPath: mdiFormatListBulleted },
+  { value: 'timeline', label: 'Timeline', iconPath: mdiChartTimelineVariant },
+  { value: 'report', label: 'Report', iconPath: mdiFileChart },
+];
 
 @customElement('logbook-dialog')
 export class LogbookDialog extends LitElement {
@@ -70,42 +78,8 @@ export class LogbookDialog extends LitElement {
         padding: 16px 24px;
       }
 
-      .tab-bar {
-        display: flex;
-        gap: 8px;
+      gs-tab-strip {
         margin-bottom: 16px;
-        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        padding-bottom: 2px;
-      }
-
-      .tab {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid transparent;
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: var(--font-size-sm);
-      }
-
-      .tab svg {
-        width: 20px;
-        height: 20px;
-        fill: currentColor;
-      }
-
-      .tab:hover {
-        color: var(--primary-text-color, #fff);
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-      }
-
-      .tab.active {
-        color: var(--primary-color, #4caf50);
-        border-bottom-color: var(--primary-color, #4caf50);
       }
 
       .list-view-container {
@@ -424,30 +398,13 @@ export class LogbookDialog extends LitElement {
         ></gs-help-tooltip>
 
         <div class="content-wrapper">
-          <!-- Tab Switcher -->
-          <div class="tab-bar">
-            <button
-              class="tab ${this._activeTab === 'list' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'list')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiFormatListBulleted}"></path></svg>
-              <span>List View</span>
-            </button>
-            <button
-              class="tab ${this._activeTab === 'timeline' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'timeline')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
-              <span>Timeline</span>
-            </button>
-            <button
-              class="tab ${this._activeTab === 'report' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'report')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiFileChart}"></path></svg>
-              <span>Report</span>
-            </button>
-          </div>
+          <gs-tab-strip
+            .tabs=${LOGBOOK_TABS}
+            .selected=${this._activeTab}
+            label="Logbook view"
+            @tab-selected=${(event: CustomEvent<{ value: LogbookTab }>) =>
+              (this._activeTab = event.detail.value)}
+          ></gs-tab-strip>
 
           <!-- Content -->
           ${this._activeTab === 'list'
