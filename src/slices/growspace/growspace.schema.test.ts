@@ -427,6 +427,36 @@ describe('Growspace Zod Schemas', () => {
         expect(parsed.irrigation.irrigation_config.tank_unknown_grace_minutes).toBeUndefined();
       });
 
+      it('keeps the Control Input validity settings', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: {
+              sensor_stale_after_minutes: 30,
+              sensor_alert_delay_minutes: 15,
+              moisture_zero_is_implausible: true,
+            },
+          },
+        });
+
+        const config = parsed.irrigation.irrigation_config;
+        expect(config.sensor_stale_after_minutes).toBe(30);
+        expect(config.sensor_alert_delay_minutes).toBe(15);
+        expect(config.moisture_zero_is_implausible).toBe(true);
+      });
+
+      it('accepts a backend that predates the Control Input validity settings', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { irrigation_duration: 30 },
+          },
+        });
+
+        const config = parsed.irrigation.irrigation_config;
+        expect(config.sensor_stale_after_minutes).toBeUndefined();
+        expect(config.sensor_alert_delay_minutes).toBeUndefined();
+        expect(config.moisture_zero_is_implausible).toBeUndefined();
+      });
+
       it('keeps the pump cycle runtime limits', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {

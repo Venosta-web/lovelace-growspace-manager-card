@@ -146,6 +146,15 @@ const IrrigationConfigSchema = z.object({
   // out (GSM#790, ADR-0050). Declared for the contract; the card neither shows
   // nor edits it yet. Optional because older backends omit it.
   tank_unknown_grace_minutes: z.number().optional(),
+  // Control Input validity (GSM#789, ADR-0051): the cap on how long the
+  // moisture and pore-EC sensors may go without reporting before they are
+  // stale (0 is off), how long the moisture sensor may be invalid before its
+  // alert goes out, and whether a moisture reading of exactly 0 is
+  // implausible. Declared for the contract; the card neither shows nor edits
+  // them yet. Optional because older backends omit them.
+  sensor_stale_after_minutes: z.number().optional(),
+  sensor_alert_delay_minutes: z.number().optional(),
+  moisture_zero_is_implausible: z.boolean().optional(),
   active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
   phase_changed_at: z.string().nullable().optional(),
 });
