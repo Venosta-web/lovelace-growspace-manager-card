@@ -92,8 +92,6 @@ export const ClimateFailSafeConfigSchema = z.object({
   dehumidifier_max_runtime_minutes: z.number(),
 });
 
-export type ClimateFailSafeConfig = z.infer<typeof ClimateFailSafeConfigSchema>;
-
 const StageThresholdsSchema = z
   .record(z.string(), z.object({ target: z.number(), tolerance: z.number() }))
   .optional();
