@@ -4,7 +4,7 @@ import { mdiClose } from '@mdi/js';
 import { reducedMotion } from '../../../styles/reduced-motion.styles';
 
 /**
- * Shell component that owns the ha-dialog wrapper, glass container, and standard header.
+ * The Dialog Frame: owns the ha-dialog wrapper, glass container, and standard header.
  * Dialogs supply title/subtitle/icon as properties and place their body in the default slot.
  *
  * Dispatches a composed "close" event on close-button click or ha-dialog's native closed event.
