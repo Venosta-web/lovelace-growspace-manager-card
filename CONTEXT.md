@@ -277,6 +277,9 @@ Copy is static text with one exception: the Timing explainer names the growspace
 **Context Chip**
 A tag attached to a composed message that provides contextual scope — growspace, time range, or sensor — so the [[Conversation Agent]] can ground its response. Displayed in the Composer bar of the [[Growmaster Dialog]] Chat panel; removable individually. Distinct from the environment metric Chip in the header.
 
+**Safety Chip**
+The irrigation controller's state beside the growspace name in the main-card header — `idle`, `ready`, `running`, `inhibited`, `fault` or `emergency_stop`, plus the reason that decides it — coloured by severity (card#974, backend GSM#783/#791). Tapping it opens its detail: every structured reason, how long it has held, and the operator controls (Emergency Stop first, Acknowledge Fault, Reset Safety, Arm/Disarm Irrigation). It is not a [[Chip]]: it carries no `MetricKey`, cannot be hidden through `hidden_chips`, and opens no [[Env Graph]]. Its read side is the safety slice (`src/slices/safety`), which finds `sensor.<gs>_irrigation_controller` and its sibling switches and button through the entity and device registries by `translation_key` and the growspace device identifier, and derives the view from `hass.states` on every render — no atom, and nothing optimistic, because a safety state the card showed ahead of the backend is the failure these controls exist to prevent. It lives in the entry bundle rather than a lazy chunk so that a stale HACS install, which loses the dialog chunks first, cannot take the Emergency Stop with them.
+
 **Plant Grid Cell**
 A single plant slot in the grid. Interactions (watering, selecting, transplanting) are driven by the store state machine — not generic Lovelace actions.
 

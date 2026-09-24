@@ -26,6 +26,7 @@ import { PlantUtils } from '../../../utils/plant-utils';
 import { ViewMode, ConfigTab } from '../../../constants';
 import { todayISO } from '../../../utils/local-date-time';
 import { localizePlural, localizeWithParams } from '../../../localize/localize';
+import { deriveSafetyView, type SafetyView } from '../../../slices/safety';
 
 import '../components/growspace-header-ui';
 
@@ -446,6 +447,21 @@ export class GrowspaceHeaderContainer extends LitElement {
     }
   }
 
+  /**
+   * Read on every render rather than held in an atom: the controller is a Home
+   * Assistant entity, and a safety state one hass update behind is the one
+   * staleness this header cannot afford.
+   */
+  private get _safetyView(): SafetyView | null {
+    const config = irrigationConfigs$.get().get(this.device.deviceId);
+    return deriveSafetyView(
+      this.device.deviceId,
+      this.hass,
+      [config?.irrigationPumpEntity, config?.drainPumpEntity],
+      this.hass?.language ?? 'en'
+    );
+  }
+
   private get _problemPlants(): string[] {
     return (this.device?.plants || [])
       .filter((p) => !!p.attributes?.problem)
@@ -532,6 +548,7 @@ export class GrowspaceHeaderContainer extends LitElement {
         .tcAvailable=${this._tcPresenceController?.value.status === 'present'}
         .labelTemplatesAvailable=${this._labelSupportController?.value.status === 'available'}
         .problemPlants=${this._problemPlants}
+        .safety=${this._safetyView}
         .flowerFlipInfo=${this._flowerFlipInfo}
         .irrigationStrategy=${irrigationStrategy}
         .irrigationConfig=${irrigationConfig}

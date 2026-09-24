@@ -27,6 +27,7 @@ import {
   UPDATE_PLANT_EDITABLE_FIELDS,
   UpdatePlantRequestContractSchema,
 } from '../../src/slices/plant/schema';
+import { IrrigationControllerSchema } from '../../src/slices/safety/schema';
 
 interface FixtureContract {
   name: string;
@@ -111,6 +112,15 @@ const CONTRACTS: FixtureContract[] = [
     schema: UpdatePlantRequestContractSchema,
     leadingVariable: 'GSM_PRERELEASE_UPDATE_PLANT_REQUEST_FIXTURE',
     releaseVariable: 'GSM_RELEASE_UPDATE_PLANT_REQUEST_FIXTURE',
+    releaseRequired: false,
+  },
+  // The irrigation controller sensor's state and attributes (GSM#783): the
+  // safety chip's whole read side. Prerelease-first like the label contracts.
+  {
+    name: 'Irrigation controller',
+    schema: IrrigationControllerSchema,
+    leadingVariable: 'GSM_PRERELEASE_IRRIGATION_CONTROLLER_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_IRRIGATION_CONTROLLER_FIXTURE',
     releaseRequired: false,
   },
   // Growspace Manager TC is a separate repository that owns its own WebSocket

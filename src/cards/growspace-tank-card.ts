@@ -16,6 +16,8 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import type { IrrigationTank } from '../services/types';
+import { deriveSafetyView, tankHoldReasons } from '../slices/safety';
+import { localize } from '../localize/localize';
 
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 import '../features/shared/ui/error-boundary';
@@ -95,6 +97,27 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         padding: 3px 10px;
         font-size: 0.78rem;
         font-weight: 600;
+      }
+
+      .hold-note {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0 0 16px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 167, 38, 0.6);
+        background: rgba(255, 167, 38, 0.14);
+        font-size: var(--font-size-supporting);
+      }
+
+      .hold-note span {
+        opacity: 0.8;
+      }
+
+      .percentage-text.unknown {
+        font-size: 1rem;
+        text-align: center;
       }
 
       .avg-badge {
@@ -481,6 +504,8 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
     }
 
     const tanks: IrrigationTank[] = device.environmentAttributes?.irrigationTanks ?? [];
+    const language = this.hass.language ?? 'en';
+    const holds = tankHoldReasons(deriveSafetyView(device.deviceId, this.hass, [], language));
 
     const warningTanks = tanks.filter((t) => t.isWarning);
     const tanksWithData = tanks.filter((t) => t.fillLevel !== null && t.fillLevel !== undefined);
@@ -505,6 +530,17 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
                   : nothing}
             </div>
 
+            ${holds.map(
+              (reason) => html`
+                <p class="hold-note" role="status" data-code=${reason.code}>
+                  <strong
+                    >${localize('safety.tank_irrigation_held', '', '', language)} ·
+                    ${reason.label}</strong
+                  >
+                  <span>${reason.detail}</span>
+                </p>
+              `
+            )}
             ${tanks.length === 0
               ? html`
                   <div class="empty-state">
@@ -550,6 +586,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
           : `${Math.round(tank.hoursRemaining)}h left`
         : null;
 
+    const known = tank.fillLevel !== null && tank.fillLevel !== undefined;
     return html`
       <div class="tank-card ${isWarning ? 'warning' : ''}">
         <div class="tank-header">
@@ -577,10 +614,10 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
                 <div class="wave"></div>
                 <div class="liquid-surface"></div>
               </div>
-              <div class="percentage-text">
-                ${tank.fillLevel !== null && tank.fillLevel !== undefined
+              <div class="percentage-text ${known ? '' : 'unknown'}">
+                ${known
                   ? `${fillLevel.toFixed(0)}%`
-                  : 'N/A'}
+                  : localize('safety.tank_level_unknown', '', '', this.hass.language ?? 'en')}
                 ${isWarning ? html`<span class="warning-icon">⚠️</span>` : nothing}
               </div>
             </div>
