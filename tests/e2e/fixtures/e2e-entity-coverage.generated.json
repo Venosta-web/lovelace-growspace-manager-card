@@ -3957,6 +3957,54 @@
       "behavior": "controllable"
     },
     {
+      "entity_id": "switch.sim_e2e_vwc_veg_irrigation_pump_stuck",
+      "role": "simulation.irrigation_pump_stuck",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_flower_irrigation_pump_stuck",
+      "role": "simulation.irrigation_pump_stuck",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_veg_irrigation_pump_error",
+      "role": "simulation.irrigation_pump_error",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "switch.sim_e2e_vwc_flower_irrigation_pump_error",
+      "role": "simulation.irrigation_pump_error",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "switch",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_veg_irrigation_pump_stuck",
+      "role": "simulation.irrigation_pump_stuck_state",
+      "profile": "vwc",
+      "slug": "vwc_veg",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
+      "entity_id": "input_boolean.sim_e2e_vwc_flower_irrigation_pump_stuck",
+      "role": "simulation.irrigation_pump_stuck_state",
+      "profile": "vwc",
+      "slug": "vwc_flower",
+      "domain": "input_boolean",
+      "behavior": "controllable"
+    },
+    {
       "entity_id": "input_boolean.sim_e2e_veg_irrigation_pump",
       "role": "simulation.irrigation_pump_state",
       "profile": "stage",
