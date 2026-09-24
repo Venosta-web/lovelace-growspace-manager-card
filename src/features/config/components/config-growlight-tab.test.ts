@@ -13,6 +13,15 @@ function makeVm(over: Partial<GrowlightTabViewModel> = {}): GrowlightTabViewMode
     disabled: true,
     growlightEntities: [],
     growlightEntityOptions: ['switch.grow', 'light.bar'],
+    lightLeakConfig: {
+      enabled: true,
+      illuminance_sensor: 'sensor.room_lux',
+      threshold_lux: 1,
+      debounce_seconds: 120,
+      switch_off_lights: false,
+      all_stages: false,
+    },
+    illuminanceSensorOptions: ['sensor.room_lux'],
     acInfinityDevices: [],
     modeOptions: ['select.m'],
     timeOptions: ['time.on', 'time.off'],
@@ -96,6 +105,35 @@ describe('ConfigGrowlightTab', () => {
   it('greys the controls out when disabled', async () => {
     const el = await mount(makeVm({ disabled: true }));
     expect(el.shadowRoot!.querySelector('.disabled')).not.toBeNull();
+    expect(el.shadowRoot!.querySelectorAll('config-section-header')[1].label).toBe('Light leak');
+    expect(el.shadowRoot!.querySelector('gm-entity-picker')?.closest('.disabled')).toBeNull();
+  });
+
+  it('emits the whole guard object, including an explicit null when its sensor is cleared', async () => {
+    const el = await mount(makeVm());
+    const partials = listenPartials(el);
+    (el.shadowRoot!.querySelector('.clear-sensor') as HTMLButtonElement).click();
+    expect(partials[partials.length - 1]?.lightLeakConfig).toEqual({
+      ...makeVm().lightLeakConfig,
+      illuminance_sensor: null,
+    });
+    checkbox(el, 'Switch off lights when a leak is detected').click();
+    expect(partials[partials.length - 1]?.lightLeakConfig).toEqual({
+      ...makeVm().lightLeakConfig,
+      switch_off_lights: true,
+    });
+    expect(partials[partials.length - 1]?.growlightConfig).toBeUndefined();
+  });
+
+  it('emits nonnegative lux and debounce values', async () => {
+    const el = await mount(makeVm());
+    const partials = listenPartials(el);
+    const input = (label: string) =>
+      el.shadowRoot!.querySelector(`md3-number-input[label="${label}"]`)!;
+    input('Threshold (lux)').dispatchEvent(new CustomEvent('change', { detail: '2.5' }));
+    expect(partials[partials.length - 1]?.lightLeakConfig?.threshold_lux).toBe(2.5);
+    input('Debounce (seconds)').dispatchEvent(new CustomEvent('change', { detail: '-4' }));
+    expect(partials[partials.length - 1]?.lightLeakConfig?.debounce_seconds).toBe(0);
   });
 
   it('shows the sunrise duration input only when sunrise is enabled', async () => {

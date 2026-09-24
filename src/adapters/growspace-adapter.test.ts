@@ -18,6 +18,21 @@ function wsWithStrategy(strategy: Record<string, unknown>): GrowspaceAPIResponse
 }
 
 describe('GrowspaceAdapter irrigation strategy', () => {
+  it('carries the parsed light leak settings into device attributes', () => {
+    const saved = {
+      enabled: true,
+      illuminance_sensor: 'sensor.tent_lux',
+      threshold_lux: 3,
+      debounce_seconds: 60,
+      switch_off_lights: false,
+      all_stages: true,
+    };
+    const device = GrowspaceAdapter.transformGrowspace(null, {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      environment: { light_leak_config: saved },
+    } as unknown as GrowspaceAPIResponse);
+    expect(device?.environmentAttributes.lightLeakConfig).toEqual(saved);
+  });
   it('deserializes the pump flow rate from irrigation config', () => {
     const device = GrowspaceAdapter.transformGrowspace(null, {
       identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },

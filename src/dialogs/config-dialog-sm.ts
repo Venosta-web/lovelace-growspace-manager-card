@@ -15,7 +15,7 @@
 
 import type { DialogStateMachine } from './dialog-sm';
 import type { GrowspaceDevice, SensorGroup } from '../types';
-import type { Subarea } from '../slices/subarea/schema';
+import type { LightLeakConfig, Subarea } from '../slices/subarea/schema';
 import type { TimedNotificationTriggerValue } from '../slices/notification/triggers';
 import type {
   AcInfinityDevice,
@@ -126,6 +126,7 @@ export interface EnvironmentDraft {
   growlightEntities: string[];
   growlightAcInfinityDevices: AcInfinityGrowLight[];
   growlightConfig: GrowLightConfig;
+  lightLeakConfig: LightLeakConfig;
 
   // VPD optimal overrides
   vpdOptimalOverrides: Record<
@@ -519,6 +520,14 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
       sunrise_enabled: false,
       sunrise_minutes: 0,
     },
+    lightLeakConfig: {
+      enabled: true,
+      illuminance_sensor: null,
+      threshold_lux: 1,
+      debounce_seconds: 120,
+      switch_off_lights: false,
+      all_stages: false,
+    },
     vpdOptimalOverrides: {},
     lstOffset: -2.0,
   };
@@ -658,6 +667,7 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     growlightEntities: attrs.growlightEntities ?? [],
     growlightAcInfinityDevices: attrs.growlightAcInfinityDevices ?? [],
     growlightConfig: attrs.growlightConfig ?? defaultEnvironmentDraft().growlightConfig,
+    lightLeakConfig: attrs.lightLeakConfig ?? defaultEnvironmentDraft().lightLeakConfig,
     vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
     lstOffset: attrs.lstOffset ?? -2.0,
   };

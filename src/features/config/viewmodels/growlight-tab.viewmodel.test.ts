@@ -55,6 +55,30 @@ describe('createGrowlightTabViewModel', () => {
     });
     expect(vm.lightsOnTime).toBe('06:00:00');
   });
+
+  it('projects the saved guard and prefers illuminance sensors without excluding other sensors', () => {
+    const s = transition(sm(), {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: {
+        lightLeakConfig: {
+          enabled: false,
+          illuminance_sensor: 'sensor.room_lux',
+          threshold_lux: 2.5,
+          debounce_seconds: 45,
+          switch_off_lights: true,
+          all_stages: true,
+        },
+      },
+    });
+    const vm = createGrowlightTabViewModel(s, {
+      ...portDeps,
+      entityOptions: (_domains, deviceClass) =>
+        deviceClass === 'illuminance' ? ['sensor.room_lux'] : ['sensor.other', 'sensor.room_lux'],
+    });
+    expect(vm.lightLeakConfig).toEqual(s.environmentDraft.lightLeakConfig);
+    expect(vm.illuminanceSensorOptions).toEqual(['sensor.room_lux', 'sensor.other']);
+    expect(vm.disabled).toBe(true);
+  });
 });
 
 describe('createGrowlightTabViewModel — Duplicate Port Warning', () => {

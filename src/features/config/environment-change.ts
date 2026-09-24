@@ -171,6 +171,7 @@ const ENVIRONMENT_FIELDS = {
     wireKey: 'growlight_ac_infinity_devices',
   },
   growlightConfig: { owner: 'environment', wireKey: 'growlight_config' },
+  lightLeakConfig: { owner: 'environment', wireKey: 'light_leak_config' },
   vpdOptimalOverrides: { owner: 'environment', wireKey: 'vpd_optimal_overrides' },
   lstOffset: { owner: 'environment', wireKey: 'lst_offset' },
 } as const satisfies Record<EnvironmentDraftKey, EnvironmentFieldRule>;

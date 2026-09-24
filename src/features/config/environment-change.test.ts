@@ -48,6 +48,32 @@ describe('Environment Change', () => {
     ]);
   });
 
+  it('sends each whole light config under its own key without replacing the other', async () => {
+    const calls: string[] = [];
+    const draft = createInitialSM().environmentDraft;
+    draft.selectedGrowspaceId = 'growspace_1';
+    draft.temperatureSensors = ['sensor.temperature'];
+    draft.humiditySensors = ['sensor.humidity'];
+    draft.lightLeakConfig = {
+      ...draft.lightLeakConfig,
+      illuminance_sensor: null,
+      threshold_lux: 3,
+    };
+
+    await applyEnvironmentChange(
+      {
+        kind: 'shared-environment-draft',
+        draft,
+        dirty: new Set(['growlightConfig', 'lightLeakConfig']),
+      },
+      recordingAdapter(calls)
+    );
+    const payload = JSON.parse(calls[0].slice('configure_environment:'.length));
+    expect(payload.growlight_config).toEqual(draft.growlightConfig);
+    expect(payload.light_leak_config).toEqual(draft.lightLeakConfig);
+    expect(payload.light_leak_config.illuminance_sensor).toBeNull();
+  });
+
   it('applies a Tank Config Change without leaking live Tank Levels', async () => {
     const calls: string[] = [];
 
@@ -210,6 +236,7 @@ describe('Environment Change', () => {
         'irrigation_flow_sensors',
         'irrigation_tanks',
         'light_sensors',
+        'light_leak_config',
         'lst_offset',
         'lung_room_temp_sensors',
         'mold_threshold',

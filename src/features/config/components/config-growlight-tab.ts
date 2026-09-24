@@ -25,6 +25,8 @@ import './config-entity-multi-select';
 import './config-section-header';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type { GrowLightConfig, AcInfinityGrowLight } from '../../../slices/growspace/schema';
+import type { LightLeakConfig } from '../../../slices/subarea/schema';
+import '../../shared/ui/gm-entity-picker';
 import type { GrowlightTabViewModel } from '../viewmodels/growlight-tab.viewmodel';
 
 @customElement('config-growlight-tab')
@@ -70,6 +72,15 @@ export class ConfigGrowlightTab extends LitElement {
         opacity: 0.5;
         pointer-events: none;
       }
+      .clear-sensor {
+        align-self: flex-start;
+        border: 0;
+        background: transparent;
+        color: var(--primary-color);
+        font: inherit;
+        cursor: pointer;
+        padding: 8px 0;
+      }
     `,
   ];
 
@@ -111,6 +122,10 @@ export class ConfigGrowlightTab extends LitElement {
       ...patch,
     };
     this._update({ growlightConfig: next });
+  }
+
+  private _updateLightLeakConfig(patch: Partial<LightLeakConfig>): void {
+    this._update({ lightLeakConfig: { ...this.vm.lightLeakConfig, ...patch } });
   }
 
   /** Lights-on is a strategy field persisted immediately by the host (ADR-0026). */
@@ -208,6 +223,83 @@ export class ConfigGrowlightTab extends LitElement {
                 this._pickPort('growlightAcInfinityDevices', index, deviceId),
             })}
           </div>
+        </div>
+      </div>
+      <div class="detail-card">
+        <config-section-header
+          .icon=${mdiWhiteBalanceSunny}
+          label="Light leak"
+        ></config-section-header>
+        <div class="form-section">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${vm.lightLeakConfig.enabled}
+              @change=${(e: Event) =>
+                this._updateLightLeakConfig({ enabled: (e.target as HTMLInputElement).checked })}
+            />
+            Enable light leak guard
+          </label>
+          <gm-entity-picker
+            label="Illuminance sensor"
+            .value=${vm.lightLeakConfig.illuminance_sensor ?? ''}
+            .options=${vm.illuminanceSensorOptions}
+            @entity-picked=${(e: CustomEvent<string>) =>
+              this._updateLightLeakConfig({ illuminance_sensor: e.detail || null })}
+          ></gm-entity-picker>
+          ${vm.lightLeakConfig.illuminance_sensor
+            ? html`<button
+                class="clear-sensor"
+                type="button"
+                @click=${() => this._updateLightLeakConfig({ illuminance_sensor: null })}
+              >
+                Clear illuminance sensor
+              </button>`
+            : nothing}
+          <md3-number-input
+            label="Threshold (lux)"
+            .value=${vm.lightLeakConfig.threshold_lux}
+            step="0.1"
+            min="0"
+            @change=${(e: CustomEvent<string>) =>
+              this._updateLightLeakConfig({
+                threshold_lux: Math.max(0, Number.parseFloat(e.detail) || 0),
+              })}
+          ></md3-number-input>
+          <md3-number-input
+            label="Debounce (seconds)"
+            .value=${vm.lightLeakConfig.debounce_seconds}
+            step="1"
+            min="0"
+            @change=${(e: CustomEvent<string>) =>
+              this._updateLightLeakConfig({
+                debounce_seconds: Math.max(0, Math.round(Number.parseFloat(e.detail) || 0)),
+              })}
+          ></md3-number-input>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${vm.lightLeakConfig.switch_off_lights}
+              @change=${(e: Event) =>
+                this._updateLightLeakConfig({
+                  switch_off_lights: (e.target as HTMLInputElement).checked,
+                })}
+            />
+            Switch off lights when a leak is detected
+          </label>
+          <p class="anchor-note">
+            Only switches lights Growspace Manager drives. AC Infinity ports get their schedule back
+            at lights-on.
+          </p>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${vm.lightLeakConfig.all_stages}
+              @change=${(e: Event) =>
+                this._updateLightLeakConfig({ all_stages: (e.target as HTMLInputElement).checked })}
+            />
+            Also watch the veg dark period
+          </label>
         </div>
       </div>
     `;
