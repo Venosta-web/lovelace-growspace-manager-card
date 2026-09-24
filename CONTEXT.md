@@ -627,7 +627,7 @@ The chrome every dialog renders inside: Home Assistant's `ha-dialog` surface wra
 _Avoid_: shell, dialog shell, base dialog, dialog layout — for this meaning; "shell" belongs to [[Dialog Shell]].
 
 **Tab Strip**
-The horizontal `tablist` a tabbed dialog places at the top of its [[Dialog Frame]]'s content slot: one Tab stop (roving tabindex), ←/→ with Home/End, and automatic activation — moving to a tab selects it. It owns the tabs and nothing below them: whether the panels render only while active or, like Tissue Culture's surfaces (ADR-0055), stay mounted is the dialog's business. Not a **nav rail** — the vertical, grouped navigation of the config and irrigation dialogs — and not a **view switch**, the segmented control that swaps one view for another (the snapshots dialog's Captures / Vision Checkup, the genetics tree's mode toggle).
+The horizontal `tablist` — `gs-tab-strip` — a tabbed dialog places at the top of its [[Dialog Frame]]'s content slot: one Tab stop (roving tabindex), ←/→ with Home/End, and automatic activation — moving to a tab selects it. It owns the tabs and nothing below them: whether the panels render only while active or, like Tissue Culture's surfaces (ADR-0055), stay mounted is the dialog's business. Not a **nav rail** — the vertical, grouped navigation of the config and irrigation dialogs — and not a **view switch**, the segmented control that swaps one view for another (the snapshots dialog's Captures / Vision Checkup, the genetics tree's mode toggle). The Dialog Frame never renders one itself (ADR-0060).
 _Avoid_: tab bar, tabs header.
 
 **Dialog Capabilities atom**

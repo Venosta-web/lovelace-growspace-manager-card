@@ -369,7 +369,7 @@ describe('AddPlantDialog', () => {
     });
 
     it('should switch to clone tab and render clone form', async () => {
-      const cloneTab = element.shadowRoot?.querySelectorAll('.tab')[1] as HTMLElement;
+      const cloneTab = element.shadowRoot?.querySelectorAll('[role="tab"]')[1] as HTMLElement;
       cloneTab.click();
       await element.updateComplete;
 
@@ -384,7 +384,7 @@ describe('AddPlantDialog', () => {
     });
 
     it('should switch to seedling tab and render seedling form', async () => {
-      const seedlingTab = element.shadowRoot?.querySelectorAll('.tab')[2] as HTMLElement;
+      const seedlingTab = element.shadowRoot?.querySelectorAll('[role="tab"]')[2] as HTMLElement;
       seedlingTab.click();
       await element.updateComplete;
 
@@ -396,7 +396,7 @@ describe('AddPlantDialog', () => {
 
     it('should show empty message if no plants available', async () => {
       element.clonePlants = [];
-      const cloneTab = element.shadowRoot?.querySelectorAll('.tab')[1] as HTMLElement;
+      const cloneTab = element.shadowRoot?.querySelectorAll('[role="tab"]')[1] as HTMLElement;
       cloneTab.click();
       await element.updateComplete;
 
@@ -509,7 +509,7 @@ describe('AddPlantDialog', () => {
       (element as any)._sm = transition(sm(element), { type: 'TabSelected', tab: 'clone' });
       await element.updateComplete;
 
-      const addTab = element.shadowRoot?.querySelectorAll('.tab')[0] as HTMLElement;
+      const addTab = element.shadowRoot?.querySelectorAll('[role="tab"]')[0] as HTMLElement;
       addTab.click();
       await element.updateComplete;
 

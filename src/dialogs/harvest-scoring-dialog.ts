@@ -9,6 +9,8 @@ import type { HarvestScoringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import { scorePlant, advancePlantStage } from '../slices/plant';
 import '../features/shared/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-tab-strip';
+import type { TabStripTab } from '../features/shared/ui/gs-tab-strip';
 import {
   createInitialSM,
   transition,
@@ -19,6 +21,11 @@ import {
   type ScoringDraft,
   type MetricsDraft,
 } from './harvest-scoring-dialog-sm';
+
+const HARVEST_TABS: TabStripTab[] = [
+  { value: 'scoring', label: 'Scoring' },
+  { value: 'metrics', label: 'Yield & Lab' },
+];
 
 /** Score dimension descriptor */
 interface ScoreDimension {
@@ -77,31 +84,8 @@ export class HarvestScoringDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      .tab-bar {
-        display: flex;
-        gap: 4px;
+      gs-tab-strip {
         padding: 0 24px;
-        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      }
-
-      .tab-btn {
-        background: none;
-        border: none;
-        border-bottom: 2px solid transparent;
-        color: var(--primary-text-color);
-        cursor: pointer;
-        font-size: 0.85rem;
-        font-weight: 500;
-        opacity: 0.6;
-        padding: 10px 16px;
-        transition:
-          opacity 0.15s,
-          border-color 0.15s;
-      }
-
-      .tab-btn.active {
-        border-bottom-color: var(--primary-color, #4caf50);
-        opacity: 1;
       }
 
       .score-grid {
@@ -419,23 +403,14 @@ export class HarvestScoringDialog extends LitElement {
             </button>
           </div>
 
-          <!-- TAB BAR -->
-          <div class="tab-bar">
-            <button
-              class="tab-btn ${sm.activeTab === 'scoring' ? 'active' : ''}"
-              @click=${() => this._selectTab('scoring')}
-              ?disabled=${isBusy}
-            >
-              Scoring
-            </button>
-            <button
-              class="tab-btn ${sm.activeTab === 'metrics' ? 'active' : ''}"
-              @click=${() => this._selectTab('metrics')}
-              ?disabled=${isBusy}
-            >
-              Yield &amp; Lab
-            </button>
-          </div>
+          <gs-tab-strip
+            .tabs=${HARVEST_TABS}
+            .selected=${sm.activeTab}
+            label="Phenotype scoring"
+            ?disabled=${isBusy}
+            @tab-selected=${(event: CustomEvent<{ value: TabId }>) =>
+              this._selectTab(event.detail.value)}
+          ></gs-tab-strip>
 
           <!-- TAB CONTENT -->
           ${sm.activeTab === 'scoring' ? this._renderScoringTab() : this._renderMetricsTab()}

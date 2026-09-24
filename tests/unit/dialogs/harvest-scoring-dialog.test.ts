@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { userEvent } from 'vitest/browser';
 import { HarvestScoringDialog } from '../../../src/dialogs/harvest-scoring-dialog';
 import '../../../src/dialogs/harvest-scoring-dialog';
 import { aPlant, aHass } from '../../fixtures';
@@ -88,7 +89,7 @@ describe('HarvestScoringDialog', () => {
     element.dialogState = { plant: aPlant() };
     element.open = true;
     await element.updateComplete;
-    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    const tabs = element.shadowRoot?.querySelectorAll('[role="tab"]');
     expect(tabs?.length).toBe(2);
   });
 
@@ -104,10 +105,30 @@ describe('HarvestScoringDialog', () => {
     element.dialogState = { plant: aPlant() };
     element.open = true;
     await element.updateComplete;
-    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+    const tabs = element.shadowRoot?.querySelectorAll(
+      '[role="tab"]'
+    ) as NodeListOf<HTMLButtonElement>;
     tabs[1].click();
     await element.updateComplete;
     expect(element.shadowRoot?.querySelector('#wet-weight')).not.toBeNull();
+  });
+
+  it('moves to Yield & Lab with the arrow key, from a single Tab stop', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = Array.from(
+      element.shadowRoot!.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    );
+    expect(tabs.map((t) => t.textContent?.trim())).toEqual(['Scoring', 'Yield & Lab']);
+    expect(tabs.filter((t) => t.tabIndex === 0)).toEqual([tabs[0]]);
+
+    tabs[0].focus();
+    await userEvent.keyboard('{ArrowRight}');
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('#wet-weight')).not.toBeNull();
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
   });
 
   it('shows confirmation bar when save is requested', async () => {
@@ -262,7 +283,9 @@ describe('HarvestScoringDialog', () => {
     element.open = true;
     await element.updateComplete;
 
-    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+    const tabs = element.shadowRoot?.querySelectorAll(
+      '[role="tab"]'
+    ) as NodeListOf<HTMLButtonElement>;
     tabs[1].click();
     await element.updateComplete;
     expect((element as any)._sm.activeTab).toBe('metrics');
@@ -277,7 +300,9 @@ describe('HarvestScoringDialog', () => {
     element.open = true;
     await element.updateComplete;
 
-    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+    const tabs = element.shadowRoot?.querySelectorAll(
+      '[role="tab"]'
+    ) as NodeListOf<HTMLButtonElement>;
     tabs[1].click();
     await element.updateComplete;
 
@@ -294,7 +319,9 @@ describe('HarvestScoringDialog', () => {
     element.open = true;
     await element.updateComplete;
 
-    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+    const tabs = element.shadowRoot?.querySelectorAll(
+      '[role="tab"]'
+    ) as NodeListOf<HTMLButtonElement>;
     tabs[1].click();
     await element.updateComplete;
 

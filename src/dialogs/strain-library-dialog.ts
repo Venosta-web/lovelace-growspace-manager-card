@@ -1,6 +1,5 @@
 import { LitElement, html, css, PropertyValues, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { ifDefined } from 'lit/directives/if-defined.js';
 import {
   mdiClose,
   mdiCloudUpload,
@@ -24,9 +23,34 @@ import { dialogStyles } from '../styles/dialog.styles';
 import { buildStrainTreeNodes } from '../utils/strain-tree-utils';
 import '../features/shared/ui/md3-number-input';
 import '../features/shared/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-tab-strip';
+import type { TabStripTab } from '../features/shared/ui/gs-tab-strip';
 import '../features/shared/ui/lineage-tree';
 import '../features/shared/ui/genetics-tree-view';
 import type { TreeNode } from '../features/shared/ui/genetics-tree-layout';
+
+type WorkspaceTab = 'strains' | 'seeds' | 'tree';
+
+/**
+ * Each tab names its panel; the Tab Strip carries that as `aria-controls` on
+ * the selected tab only, because the panels render conditionally and the
+ * others are not in the DOM.
+ */
+const WORKSPACE_TABS: TabStripTab[] = [
+  {
+    value: 'strains',
+    label: 'Strains',
+    id: 'workspace-tab-strains',
+    controls: 'workspace-panel-strains',
+  },
+  {
+    value: 'seeds',
+    label: 'Seeds & Genetics',
+    id: 'workspace-tab-seeds',
+    controls: 'workspace-panel-seeds',
+  },
+  { value: 'tree', label: 'Tree View', id: 'workspace-tab-tree', controls: 'workspace-panel-tree' },
+];
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {
@@ -106,7 +130,7 @@ export class StrainLibraryDialog extends LitElement {
     generation?: string;
   }) => Promise<void>;
 
-  @state() private _activeMainTab: 'strains' | 'seeds' | 'tree' = 'strains';
+  @state() private _activeMainTab: WorkspaceTab = 'strains';
   @state() private _libraryFilter: 'library' | 'active' | 'all' = 'library';
   @state() private _treeNodes: TreeNode[] = [];
   @state() private _treeMaximized = false;
@@ -243,37 +267,20 @@ export class StrainLibraryDialog extends LitElement {
         overflow: hidden;
       }
 
-      /* Main tab bar */
-      .main-tab-bar {
+      /* The Tab Strip and the tree view's maximize toggle, on one row */
+      .workspace-bar {
         display: flex;
-        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-        flex-shrink: 0;
         align-items: center;
+        flex-shrink: 0;
+        padding-inline-start: 24px;
+        border-bottom: 1px solid var(--divider-color);
+        background: var(--secondary-background-color);
       }
-      .tab-btn {
+      .workspace-bar gs-tab-strip {
         flex: 1;
-        padding: 14px 16px;
-        background: none;
-        border: none;
-        border-bottom: 3px solid transparent;
-        color: var(--secondary-text-color);
-        font-size: var(--font-size-sm);
-        font-weight: 500;
-        cursor: pointer;
-        transition:
-          color 0.2s,
-          border-color 0.2s;
-        font-family: inherit;
+        min-width: 0;
+        border-bottom: none;
       }
-      .tab-btn.active {
-        color: var(--accent-green, #4caf50);
-        border-bottom-color: var(--accent-green, #4caf50);
-      }
-      .tab-btn:hover:not(.active) {
-        color: var(--primary-text-color);
-      }
-      .tab-btn:focus-visible,
       .tab-maximize-btn:focus-visible {
         outline: 2px solid var(--primary-color);
         outline-offset: -2px;
@@ -614,36 +621,19 @@ export class StrainLibraryDialog extends LitElement {
     `;
   }
 
-  /**
-   * `aria-controls` is set only on the selected tab: panels render conditionally,
-   * so pointing at a panel id that isn't in the DOM would dangle.
-   */
-  private _renderWorkspaceTab(tab: 'strains' | 'seeds' | 'tree', label: string): TemplateResult {
-    const selected = this._activeMainTab === tab;
-    return html`
-      <button
-        class="tab-btn ${selected ? 'active' : ''}"
-        role="tab"
-        id="workspace-tab-${tab}"
-        aria-selected=${selected ? 'true' : 'false'}
-        aria-controls=${ifDefined(selected ? `workspace-panel-${tab}` : undefined)}
-        @click=${() => {
-          this._activeMainTab = tab;
-          this.focusLineage = false;
-          this._cameFromEditor = false;
-        }}
-      >
-        ${label}
-      </button>
-    `;
-  }
-
   private _renderTabBar(): TemplateResult {
     return html`
-      <div class="main-tab-bar" role="tablist" aria-label="Strain library workspace">
-        ${this._renderWorkspaceTab('strains', 'Strains')}
-        ${this._renderWorkspaceTab('seeds', 'Seeds & Genetics')}
-        ${this._renderWorkspaceTab('tree', 'Tree View')}
+      <div class="workspace-bar">
+        <gs-tab-strip
+          .tabs=${WORKSPACE_TABS}
+          .selected=${this._activeMainTab}
+          label="Strain library workspace"
+          @tab-selected=${(event: CustomEvent<{ value: WorkspaceTab }>) => {
+            this._activeMainTab = event.detail.value;
+            this.focusLineage = false;
+            this._cameFromEditor = false;
+          }}
+        ></gs-tab-strip>
         ${this._activeMainTab === 'tree'
           ? html`
               <button

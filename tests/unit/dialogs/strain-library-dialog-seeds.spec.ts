@@ -78,7 +78,7 @@ describe('StrainLibraryDialog - Seeds & Genetics Tab', () => {
 
   describe('Tab bar', () => {
     it('renders both tab buttons', async () => {
-      const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+      const tabs = element.shadowRoot?.querySelectorAll('[role="tab"]');
       expect(tabs?.length).toBe(3);
       expect(tabs?.[0].textContent).toContain('Strains');
       expect(tabs?.[1].textContent).toContain('Seeds');
@@ -87,17 +87,17 @@ describe('StrainLibraryDialog - Seeds & Genetics Tab', () => {
 
     it('defaults to strains tab', async () => {
       expect((element as any)._activeMainTab).toBe('strains');
-      const activeTab = element.shadowRoot?.querySelector('.tab-btn.active');
+      const activeTab = element.shadowRoot?.querySelector('[role="tab"][aria-selected="true"]');
       expect(activeTab?.textContent).toContain('Strains');
     });
 
     it('switches to seeds tab on click', async () => {
-      const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+      const tabs = element.shadowRoot?.querySelectorAll('[role="tab"]');
       (tabs?.[1] as HTMLElement)?.click();
       await element.updateComplete;
 
       expect((element as any)._activeMainTab).toBe('seeds');
-      const activeTab = element.shadowRoot?.querySelector('.tab-btn.active');
+      const activeTab = element.shadowRoot?.querySelector('[role="tab"][aria-selected="true"]');
       expect(activeTab?.textContent).toContain('Seeds');
     });
 
@@ -105,7 +105,7 @@ describe('StrainLibraryDialog - Seeds & Genetics Tab', () => {
       (element as any)._activeMainTab = 'seeds';
       await element.updateComplete;
 
-      const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+      const tabs = element.shadowRoot?.querySelectorAll('[role="tab"]');
       (tabs?.[0] as HTMLElement)?.click();
       await element.updateComplete;
 
