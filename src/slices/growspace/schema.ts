@@ -111,6 +111,12 @@ export const IrrigationConfigSchema = z.object({
   soil_trigger_percent: z.number().nullable().optional(),
   daily_volume_cap_liters: z.number().nullable().optional(),
   max_cycles_per_day: z.number().nullable().optional(),
+  // Per-cycle pump runtime ceiling and the minimum gap between automatic
+  // cycles (GSM "Enforce pump cycle runtime limits"). Declared for the
+  // contract; the card neither shows nor edits them yet. Optional because
+  // older backends omit them.
+  max_cycle_seconds: z.number().optional(),
+  min_interval_minutes: z.number().optional(),
   skip_during_dark: z.boolean().optional(),
   pause_on_low_tank: z.boolean().optional(),
   log_to_logbook: z.boolean().optional(),
@@ -131,6 +137,10 @@ export const IrrigationConfigSchema = z.object({
   // phase flags above are — the same kind of consent, given in advance.
   program_auto_advance: z.boolean().optional(),
   halt_on_runoff_ec_threshold: z.number().nullable().optional(),
+  // Minutes every automatic cycle is held after a start or reload (the Startup
+  // Inhibit, GSM#786). Declared so the contract completeness check passes; the
+  // card neither shows nor edits it. Optional because older backends omit it.
+  startup_grace_minutes: z.number().optional(),
   active_steering_phase: z.enum(['p1', 'p2', 'p3']).optional(),
   phase_changed_at: z.string().nullable().optional(),
 });

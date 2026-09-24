@@ -387,6 +387,48 @@ describe('Growspace Zod Schemas', () => {
         expect(parsed.irrigation.irrigation_config.resolved_day_hours).toBe(11);
       });
 
+      it('keeps the Startup Inhibit grace period', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { startup_grace_minutes: 5 },
+          },
+        });
+
+        expect(parsed.irrigation.irrigation_config.startup_grace_minutes).toBe(5);
+      });
+
+      it('accepts a backend that predates the Startup Inhibit grace period', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { irrigation_duration: 30 },
+          },
+        });
+
+        expect(parsed.irrigation.irrigation_config.startup_grace_minutes).toBeUndefined();
+      });
+
+      it('keeps the pump cycle runtime limits', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { max_cycle_seconds: 600, min_interval_minutes: 5 },
+          },
+        });
+
+        expect(parsed.irrigation.irrigation_config.max_cycle_seconds).toBe(600);
+        expect(parsed.irrigation.irrigation_config.min_interval_minutes).toBe(5);
+      });
+
+      it('accepts a backend that predates the pump cycle runtime limits', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            irrigation_config: { irrigation_duration: 30 },
+          },
+        });
+
+        expect(parsed.irrigation.irrigation_config.max_cycle_seconds).toBeUndefined();
+        expect(parsed.irrigation.irrigation_config.min_interval_minutes).toBeUndefined();
+      });
+
       it('should parse irrigation schedule items using time and duration', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
           irrigation: {
