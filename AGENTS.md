@@ -114,6 +114,27 @@ npm ci   # standalone worktrees install privately; see CLAUDE.md for hub-managed
   environment use the guarded sharing policy in `CLAUDE.md`; do not replace that link by
   running an install command through it.
 
+## Dependency updates
+
+Dependabot reads `.github/dependabot.yml` from the default branch and opens weekly
+Monday npm and GitHub Actions version-update PRs against `dev`. npm updates are
+grouped by Lit, Vitest, Playwright, Rollup, lint, release, and TypeScript; other
+packages arrive individually. Both production and development bumps use the
+`chore(deps)` prefix, which passes the PR-title check and does not request a
+semantic-release version. Review grouped Playwright bumps with the Chromium
+browser-mode unit job; the managed e2e job runs on promotion to `main`.
+
+Dependabot PR checks use the read-only built-in `GITHUB_TOKEN`: the contract
+fixture job reads public releases and fixtures, and the PR-title job reads the
+PR. Lint, unit tests, and release preflight need no secrets. The SSH release key
+is used only on a later `push` to `dev` or `main`; add a Dependabot secret if a
+future required PR job needs any other credential. Version-update settings
+target `dev`; GitHub handles security updates against the default branch.
+
+After a bump changes `package-lock.json`, hub-managed worktrees sharing the main
+checkout's `node_modules` will refuse checks until the lending checkout runs
+`npm ci`; a worktree with a different lockfile needs its own private install.
+
 ## Merge gates & landing order
 
 `dev` and `main` are ruleset-protected: PR + green checks, zero required approvals,
