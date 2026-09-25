@@ -64,6 +64,8 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
               { label: 'Circulation Fan', value: 'circulation_fan' },
               { label: 'Humidifier', value: 'humidifier' },
               { label: 'Dehumidifier', value: 'dehumidifier' },
+              { label: 'Irrigation Pump', value: 'irrigation_pump' },
+              { label: 'Drain Pump', value: 'drain_pump' },
               { label: 'Temperature', value: 'temperature' },
               { label: 'Humidity', value: 'humidity' },
               { label: 'VPD', value: 'vpd' },

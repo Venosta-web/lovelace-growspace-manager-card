@@ -20,6 +20,8 @@ function snapshot(overrides: Partial<DeviceSnapshot>): DeviceSnapshot {
     circulationFans: null,
     humidifiers: null,
     dehumidifiers: null,
+    irrigationPump: null,
+    drainPump: null,
     ...overrides,
   };
 }

@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { mdiWaterPump } from '@mdi/js';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { GrowspaceDevice } from '../../services/types';
 import { createGrowspaceDevice } from '../../services/types';
@@ -809,6 +810,8 @@ describe('computeSubareaDeviceSnapshot — environment_config device lists', () 
     expect(snapshot.circulationFans).toBeNull();
     expect(snapshot.humidifiers).toBeNull();
     expect(snapshot.dehumidifiers).toBeNull();
+    expect(snapshot.irrigationPump).toBeNull();
+    expect(snapshot.drainPump).toBeNull();
   });
 
   it('applies Fan Entity Mode detection (ADR-0008) to subarea fan entities', () => {
@@ -942,6 +945,115 @@ describe('subareaDeviceSnapshots$ atom and setSubareaDeviceSnapshot', () => {
     expect(subareaDeviceSnapshots$.get().get('sa1')!.exhaustFans!.value).toBe('On');
     expect(subareaDeviceSnapshots$.get().get('sa2')!.exhaustFans!.value).toBe('Off');
     expect(deviceSnapshots$.get().size).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Irrigation and drain pumps (#1006) — read from the irrigation config, not
+// environmentAttributes, so the equipment strip can show the pump's state.
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — irrigation and drain pumps', () => {
+  it('returns the irrigation pump entry from the irrigation config', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        irrigationPumpEntity: 'switch.tent_1_pump',
+      },
+    });
+    const hassStates: HassStates = {
+      'switch.tent_1_pump': makeHassEntity('switch.tent_1_pump', 'on'),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.irrigationPump).toEqual({
+      entityIds: ['switch.tent_1_pump'],
+      value: 'On',
+      icon: mdiWaterPump,
+    });
+    expect(snapshot.drainPump).toBeNull();
+  });
+
+  it('returns the drain pump entry beside the irrigation pump when one is configured', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        irrigationPumpEntity: 'switch.tent_1_pump',
+        drainPumpEntity: 'input_boolean.tent_1_drain',
+      },
+    });
+    const hassStates: HassStates = {
+      'switch.tent_1_pump': makeHassEntity('switch.tent_1_pump', 'off'),
+      'input_boolean.tent_1_drain': makeHassEntity('input_boolean.tent_1_drain', 'on'),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.irrigationPump?.value).toBe('Off');
+    expect(snapshot.drainPump).toEqual({
+      entityIds: ['input_boolean.tent_1_drain'],
+      value: 'On',
+      icon: mdiWaterPump,
+    });
+  });
+
+  it.each([
+    ['absent', undefined],
+    ['null', null],
+    ['empty', ''],
+  ])('returns null for both pumps when the pump entity is %s', (_label, entity) => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        irrigationPumpEntity: entity,
+        drainPumpEntity: entity,
+      },
+    });
+
+    const snapshot = computeDeviceSnapshot(device, {});
+
+    expect(snapshot.irrigationPump).toBeNull();
+    expect(snapshot.drainPump).toBeNull();
+  });
+
+  it('keeps a configured pump whose entity is unavailable, with no value', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        irrigationPumpEntity: 'switch.tent_1_pump',
+      },
+    });
+    const hassStates: HassStates = {
+      'switch.tent_1_pump': makeHassEntity('switch.tent_1_pump', 'unavailable'),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.irrigationPump).not.toBeNull();
+    expect(snapshot.irrigationPump!.value).toBeUndefined();
+  });
+
+  it('lists both pump entities among the snapshot entity IDs sync watches', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        irrigationPumpEntity: 'switch.tent_1_pump',
+        drainPumpEntity: 'switch.tent_1_drain',
+      },
+    });
+
+    const snapshot = computeDeviceSnapshot(device, {});
+
+    expect(deviceSnapshotEntityIds(snapshot)).toEqual([
+      'switch.tent_1_pump',
+      'switch.tent_1_drain',
+    ]);
   });
 });
 

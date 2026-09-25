@@ -65,6 +65,8 @@ export function isBinaryMetric(id: string, unit: string): boolean {
     id === MetricKey.DEHUMIDIFIER ||
     id === MetricKey.IRRIGATION ||
     id === MetricKey.DRAIN ||
+    id === MetricKey.IRRIGATION_PUMP ||
+    id === MetricKey.DRAIN_PUMP ||
     (id === MetricKey.LIGHT && unit !== '%')
   );
 }

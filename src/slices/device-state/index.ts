@@ -27,7 +27,13 @@
  */
 
 import { atom } from 'nanostores';
-import { mdiLightbulbOn, mdiFan, mdiAirHumidifier, mdiAirHumidifierOff } from '@mdi/js';
+import {
+  mdiLightbulbOn,
+  mdiFan,
+  mdiAirHumidifier,
+  mdiAirHumidifierOff,
+  mdiWaterPump,
+} from '@mdi/js';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { GrowspaceDevice } from '../../services/types';
 import type { AcInfinityDevice } from '../growspace/schema';
@@ -60,6 +66,10 @@ export interface DeviceSnapshot {
   circulationFans: DeviceEntry | null;
   humidifiers: DeviceEntry | null;
   dehumidifiers: DeviceEntry | null;
+  /** The irrigation config's pump; null when the growspace has none (and always for a subarea). */
+  irrigationPump: DeviceEntry | null;
+  /** The irrigation config's drain pump; null when the growspace has none (and always for a subarea). */
+  drainPump: DeviceEntry | null;
 }
 
 type HassStates = Record<string, HassEntity>;
@@ -259,6 +269,8 @@ interface DeviceEntityIds {
   circulationIds: string[];
   humidifierIds: string[];
   dehumidifierIds: string[];
+  irrigationPumpIds: string[];
+  drainPumpIds: string[];
 }
 
 /**
@@ -278,6 +290,8 @@ function _buildSnapshot(ids: DeviceEntityIds, hassStates: HassStates): DeviceSna
       mdiAirHumidifierOff,
       _normalizeOnOff
     ),
+    irrigationPump: _buildEntry(ids.irrigationPumpIds, hassStates, mdiWaterPump, _normalizeOnOff),
+    drainPump: _buildEntry(ids.drainPumpIds, hassStates, mdiWaterPump, _normalizeOnOff),
   };
 }
 
@@ -341,6 +355,8 @@ function _acInfinityDisplayEntities(
  * with the legacy singular fields as fallback, plus each AC Infinity bundle's
  * display entity — its port `current_power` read-back sensor when the entity
  * registry exposes it, else the speed setpoint (a port has no `fan` entity).
+ * The two pumps are the exception: they live on the irrigation config, not in
+ * environmentAttributes, and each is a single entity.
  *
  * This is the canonical place to read device-controlled entity states from hass.states.
  * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
@@ -352,6 +368,7 @@ export function computeDeviceSnapshot(
   registry?: EntityRegistry
 ): DeviceSnapshot {
   const env = device.environmentAttributes ?? {};
+  const irrigation = device.irrigationConfig;
 
   return _buildSnapshot(
     {
@@ -383,6 +400,8 @@ export function computeDeviceSnapshot(
         ...(env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : [])),
         ..._acInfinityDisplayEntities(env.dehumidifierAcInfinityDevices, registry),
       ],
+      irrigationPumpIds: irrigation?.irrigationPumpEntity ? [irrigation.irrigationPumpEntity] : [],
+      drainPumpIds: irrigation?.drainPumpEntity ? [irrigation.drainPumpEntity] : [],
     },
     hassStates
   );
@@ -393,7 +412,8 @@ export function computeDeviceSnapshot(
  *
  * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
  * directly from the subarea's environment_config device lists. Categories
- * without configured entities are null, exactly like the growspace adapter.
+ * without configured entities are null, exactly like the growspace adapter. A
+ * subarea has no irrigation config, so its pumps are always null.
  */
 export function computeSubareaDeviceSnapshot(
   subarea: Subarea,
@@ -408,6 +428,8 @@ export function computeSubareaDeviceSnapshot(
       circulationIds: ec.circulation_fan_entities ?? [],
       humidifierIds: ec.humidifier_entities ?? [],
       dehumidifierIds: ec.dehumidifier_entities ?? [],
+      irrigationPumpIds: [],
+      drainPumpIds: [],
     },
     hassStates
   );
@@ -424,6 +446,8 @@ export function deviceSnapshotEntityIds(snapshot: DeviceSnapshot): string[] {
     snapshot.circulationFans,
     snapshot.humidifiers,
     snapshot.dehumidifiers,
+    snapshot.irrigationPump,
+    snapshot.drainPump,
   ];
   return entries.flatMap((e) => e?.entityIds ?? []);
 }

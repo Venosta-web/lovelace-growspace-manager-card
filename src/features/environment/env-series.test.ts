@@ -47,6 +47,8 @@ function snapshot(
     circulationFans: null,
     humidifiers: null,
     dehumidifiers: null,
+    irrigationPump: null,
+    drainPump: null,
     [field]: { entityIds: [entityId], value: undefined, icon: '' },
   };
 }

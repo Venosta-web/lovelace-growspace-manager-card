@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { mdiFan, mdiLightbulbOn, mdiLightbulbOff } from '@mdi/js';
+import { mdiFan, mdiLightbulbOn, mdiLightbulbOff, mdiWaterPump } from '@mdi/js';
 import type { EnvSnapshot, SensorReadings } from '../environment';
 import type { DeviceEntry, DeviceSnapshot } from '../device-state';
 import type { PlantEntity } from '../../features/plants/types';
@@ -103,6 +103,8 @@ function makeDeviceSnapshot(overrides: Partial<DeviceSnapshot> = {}): DeviceSnap
     circulationFans: null,
     humidifiers: null,
     dehumidifiers: null,
+    irrigationPump: null,
+    drainPump: null,
     ...overrides,
   };
 }
@@ -1440,6 +1442,76 @@ describe('Cycle 12 — device chips from DeviceSnapshot', () => {
       MetricKey.HUMIDIFIER,
       MetricKey.DEHUMIDIFIER,
     ]);
+  });
+
+  it('emits the irrigation and drain pump chips after the dehumidifier (#1006)', () => {
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['sensor.light'], value: '70%' }),
+      exhaustFans: makeDeviceEntry(),
+      dehumidifiers: makeDeviceEntry(),
+      irrigationPump: makeDeviceEntry({
+        entityIds: ['switch.pump'],
+        value: 'On',
+        icon: mdiWaterPump,
+      }),
+      drainPump: makeDeviceEntry({
+        entityIds: ['switch.drain'],
+        value: 'Off',
+        icon: mdiWaterPump,
+      }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips.map((c) => c.key)).toEqual([
+      MetricKey.LIGHT,
+      MetricKey.EXHAUST,
+      MetricKey.DEHUMIDIFIER,
+      MetricKey.IRRIGATION_PUMP,
+      MetricKey.DRAIN_PUMP,
+    ]);
+    expect(deviceChips.slice(-2)).toEqual([
+      expect.objectContaining({
+        label: 'Pump',
+        value: 'On',
+        icon: mdiWaterPump,
+        entityIds: ['switch.pump'],
+      }),
+      expect.objectContaining({
+        label: 'Drain Pump',
+        value: 'Off',
+        icon: mdiWaterPump,
+        entityIds: ['switch.drain'],
+      }),
+    ]);
+  });
+
+  it('emits no pump chip for a growspace with no pump — absent, not unavailable', () => {
+    const snapshot = makeDeviceSnapshot({ exhaustFans: makeDeviceEntry() });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      makeIrrigationConfig(),
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips.map((c) => c.key)).toEqual([MetricKey.EXHAUST]);
   });
 
   it('sets active true for a device chip whose key is in activeEnvGraphs', () => {

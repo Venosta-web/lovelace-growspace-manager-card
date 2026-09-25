@@ -9,6 +9,7 @@ import {
   mdiWater,
   mdiWaterMinus,
   mdiWaterPercent,
+  mdiWaterPump,
   mdiWeatherCloudy,
 } from '@mdi/js';
 import { html } from 'lit';
@@ -53,6 +54,8 @@ const equipment = [
     value: 'Multiple',
     multiValues: ['On', 'Off'],
   }),
+  chip({ key: 'irrigation_pump', icon: mdiWaterPump, label: 'Pump', value: 'On' }),
+  chip({ key: 'drain_pump', icon: mdiWaterPump, label: 'Drain Pump', value: 'Off' }),
 ];
 
 const nextIrrigation = chip({ key: 'irrigation', icon: mdiWater, label: 'Next', value: '14:00' });
@@ -87,6 +90,8 @@ describe('mobile deck – equipment strip', () => {
       'Circulation Fan',
       'Humidifier',
       'Dehumidifier',
+      'Pump',
+      'Drain Pump',
     ]);
     expect(texts(el.shadowRoot!, '.equipment-value')).toEqual([
       'On',
@@ -94,7 +99,26 @@ describe('mobile deck – equipment strip', () => {
       'On',
       'Off',
       'On · Off',
+      'On',
+      'Off',
     ]);
+  });
+
+  it('toggles the pump graph from its strip button (#1006)', async () => {
+    const el = await renderDeck({});
+    const toggle = vi.fn();
+    el.addEventListener('toggle-graph', toggle);
+
+    await expect
+      .element(page.elementLocator(el).getByRole('button', { name: 'Pump: On. Toggle graph' }))
+      .toBeVisible();
+    el.shadowRoot!.querySelector<HTMLButtonElement>(
+      '.equipment-item[data-key="irrigation_pump"]'
+    )!.click();
+
+    expect(toggle).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: { metric: 'irrigation_pump' } })
+    );
   });
 
   it('takes equipment out of the readings carousel and the More readings list', async () => {
