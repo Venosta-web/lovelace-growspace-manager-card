@@ -232,7 +232,7 @@ describe('GrowspaceAnalyticsContainer', () => {
     await element.updateComplete;
 
     expect((element as any)._items).toEqual([
-      { type: 'combo', metrics: ['pore_ec', 'runoff_ec', 'feed_ec'], sortIndex: 22 },
+      { type: 'combo', metrics: ['pore_ec', 'runoff_ec', 'feed_ec'], sortIndex: 24 },
     ]);
   });
 
@@ -250,7 +250,7 @@ describe('GrowspaceAnalyticsContainer', () => {
     await element.updateComplete;
 
     expect((element as any)._items).toEqual([
-      { type: 'combo', metrics: ['energy', 'power'], sortIndex: 17 },
+      { type: 'combo', metrics: ['energy', 'power'], sortIndex: 19 },
     ]);
   });
 
@@ -315,7 +315,7 @@ describe('GrowspaceAnalyticsContainer', () => {
     (element as any).hiddenMetrics = [MetricKey.VPD];
     await element.updateComplete;
 
-    expect((element as any)._items).toEqual([{ type: 'single', metrics: ['ph'], sortIndex: 19 }]);
+    expect((element as any)._items).toEqual([{ type: 'single', metrics: ['ph'], sortIndex: 21 }]);
     expect($analyticsViewState.get().activeEnvGraphs).toEqual(new Set(['ph', 'vpd']));
   });
 

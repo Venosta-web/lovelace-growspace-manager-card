@@ -106,6 +106,18 @@ describe('resolveMetricEntityIds', () => {
     expect(resolveMetricEntityIds(device, 'irrigation')).toEqual(['switch.irrigation_pump']);
   });
 
+  it("resolves the pump chips' metrics to the irrigation config pumps (#1006)", () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.irrigation_pump',
+        drainPumpEntity: 'switch.drain_pump',
+      },
+      environmentAttributes: {},
+    });
+    expect(resolveMetricEntityIds(device, 'irrigation_pump')).toEqual(['switch.irrigation_pump']);
+    expect(resolveMetricEntityIds(device, 'drain_pump')).toEqual(['switch.drain_pump']);
+  });
+
   it('falls back to snake_case key when camelCase irrigationConfig key is absent', () => {
     const device = makeDevice({
       irrigationConfig: { irrigation_pump_entity: 'switch.irrigation_pump' },

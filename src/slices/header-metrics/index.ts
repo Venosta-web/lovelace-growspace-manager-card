@@ -914,9 +914,9 @@ export function computeHeaderMetrics(
   );
   if (energyChip) chips.push(energyChip);
 
-  // --- Device chips (light, exhaust, circulation fan, humidifier, dehumidifier) ---
+  // --- Device chips (light, exhaust, circulation fan, humidifier, dehumidifier, pumps) ---
   // Same MetricKeys and order as the legacy MetricsUtils path so hidden_chips
-  // configs and graph toggling are unaffected.
+  // configs and graph toggling are unaffected; the pumps (#1006) come last.
   const deviceChips: HeaderChip[] = [];
 
   if (deviceSnapshot !== null) {
@@ -955,6 +955,20 @@ export function computeHeaderMetrics(
         MetricKey.DEHUMIDIFIER,
         'Dehumidifier',
         deviceSnapshot.dehumidifiers,
+        activeEnvGraphs,
+        linkedGraphGroups
+      ),
+      _buildDeviceChip(
+        MetricKey.IRRIGATION_PUMP,
+        'Pump',
+        deviceSnapshot.irrigationPump,
+        activeEnvGraphs,
+        linkedGraphGroups
+      ),
+      _buildDeviceChip(
+        MetricKey.DRAIN_PUMP,
+        'Drain Pump',
+        deviceSnapshot.drainPump,
         activeEnvGraphs,
         linkedGraphGroups
       ),

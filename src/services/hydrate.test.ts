@@ -124,6 +124,25 @@ describe('hydrate()', () => {
     expect(watched).toBeInstanceOf(Set);
     expect(watched.has('sensor.plant_1')).toBe(true);
   });
+
+  it('watches the irrigation and drain pumps, so the pump chips refresh when they switch', () => {
+    const collection = {
+      'gs-1': {
+        identity: { growspace_id: 'gs-1', name: 'Tent A', type: 'flower' },
+        irrigation: {
+          irrigation_config: {
+            irrigation_pump_entity: 'switch.pump',
+            drain_pump_entity: 'switch.drain',
+          },
+        },
+      },
+    };
+
+    const watched = hydrate(collection as never, {});
+
+    expect(watched.has('switch.pump')).toBe(true);
+    expect(watched.has('switch.drain')).toBe(true);
+  });
 });
 
 describe('hydrate() — the global Irrigation Recipe library', () => {

@@ -65,6 +65,15 @@ describe('formatReading', () => {
     );
   });
 
+  it("reads the pump chips' graphs as on/off too (#1006)", () => {
+    expect(
+      formatReading({ id: MetricKey.IRRIGATION_PUMP, unit: 'state' }, { value: 1 }, localize)
+    ).toBe('ON');
+    expect(formatReading({ id: MetricKey.DRAIN_PUMP, unit: 'state' }, { value: 0 }, localize)).toBe(
+      'OFF'
+    );
+  });
+
   it('names why an optimal reading was not optimal, when the point says why', () => {
     const optimal = { id: MetricKey.OPTIMAL, unit: 'state' };
 
