@@ -37,6 +37,15 @@ const CONTRACT_FIXTURE = {
     fault_id: 'fault-1',
     requires_ack: true,
     since: '2026-09-23T10:00:00Z',
+    overrides: [
+      {
+        subsystem: 'exhaust',
+        started_at: '2026-09-23T09:30:00+00:00',
+        expires_at: '2026-09-23T10:30:00+00:00',
+        user_id: 'user-1',
+        reason: 'Changing the carbon filter',
+      },
+    ],
   },
 };
 
@@ -126,10 +135,17 @@ describe('the irrigation controller contract', () => {
     });
     expect(Object.keys(parsed.attributes).sort()).toEqual([
       'fault_id',
+      'overrides',
       'reasons',
       'requires_ack',
       'since',
     ]);
+  });
+
+  it('accepts a backend that predates manual overrides', () => {
+    const { overrides: _, ...older } = CONTRACT_FIXTURE.attributes;
+    const parsed = IrrigationControllerSchema.parse({ ...CONTRACT_FIXTURE, attributes: older });
+    expect(parsed.attributes.overrides).toBeUndefined();
   });
 });
 
