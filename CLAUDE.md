@@ -105,7 +105,11 @@ checkout's, and `preinstall` refuses to install *through* a link at all, because
 it is how a worktree stops being hub-managed and that should be a deliberate act. Both are
 inert when `node_modules` is a real directory or absent, so the main checkout and CI are
 unaffected, and neither ever creates, repairs, or removes a link — the fix they print is
-`rm node_modules && npm ci`.
+`rm node_modules && npm ci`. The guard is only a guard while `package.json` runs it: the
+#742 back-merge once dropped both entries and nothing noticed for a month, so
+`scripts/shared-dependency-link.test.mjs` (in `npm run test:ci-policy`) reads the wiring and
+runs each entry against a checkout it must refuse. `pretest` fires for `npm test` only —
+`npm run test:unit`, which the pre-commit hook calls, does not run it.
 
 Never run dependency-mutating npm commands through a shared link. That is a rule, not a
 guarantee — the mechanics split in two. Measured: `npm ci` and `npm install` delete the link and put a private install in its place, leaving the main checkout's tree
