@@ -5,7 +5,7 @@
       "id": "entry",
       "label": "Entry",
       "match": "growspace-manager-card.js",
-      "maxGzipBytes": 200000
+      "maxGzipBytes": 205000
     },
     {
       "id": "three",
@@ -40,6 +40,11 @@
       "date": "2026-09-24",
       "rules": ["entry"],
       "change": "#974 raises the entry from 195,000 to 200,000 bytes gzip for the irrigation safety chip, its detail and the Emergency Stop. Measured at 1b715d3c plus #974: entry 198,767 bytes gzip, 4.3 KB over dev, of which the chip and its detail are 2.1 KB and the safety slice, its localized labels and the tank card's hold note the rest. It stays in the entry on purpose: the lazy dialog chunks are what a stale HACS install loses first (ADR 0053), and an emergency stop that 404s with them is not one. A chip-only entry with a lazy detail would still exceed the 500 bytes of headroom 195,000 left."
+    },
+    {
+      "date": "2026-09-26",
+      "rules": ["entry"],
+      "change": "GSM#668 raises the entry from 200,000 to 205,000 bytes gzip for the Active Grow Run chip in the header, its Start dialog, the grow-run slice and its localized labels. Measured at dev df785598: entry 199,162 bytes gzip; with the run chip 201,300, 2,138 bytes over dev and 1,300 over the old limit. The chip is part of the header the entry already renders, beside the safety chip. The remaining 3.7 KB is headroom for the rest of the Grow Run MVP's header surface (#669, #671); the Grow Run View itself (#675) belongs in a lazy chunk."
     }
   ]
 }
