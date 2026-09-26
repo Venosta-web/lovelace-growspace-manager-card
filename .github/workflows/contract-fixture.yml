@@ -63,6 +63,12 @@ jobs:
           GSM_RELEASE_UPDATE_PLANT_REQUEST_FIXTURE: ${{ runner.temp }}/gsm-release-update_plant_request_v1.json
           GSM_PRERELEASE_IRRIGATION_CONTROLLER_FIXTURE: ${{ runner.temp }}/gsm-prerelease-irrigation_controller_v1.json
           GSM_RELEASE_IRRIGATION_CONTROLLER_FIXTURE: ${{ runner.temp }}/gsm-release-irrigation_controller_v1.json
+          GSM_PRERELEASE_ACTIVE_RUN_SENSOR_FIXTURE: ${{ runner.temp }}/gsm-prerelease-active_run_sensor_v1.json
+          GSM_RELEASE_ACTIVE_RUN_SENSOR_FIXTURE: ${{ runner.temp }}/gsm-release-active_run_sensor_v1.json
+          GSM_PRERELEASE_GROW_RUN_STARTED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_started_v1.json
+          GSM_RELEASE_GROW_RUN_STARTED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_started_v1.json
+          GSM_PRERELEASE_GROW_RUN_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_refused_v1.json
+          GSM_RELEASE_GROW_RUN_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_refused_v1.json
           TC_MAIN_MANIFEST_FIXTURE: ${{ runner.temp }}/tc-main-manifest.json
           TC_MAIN_CULTURE_MEDIA_FIXTURE: ${{ runner.temp }}/tc-main-culture-media.json
           TC_MAIN_CULTURE_LINES_FIXTURE: ${{ runner.temp }}/tc-main-culture-lines.json

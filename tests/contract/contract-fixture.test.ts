@@ -28,6 +28,7 @@ import {
   UpdatePlantRequestContractSchema,
 } from '../../src/slices/plant/schema';
 import { IrrigationControllerSchema } from '../../src/slices/safety/schema';
+import { ActiveRunSensorSchema, StartGrowRunResultSchema } from '../../src/slices/grow-run/schema';
 
 interface FixtureContract {
   name: string;
@@ -41,6 +42,14 @@ const VisionStatusFixtureSchema = z
   .object({
     ready: VisionStatusSchema,
     unavailable: VisionStatusSchema,
+  })
+  .strict();
+
+// The fixture carries the sensor both ways: with an Active Run and without.
+const ActiveRunSensorFixtureSchema = z
+  .object({
+    active: ActiveRunSensorSchema,
+    none: ActiveRunSensorSchema,
   })
   .strict();
 
@@ -121,6 +130,29 @@ const CONTRACTS: FixtureContract[] = [
     schema: IrrigationControllerSchema,
     leadingVariable: 'GSM_PRERELEASE_IRRIGATION_CONTROLLER_FIXTURE',
     releaseVariable: 'GSM_RELEASE_IRRIGATION_CONTROLLER_FIXTURE',
+    releaseRequired: false,
+  },
+  // The Active Run Sensor and start_grow_run's two outcomes (GSM#668): the run
+  // chip's read side and its one command. Prerelease-first like the above.
+  {
+    name: 'Active Run Sensor',
+    schema: ActiveRunSensorFixtureSchema,
+    leadingVariable: 'GSM_PRERELEASE_ACTIVE_RUN_SENSOR_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_ACTIVE_RUN_SENSOR_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run started',
+    schema: StartGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_STARTED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_STARTED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run refused',
+    schema: StartGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_REFUSED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_REFUSED_FIXTURE',
     releaseRequired: false,
   },
   // Growspace Manager TC is a separate repository that owns its own WebSocket
