@@ -12,6 +12,7 @@ import '../../src/features/ui/components/growspace-header-ui';
 
 vi.mock('../../src/services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
+  hassCall: vi.fn(),
   setHass: vi.fn(),
   getHass: vi.fn(),
 }));

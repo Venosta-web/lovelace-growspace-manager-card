@@ -12,6 +12,7 @@ import { statusTokens } from '../../../styles/status.styles';
 import { STATUS_CUES, StatusLevel } from '../../environment/constants';
 import { deriveHeaderVerdict } from '../../../slices/header-metrics/verdict';
 import type { SafetyView } from '../../../slices/safety';
+import type { RunView } from '../../../slices/grow-run';
 
 const VERDICT_TONE: Record<StatusLevel, string> = {
   [StatusLevel.OPTIMAL]: 'stable',
@@ -23,6 +24,7 @@ import './growspace-header-actions-ui';
 import './growspace-header-hero-ui';
 import './growspace-header-secondary-ui';
 import '../../safety/components/growspace-safety-chip';
+import '../../grow-run/components/growspace-run-chip';
 
 @customElement('growspace-header-ui')
 export class GrowspaceHeaderUI extends LitElement {
@@ -56,6 +58,7 @@ export class GrowspaceHeaderUI extends LitElement {
   @property({ type: Boolean }) labelTemplatesAvailable = false;
   /** The irrigation controller's state; `null` on a backend that has none. */
   @property({ attribute: false }) safety: SafetyView | null = null;
+  @property({ attribute: false }) run: RunView | null = null;
 
   private _resizeController = new ResizeController(this, () => {});
 
@@ -242,6 +245,13 @@ export class GrowspaceHeaderUI extends LitElement {
                       ?.is_admin === true}
                     .language=${this.hass?.language ?? 'en'}
                   ></growspace-safety-chip>`
+                : nothing}
+              ${this.run
+                ? html`<growspace-run-chip
+                    .view=${this.run}
+                    .plantCount=${this.device.plants?.length ?? 0}
+                    .language=${this.hass?.language ?? 'en'}
+                  ></growspace-run-chip>`
                 : nothing}
             </div>
             ${this._renderOperationalSummary()} ${this._renderMetaRow()}

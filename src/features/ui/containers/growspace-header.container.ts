@@ -27,6 +27,7 @@ import { ViewMode, ConfigTab } from '../../../constants';
 import { todayISO } from '../../../utils/local-date-time';
 import { localizePlural, localizeWithParams } from '../../../localize/localize';
 import { deriveSafetyView, type SafetyView } from '../../../slices/safety';
+import { deriveRunView, type RunView } from '../../../slices/grow-run';
 
 import '../components/growspace-header-ui';
 
@@ -462,6 +463,11 @@ export class GrowspaceHeaderContainer extends LitElement {
     );
   }
 
+  /** Read on every render, like the safety view: the Active Run is entity state. */
+  private get _runView(): RunView | null {
+    return deriveRunView(this.device.deviceId, this.hass, this.hass?.language ?? 'en');
+  }
+
   private get _problemPlants(): string[] {
     return (this.device?.plants || [])
       .filter((p) => !!p.attributes?.problem)
@@ -549,6 +555,7 @@ export class GrowspaceHeaderContainer extends LitElement {
         .labelTemplatesAvailable=${this._labelSupportController?.value.status === 'available'}
         .problemPlants=${this._problemPlants}
         .safety=${this._safetyView}
+        .run=${this._runView}
         .flowerFlipInfo=${this._flowerFlipInfo}
         .irrigationStrategy=${irrigationStrategy}
         .irrigationConfig=${irrigationConfig}

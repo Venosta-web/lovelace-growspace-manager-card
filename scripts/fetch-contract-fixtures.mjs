@@ -47,6 +47,9 @@ const PLANT_FIXTURES = ['update_plant_request_v1'];
 // The irrigation controller sensor's state and attributes — the safety chip's
 // whole read side (GSM#783). Prerelease-first like the two above.
 const SAFETY_FIXTURES = ['irrigation_controller_v1'];
+// The Active Run Sensor and the start_grow_run results (GSM#668): the run
+// chip's read side and the one command it sends. Prerelease-first as well.
+const GROW_RUN_FIXTURES = ['active_run_sensor_v1', 'grow_run_started_v1', 'grow_run_refused_v1'];
 // Every payload the card's TC chunk parses, and the local file each is written
 // to. One entry per contract, so adding a TC command is one line here rather
 // than a fourth copy of the download call.
@@ -135,7 +138,12 @@ export async function fetchContractFixtures({
     });
   }
 
-  for (const fixture of [...LABEL_FIXTURES, ...PLANT_FIXTURES, ...SAFETY_FIXTURES]) {
+  for (const fixture of [
+    ...LABEL_FIXTURES,
+    ...PLANT_FIXTURES,
+    ...SAFETY_FIXTURES,
+    ...GROW_RUN_FIXTURES,
+  ]) {
     await downloadFixture({
       baseUrl,
       fetchImpl,
