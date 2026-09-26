@@ -255,6 +255,11 @@ export interface IrrigationConfig {
   maxCyclesPerDay?: number | null;
   skipDuringDark?: boolean;
   pauseOnLowTank?: boolean;
+  /**
+   * Minutes a tank's level may be unknown before irrigation pauses on it and
+   * the Tank Offline Alert goes out (GSM#790). Undefined on older backends.
+   */
+  tankUnknownGraceMinutes?: number;
   logToLogbook?: boolean;
   autoAdvanceP1ToP2?: boolean;
   autoAdvanceP2ToP3?: boolean;
@@ -312,6 +317,12 @@ export interface IrrigationTank {
   hoursRemaining?: number | null;
   depletionStatus?: TankDepletionStatus | null;
   volumeLiters?: number | null;
+  /**
+   * Minutes without a report before the level counts as stale; `0` is never
+   * (GSM#790). `null` when the backend does not report it, which also means it
+   * would not accept it back.
+   */
+  staleAfterMinutes?: number | null;
   waterHistory?: TankWaterHistory;
 }
 

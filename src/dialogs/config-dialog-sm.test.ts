@@ -721,6 +721,7 @@ describe('BEGIN_EDIT_TANK', () => {
       name: 'Main Tank',
       volumeLiters: 100,
       warningLevel: 20,
+      staleAfterMinutes: null,
     });
     const sub = next.tabs.tanks.sub;
     expect(sub.kind).toBe('editing');
@@ -794,6 +795,7 @@ describe('COMMIT_TANK', () => {
       name: 'Old',
       volumeLiters: null,
       warningLevel: 30,
+      staleAfterMinutes: null,
     });
     const updated = transition(editing, {
       type: 'UPDATE_TANK_DRAFT',
@@ -808,6 +810,41 @@ describe('COMMIT_TANK', () => {
     const sm = createInitialSM();
     const next = transition(sm, { type: 'COMMIT_TANK' });
     expect(next).toBe(sm);
+  });
+
+  // Every tank save restates the whole item, and a window this dialog dropped
+  // would come back as the backend's 120-minute default (GSM#790).
+  it("keeps each tank's staleness window, the edited tank's included", () => {
+    const tank = { fillLevel: 50, isWarning: false, volumeLiters: null, warningLevel: 30 };
+    const device = makeDevice({
+      environmentAttributes: {
+        irrigationTanks: [
+          { ...tank, sensorEntity: 'sensor.a', name: 'A', staleAfterMinutes: 0 },
+          { ...tank, sensorEntity: 'sensor.b', name: 'B', staleAfterMinutes: 45 },
+        ],
+      },
+    });
+    const seeded = createInitialSM(device);
+    expect(seeded.environmentDraft.irrigationTanks.map((t) => t.staleAfterMinutes)).toEqual([
+      0, 45,
+    ]);
+
+    const editing = transition(seeded, {
+      type: 'BEGIN_EDIT_TANK',
+      index: 0,
+      sensorEntity: 'sensor.a',
+      name: 'A',
+      volumeLiters: null,
+      warningLevel: 30,
+      staleAfterMinutes: 0,
+    });
+    const renamed = transition(editing, { type: 'UPDATE_TANK_DRAFT', partial: { name: 'A2' } });
+    const next = transition(renamed, { type: 'COMMIT_TANK' });
+
+    expect(next.environmentDraft.irrigationTanks).toEqual([
+      expect.objectContaining({ name: 'A2', staleAfterMinutes: 0 }),
+      expect.objectContaining({ name: 'B', staleAfterMinutes: 45 }),
+    ]);
   });
 });
 

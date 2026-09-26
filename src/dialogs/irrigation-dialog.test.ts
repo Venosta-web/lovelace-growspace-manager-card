@@ -1926,6 +1926,132 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tank grace period and staleness window (GSM#790)
+// ---------------------------------------------------------------------------
+
+describe('IrrigationDialog – unknown tank levels', () => {
+  async function mount(device: ReturnType<typeof makeDevice>, initialTab: string) {
+    setTankLevels('gs1', (device.environmentAttributes?.irrigationTanks ?? []) as never);
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${initialTab}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    const tab = el.shadowRoot!.querySelector(`irrigation-${initialTab}-tab`) as LitElement & {
+      shadowRoot: ShadowRoot;
+    };
+    await tab.updateComplete;
+    return { el, tab };
+  }
+
+  function staleTankDevice() {
+    const device = makeTankDevice();
+    const [a, b] = device.environmentAttributes!.irrigationTanks!;
+    device.environmentAttributes!.irrigationTanks = [
+      { ...a, staleAfterMinutes: 120 },
+      { ...b, staleAfterMinutes: 0 },
+    ];
+    return device;
+  }
+
+  it("saves an edited staleness window, and restates the other tank's", async () => {
+    vi.mocked(applyEnvironmentChange).mockClear();
+    const { el, tab } = await mount(staleTankDevice(), 'tanks');
+    (tab.shadowRoot.querySelector('button.tank-edit-btn') as HTMLButtonElement).click();
+    await el.updateComplete;
+    await tab.updateComplete;
+
+    const stale = tab.shadowRoot.querySelector(
+      '[data-field="stale_after_minutes"]'
+    ) as HTMLInputElement;
+    expect(stale.value).toBe('120');
+    stale.value = '0';
+    stale.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+    await tab.updateComplete;
+    const save = Array.from(tab.shadowRoot.querySelectorAll('.tank-edit-form button')).find(
+      (b) => b.textContent?.trim() === 'Save'
+    ) as HTMLButtonElement;
+    save.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const [call] = vi.mocked(applyEnvironmentChange).mock.calls;
+    if (call[0].kind !== 'tank-config-change') throw new Error('Expected Tank Config Change');
+    expect(call[0].irrigationTanks.map((t) => t.staleAfterMinutes)).toEqual([0, 0]);
+  });
+
+  it("shows the controller's tank hold above the tank rows", async () => {
+    const { el, tab } = await mount(staleTankDevice(), 'tanks');
+    el.hass = {
+      language: 'en',
+      states: {
+        'sensor.tent_irrigation_controller': {
+          entity_id: 'sensor.tent_irrigation_controller',
+          state: 'inhibited',
+          attributes: {
+            reasons: [
+              {
+                code: 'tank_unknown',
+                detail: 'Irrigation skipped: Tank A has had no usable level',
+                since: new Date(Date.now() - 5 * 60_000).toISOString(),
+              },
+            ],
+            fault_id: null,
+            requires_ack: false,
+            since: null,
+          },
+        },
+      },
+      entities: {
+        'sensor.tent_irrigation_controller': {
+          platform: 'growspace_manager',
+          device_id: 'dev-tent',
+          translation_key: 'irrigation_controller',
+        },
+      },
+      devices: { 'dev-tent': { identifiers: [['growspace_manager', 'gs1']] } },
+    } as never;
+    // `hass` is a plain context field, so a new one arrives with an update the
+    // provider asks for rather than by assignment; then the holds atom asks for
+    // the second render that carries them into the tab.
+    el.requestUpdate();
+    await el.updateComplete;
+    await el.updateComplete;
+    await tab.updateComplete;
+
+    const note = tab.shadowRoot.querySelector('.hold-note[data-code="tank_unknown"]');
+    expect(normalize(note?.textContent)).toBe(
+      'Irrigation held · Tank level unknown Irrigation skipped: Tank A has had no usable level since 5 minutes ago'
+    );
+  });
+
+  it('sends the Tank Grace Period with the settings, only to a backend that reports it', async () => {
+    const reported = withPump({
+      irrigationConfig: { irrigationTimes: [], drainTimes: [], tankUnknownGraceMinutes: 10 },
+    });
+    const { el, tab } = await mount(reported, 'config');
+    const grace = tab.shadowRoot.querySelector(
+      '[data-field="tank_unknown_grace_minutes"]'
+    ) as HTMLInputElement;
+    expect(grace.value).toBe('10');
+    grace.value = '200';
+    grace.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+    expect((el as any)._buildSettingsParams().tankUnknownGraceMinutes).toBe(120);
+
+    const older = await mount(withPump(), 'config');
+    expect(
+      older.tab.shadowRoot.querySelector('[data-field="tank_unknown_grace_minutes"]')
+    ).toBeNull();
+    expect((older.el as any)._buildSettingsParams()).not.toHaveProperty('tankUnknownGraceMinutes');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Crop Steering Schedule: real VWC trace rendering
 // ---------------------------------------------------------------------------
 

@@ -18,6 +18,7 @@ function row(over: Partial<TankRowVM> = {}): TankRowVM {
     sensorEntity: 'sensor.a',
     volumeLiters: 100,
     warningLevel: 20,
+    staleLabel: null,
     ...over,
   };
 }
@@ -27,6 +28,7 @@ const draft: TankEditVM = {
   name: 'Main',
   volumeLiters: 100,
   warningLevel: 20,
+  staleAfterMinutes: null,
 };
 
 function makeVm(over: Partial<TanksTabViewModel> = {}): TanksTabViewModel {
@@ -137,5 +139,41 @@ describe('ConfigTanksTab — intents out', () => {
       .click();
     expect(cancelled).toBe(1);
     expect(saved).toBe(1);
+  });
+});
+
+describe('ConfigTanksTab — staleness window (GSM#790)', () => {
+  it('labels a tank row whose window is not the default', async () => {
+    const el = await mount(
+      makeVm({
+        showEmpty: false,
+        tanks: [row({ staleLabel: 'Never stale' }), row({ index: 1, displayName: 'B' })],
+      })
+    );
+    const text = el.shadowRoot!.textContent!.replace(/\s+/g, ' ');
+    expect(text).toContain('warn at 20% · Never stale');
+    expect(text.match(/Never stale/g)).toHaveLength(1);
+  });
+
+  it('offers the field only when the backend reported a window', async () => {
+    const hidden = await mount(makeVm({ showEmpty: false, editing: draft }));
+    expect(hidden.shadowRoot!.querySelector('[data-field="stale_after_minutes"]')).toBeNull();
+    document.body.innerHTML = '';
+
+    const el = await mount(
+      makeVm({ showEmpty: false, editing: { ...draft, staleAfterMinutes: 120 } })
+    );
+    const input = el.shadowRoot!.querySelector(
+      '[data-field="stale_after_minutes"]'
+    ) as HTMLInputElement;
+    expect(input.value).toBe('120');
+    expect(input.labels?.[0]?.textContent).toBe('Stale After (min)');
+
+    const changes = listen<{ partial: Partial<TankEditVM> }>(el, 'tank-draft-changed');
+    for (const typed of ['0', '', '-5']) {
+      input.value = typed;
+      input.dispatchEvent(new Event('input'));
+    }
+    expect(changes.map((c) => c.partial.staleAfterMinutes)).toEqual([0, 120, 0]);
   });
 });

@@ -102,9 +102,12 @@ import { createShellViewModel, type ShellViewModel } from '../viewmodels/shell.v
 // Decomposed Tanks tab (ADR-0019): the first *draft* tab adapter.
 import {
   createTanksTabViewModel,
+  deriveTankHolds,
   mergeTankDraft,
+  type TankHoldVM,
   type TanksTabViewModel,
 } from '../viewmodels/tanks-tab.viewmodel';
+import { deriveSafetyView } from '../../../slices/safety';
 // Decomposed EC Ramp tab (ADR-0019): curves owned by the Nutrient slice (ADR-0005).
 import {
   createEcRampTabViewModel,
@@ -218,6 +221,7 @@ interface SaveSettingsParams {
   maxCyclesPerDay: number | null;
   skipDuringDark: boolean;
   pauseOnLowTank: boolean;
+  tankUnknownGraceMinutes?: number;
   logToLogbook: boolean;
   autoAdvanceP1ToP2: boolean;
   autoAdvanceP2ToP3: boolean;
@@ -292,6 +296,8 @@ export class IrrigationDialog extends LitElement {
   // view input mirrored into an atom so the Tanks Tab ViewModel stays the single
   // source and the component takes only `.vm`.
   private _tankSensorOptions = atom<string[]>([]);
+  // The controller's tank hold reasons, hass-derived for the same reason.
+  private _tankHolds = atom<TankHoldVM[]>([]);
 
   // ─── EC Ramp tab (ADR-0019: view/draft/error live in the SM, not here) ───
   // Curves are owned by the Nutrient slice (ADR-0005); the VM reads `ecRampCurves$`
@@ -325,7 +331,8 @@ export class IrrigationDialog extends LitElement {
     this._smAtom,
     tankLevels$,
     this._tankSensorOptions,
-    this._deviceAtom
+    this._deviceAtom,
+    this._tankHolds
   );
   private _tanksVmController = new StoreController(this, this._tanksVm);
   /** EC Ramp tab ViewModel — reads the Nutrient slice's `ecRampCurves$` (ADR-0005). */
@@ -887,6 +894,19 @@ export class IrrigationDialog extends LitElement {
         this._getEntities(['sensor', 'input_number']).map((s) => s.entity_id)
       );
     }
+    // Mirror why the controller is holding on a tank. Like the pump options below,
+    // hass never shows up in `changedProps`, so derive every update and set only
+    // when the notes changed — which also moves "since 3 minutes ago" along.
+    const holds = this.device
+      ? deriveTankHolds(
+          deriveSafetyView(this.device.deviceId, this.hass),
+          Date.now(),
+          this.hass?.language ?? 'en'
+        )
+      : [];
+    if (JSON.stringify(holds) !== JSON.stringify(this._tankHolds.get())) {
+      this._tankHolds.set(holds);
+    }
     // Mirror the switch/input_boolean pump-entity options into their atom so the
     // Config Tab ViewModel stays the single source and the component never reads
     // hass. `hass` is a plain (non-reactive) field, so it never appears in
@@ -1016,6 +1036,11 @@ export class IrrigationDialog extends LitElement {
     const persistedPumpFlowRate = this.device?.irrigationConfig?.pumpFlowRateMlPerSec ?? 0;
     if (cfg.pumpFlowRateMlPerSec !== persistedPumpFlowRate) {
       params.pumpFlowRateMlPerSec = cfg.pumpFlowRateMlPerSec;
+    }
+    // The Tank Grace Period is null exactly when the backend did not report it,
+    // which is the backend that would refuse it (GSM#790).
+    if (cfg.tankUnknownGraceMinutes !== null) {
+      params.tankUnknownGraceMinutes = cfg.tankUnknownGraceMinutes;
     }
 
     return params;
@@ -1799,6 +1824,7 @@ export class IrrigationDialog extends LitElement {
       name: tank.name,
       volumeLiters: tank.volumeLiters ?? null,
       warningLevel: tank.warningLevel,
+      staleAfterMinutes: tank.staleAfterMinutes ?? null,
     };
     this.dispatch({ type: 'EDIT_TANK', index, draft });
   }

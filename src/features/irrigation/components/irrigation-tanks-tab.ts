@@ -17,6 +17,10 @@
  *   - `tank-draft-changed`   detail: { partial: Partial<TankDraft> }
  *   - `cancel-tank-edit`     (no detail)
  *   - `save-tank-requested`  (no detail)
+ *
+ * The hold notes above the rows say why the irrigation controller is holding on
+ * a tank (GSM#790) — the reason a grower opens this tab to change a tank's
+ * staleness window.
  */
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
@@ -25,6 +29,10 @@ import { mdiPencil } from '@mdi/js';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/gm-entity-picker';
 import type { TankDraft } from '../../../dialogs/irrigation-dialog-sm';
+import {
+  TANK_STALE_AFTER_HINT,
+  parseStaleAfterMinutes,
+} from '../../../slices/irrigation/tank-staleness';
 import type { TanksTabViewModel, TankRowVM, TankEditVM } from '../viewmodels/tanks-tab.viewmodel';
 
 @customElement('irrigation-tanks-tab')
@@ -88,6 +96,21 @@ export class IrrigationTanksTab extends LitElement {
         opacity: 0.5;
         margin-top: 2px;
       }
+      /* Same shape as the tank card's hold note. */
+      .hold-note {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0 0 12px;
+        padding: 8px 12px;
+        border-radius: var(--border-radius-sm, 8px);
+        border: 1px solid rgba(255, 167, 38, 0.6);
+        background: rgba(255, 167, 38, 0.14);
+        font-size: var(--font-size-supporting);
+      }
+      .hold-note span {
+        opacity: 0.8;
+      }
     `,
   ];
 
@@ -116,6 +139,15 @@ export class IrrigationTanksTab extends LitElement {
           <h3 style="margin:0;">Tank Levels</h3>
           <span style="font-size:11px;opacity:0.45;">Updates every 30 s</span>
         </div>
+        ${vm.holds.map(
+          (hold) => html`
+            <p class="hold-note" role="status" data-code=${hold.code}>
+              <strong>${hold.heading}</strong>
+              <span>${hold.detail}</span>
+              ${hold.since ? html`<span>${hold.since}</span>` : nothing}
+            </p>
+          `
+        )}
         <div style="display:flex;flex-direction:column;gap:8px;">
           ${vm.tanks.map((row) => this._renderTankRow(row))}
         </div>
@@ -209,6 +241,34 @@ export class IrrigationTanksTab extends LitElement {
             />
           </div>
         </div>
+        ${draft.staleAfterMinutes !== null
+          ? html`
+              <div>
+                <div class="md3-input-group" style="margin-bottom:0;">
+                  <label class="md3-label" for="tank-stale-after">Stale After (min)</label>
+                  <input
+                    id="tank-stale-after"
+                    class="md3-input"
+                    data-field="stale_after_minutes"
+                    type="number"
+                    min="0"
+                    step="1"
+                    .value=${String(draft.staleAfterMinutes)}
+                    aria-describedby="tank-stale-after-hint"
+                    @input=${(e: Event) =>
+                      update({
+                        staleAfterMinutes: parseStaleAfterMinutes(
+                          (e.target as HTMLInputElement).value
+                        ),
+                      })}
+                  />
+                </div>
+                <div class="md3-supporting-text" id="tank-stale-after-hint">
+                  ${TANK_STALE_AFTER_HINT}
+                </div>
+              </div>
+            `
+          : nothing}
         <div class="button-group">
           <button class="md3-button tonal" @click=${() => this._emit('cancel-tank-edit')}>
             Cancel

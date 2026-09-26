@@ -28,6 +28,7 @@ import {
   expandAtomicGroups,
   type EnvironmentDraftKey,
 } from '../features/config/environment-change';
+import { DEFAULT_TANK_STALE_AFTER_MINUTES } from '../slices/irrigation/tank-staleness';
 
 // ─── Tab ID ───────────────────────────────────────────────────────────────────
 
@@ -106,6 +107,11 @@ export interface EnvironmentDraft {
     name: string;
     volumeLiters: number | null;
     warningLevel: number;
+    /**
+     * Every tank save restates the whole item, so a window this draft dropped
+     * would reset to the backend default (GSM#790). `null` when not reported.
+     */
+    staleAfterMinutes?: number | null;
   }>;
 
   // Camera / lungroom
@@ -237,6 +243,12 @@ export type TankDraftFields = {
   name: string;
   volumeLiters: number | null;
   warningLevel: number;
+  /**
+   * The tank's staleness window, `0` for never (GSM#790). `null` when the
+   * backend does not report one, which hides the field and leaves it off the
+   * save: an older backend would drop it without a word.
+   */
+  staleAfterMinutes: number | null;
 };
 
 type TanksSubState =
@@ -384,6 +396,7 @@ export type ConfigDialogEvent =
       name: string;
       volumeLiters: number | null;
       warningLevel: number;
+      staleAfterMinutes: number | null;
     }
   | { type: 'UPDATE_TANK_DRAFT'; partial: Partial<TankDraftFields> }
   | { type: 'CANCEL_TANK' }
@@ -650,6 +663,7 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
       name: t.name ?? 'Tank',
       volumeLiters: t.volumeLiters ?? null,
       warningLevel: t.warningLevel ?? 30,
+      staleAfterMinutes: t.staleAfterMinutes ?? null,
     })),
     cameraEntities: attrs.cameraEntities ?? [],
     lungroomTempSensors: attrs.lungroomTempSensors ?? [],
@@ -1118,6 +1132,13 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
               name: '',
               volumeLiters: null,
               warningLevel: 30,
+              // A backend that reports a window for any tank takes one for a
+              // new tank too; with no tank to ask, the field stays hidden.
+              staleAfterMinutes: sm.environmentDraft.irrigationTanks.some(
+                (t) => t.staleAfterMinutes != null
+              )
+                ? DEFAULT_TANK_STALE_AFTER_MINUTES
+                : null,
             },
           },
         },
@@ -1136,6 +1157,7 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
               name: event.name,
               volumeLiters: event.volumeLiters,
               warningLevel: event.warningLevel,
+              staleAfterMinutes: event.staleAfterMinutes,
             },
           },
         },
@@ -1161,11 +1183,12 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
         name: sub.name || 'Tank',
         volumeLiters: sub.volumeLiters,
         warningLevel: sub.warningLevel,
+        staleAfterMinutes: sub.staleAfterMinutes,
       };
       const existing = sm.environmentDraft.irrigationTanks;
       const updatedTanks =
         sub.kind === 'editing'
-          ? existing.map((t, i) => (i === sub.index ? tank : t))
+          ? existing.map((t, i) => (i === sub.index ? { ...t, ...tank } : t))
           : [...existing, tank];
       return {
         ...sm,

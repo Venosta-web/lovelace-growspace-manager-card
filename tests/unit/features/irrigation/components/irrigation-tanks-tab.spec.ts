@@ -46,10 +46,11 @@ const draft: TankDraft = {
   name: 'Tank A',
   volumeLiters: 200,
   warningLevel: 30,
+  staleAfterMinutes: null,
 };
 
 function makeVm(overrides: Partial<TanksTabViewModel> = {}): TanksTabViewModel {
-  return { tanks: [row()], editing: null, ...overrides };
+  return { tanks: [row()], holds: [], editing: null, ...overrides };
 }
 
 /** The picker reads the entity registry itself, so the mount supplies one. */

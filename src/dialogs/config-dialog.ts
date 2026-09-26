@@ -1726,6 +1726,7 @@ export class ConfigDialog extends LitElement {
       name: tank.name || '',
       volumeLiters: tank.volumeLiters ?? null,
       warningLevel: tank.warningLevel ?? 30,
+      staleAfterMinutes: tank.staleAfterMinutes ?? null,
     });
   }
 

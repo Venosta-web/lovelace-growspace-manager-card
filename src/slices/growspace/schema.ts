@@ -147,8 +147,9 @@ const IrrigationConfigSchema = z.object({
   startup_grace_minutes: z.number().optional(),
   // Minutes a tank's level may be unknown (unavailable, stale or implausible)
   // before the Pump Cycle Gate refuses on it and the Tank Offline Alert goes
-  // out (GSM#790, ADR-0050). Declared for the contract; the card neither shows
-  // nor edits it yet. Optional because older backends omit it.
+  // out (GSM#790, ADR-0050). Edited on the Irrigation dialog's Configuration
+  // tab. Optional because older backends omit it, and the card then hides the
+  // control rather than send a field that backend would refuse.
   tank_unknown_grace_minutes: z.number().optional(),
   // Control Input validity (GSM#789, ADR-0051): the cap on how long the
   // moisture and pore-EC sensors may go without reporting before they are

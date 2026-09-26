@@ -102,6 +102,32 @@ describe('Environment Change', () => {
     ]);
   });
 
+  it("restates every tank's staleness window, off included, and omits one never reported", async () => {
+    const calls: string[] = [];
+    const tank = { warningLevel: 20, fillLevel: null, isWarning: false };
+
+    await applyEnvironmentChange(
+      {
+        kind: 'tank-config-change',
+        growspaceId: 'growspace_1',
+        irrigationTanks: [
+          { ...tank, sensorEntity: 'sensor.a', name: 'A', staleAfterMinutes: 0 },
+          { ...tank, sensorEntity: 'sensor.b', name: 'B', staleAfterMinutes: 45 },
+          // An older backend: it neither reports the window nor accepts it.
+          { ...tank, sensorEntity: 'sensor.c', name: 'C', staleAfterMinutes: null },
+        ],
+      },
+      recordingAdapter(calls)
+    );
+
+    const payload = JSON.parse(calls[0].slice('configure_environment:'.length));
+    expect(payload.irrigation_tanks).toEqual([
+      { sensor_entity: 'sensor.a', name: 'A', warning_level: 20, stale_after_minutes: 0 },
+      { sensor_entity: 'sensor.b', name: 'B', warning_level: 20, stale_after_minutes: 45 },
+      { sensor_entity: 'sensor.c', name: 'C', warning_level: 20 },
+    ]);
+  });
+
   it('runs the dedicated exhaust action second and refreshes last', async () => {
     const order: string[] = [];
     const draft = createInitialSM().environmentDraft;

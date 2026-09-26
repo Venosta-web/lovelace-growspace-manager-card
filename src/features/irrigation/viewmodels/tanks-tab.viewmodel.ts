@@ -20,9 +20,11 @@
  * `_renderTankRow` so the rendered output stays byte-identical.
  */
 
-import { computed, type ReadableAtom } from 'nanostores';
+import { atom, computed, type ReadableAtom } from 'nanostores';
 import type { GrowspaceDevice, IrrigationTank } from '../../../services/types';
 import type { DialogSM, TankDraft } from '../../../dialogs/irrigation-dialog-sm';
+import { localize, localizeWithParams } from '../../../localize/localize';
+import { formatSince, tankLevelHolds, type SafetyView } from '../../../slices/safety';
 import { token } from '../../../styles/variables';
 
 /** One tank-level row (config identity + live telemetry, formatted for display). */
@@ -49,12 +51,53 @@ export interface TankEditVM {
   entityOptions: string[];
 }
 
+/**
+ * Why the irrigation controller is holding on a tank, in the viewer's language
+ * — so the grower sees the pause where they would fix it, without opening Home
+ * Assistant notifications.
+ */
+export interface TankHoldVM {
+  /** The backend reason code, `tank_unknown` or `tank_low`. */
+  code: string;
+  /** "Irrigation held · Tank level unknown". */
+  heading: string;
+  /** The backend's own sentence, which names the tank and the cause. */
+  detail: string;
+  /** "since 12 minutes ago", or null when the instant does not parse. */
+  since: string | null;
+}
+
 /** Complete render input for `<irrigation-tanks-tab>`. */
 export interface TanksTabViewModel {
   /** Tank rows; empty array → the "no tanks configured" empty state. */
   tanks: TankRowVM[];
+  /** The controller's tank reasons while it is inhibited; empty otherwise. */
+  holds: TankHoldVM[];
   /** The open editor, or null when idle. */
   editing: TankEditVM | null;
+}
+
+/**
+ * Project a growspace's safety view onto the Tanks tab's hold notes.
+ *
+ * Only the `tank_*` reasons (`tankLevelHolds`). `now` is a parameter so the
+ * relative time is testable.
+ */
+export function deriveTankHolds(
+  view: SafetyView | null,
+  now: number,
+  language = 'en'
+): TankHoldVM[] {
+  const held = localize('safety.tank_irrigation_held', '', '', language);
+  return tankLevelHolds(view).map((reason) => {
+    const since = formatSince(reason.since, now, language);
+    return {
+      code: reason.code,
+      heading: `${held} · ${reason.label}`,
+      detail: reason.detail,
+      since: since ? localizeWithParams('safety.since', { time: since }, language) : null,
+    };
+  });
 }
 
 function deriveRow(tank: IrrigationTank, index: number): TankRowVM {
@@ -98,7 +141,7 @@ function deriveRow(tank: IrrigationTank, index: number): TankRowVM {
 
 /**
  * Pure helper that composes the Save payload: the full tank array with `draft`
- * merged over the tank at `index`. The spread overwrites the four Tank Config
+ * merged over the tank at `index`. The spread overwrites the Tank Config
  * fields and PRESERVES the live Tank Levels fields (fillLevel, isWarning, …) so
  * an optimistic read never blanks live telemetry. Out-of-range indices are a
  * no-op. Owned here (not in the effect) so the Dialog Shell can snapshot the
@@ -117,24 +160,28 @@ export function mergeTankDraft(
 
 /**
  * Pure factory: SM atom + the Irrigation slice's `tankLevels$` + sensor-entity
- * options + the device atom (for the growspace id key) → one Tanks VM atom. No
- * `$caps` (the Tanks tab has no cross-tab capability gating). The device atom is
- * taken only to key `tankLevels$` by `deviceId` — the tank *data* comes from the
- * slice, not the device read-model. Testable with no DOM.
+ * options + the device atom (for the growspace id key) + the hold notes → one
+ * Tanks VM atom. No `$caps` (the Tanks tab has no cross-tab capability gating).
+ * The device atom is taken only to key `tankLevels$` by `deviceId` — the tank
+ * *data* comes from the slice, not the device read-model. The holds are
+ * hass-derived (`deriveTankHolds`), so the shell mirrors them into an atom the
+ * way it does the entity options. Testable with no DOM.
  */
 export function createTanksTabViewModel(
   $sm: ReadableAtom<DialogSM>,
   $tankLevels: ReadableAtom<Map<string, IrrigationTank[]>>,
   $entityOptions: ReadableAtom<string[]>,
-  $device: ReadableAtom<GrowspaceDevice | undefined>
+  $device: ReadableAtom<GrowspaceDevice | undefined>,
+  $holds: ReadableAtom<TankHoldVM[]> = atom([])
 ): ReadableAtom<TanksTabViewModel> {
   return computed(
-    [$sm, $tankLevels, $entityOptions, $device],
-    (sm, tankLevels, entityOptions, device) => {
+    [$sm, $tankLevels, $entityOptions, $device, $holds],
+    (sm, tankLevels, entityOptions, device, holds) => {
       const tanks = tankLevels.get(device?.deviceId ?? '') ?? [];
       const sub = sm.tabs.tanks.sub;
       return {
         tanks: tanks.map(deriveRow),
+        holds,
         editing:
           sub.kind === 'editing' ? { index: sub.index, draft: sub.draft, entityOptions } : null,
       };

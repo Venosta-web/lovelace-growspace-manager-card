@@ -94,6 +94,7 @@ describe('createTanksTabViewModel', () => {
       name: 'Tank A',
       volumeLiters: 200,
       warningLevel: 30,
+      staleAfterMinutes: 120,
     };
     const sm = transition(createInitialSM(), { type: 'EDIT_TANK', index: 0, draft });
     const vm = build(sm, [tank()], ['sensor.tank_a', 'sensor.tank_b']);
@@ -115,6 +116,7 @@ describe('mergeTankDraft', () => {
     name: 'Renamed',
     volumeLiters: 500,
     warningLevel: 45,
+    staleAfterMinutes: 0,
   };
 
   it('overwrites config fields but preserves live level fields', () => {

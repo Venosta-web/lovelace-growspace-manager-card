@@ -279,6 +279,35 @@ export function tankHoldReasons(view: SafetyView | null): SafetyReasonView[] {
 }
 
 /**
+ * The holds a tank's own settings answer for — `tank_low` and `tank_unknown`
+ * — without the moisture sensor's `sensor_*` ones, which no tank setting can
+ * fix. What the Irrigation dialog's Tanks tab and the header Tank chip show.
+ */
+export function tankLevelHolds(view: SafetyView | null): SafetyReasonView[] {
+  return tankHoldReasons(view).filter((r) => r.kind.startsWith('tank_'));
+}
+
+/**
+ * One line per tank hold, for a surface too small to lay them out — the header
+ * Tank chip's tooltip: "Irrigation held · Tank level unknown: <detail> (12
+ * minutes ago)". `null` when nothing holds irrigation on a tank.
+ */
+export function tankHoldNote(
+  holds: readonly SafetyReasonView[],
+  now: number,
+  language = 'en'
+): string | null {
+  if (holds.length === 0) return null;
+  const held = localize('safety.tank_irrigation_held', '', '', language);
+  return holds
+    .map((reason) => {
+      const since = formatSince(reason.since, now, language);
+      return `${held} · ${reason.label}: ${reason.detail}${since ? ` (${since})` : ''}`;
+    })
+    .join('\n');
+}
+
+/**
  * "12 minutes ago", in the viewer's language. An unparseable instant yields
  * `null` rather than "NaN years ago".
  */

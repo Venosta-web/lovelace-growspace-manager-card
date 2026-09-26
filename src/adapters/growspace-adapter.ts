@@ -225,6 +225,7 @@ export class GrowspaceAdapter {
             hoursRemaining: t.hours_remaining ?? null,
             depletionStatus: t.depletion_status ?? null,
             volumeLiters: t.volume_liters ?? null,
+            staleAfterMinutes: t.stale_after_minutes ?? null,
             waterHistory: t.water_history ?? undefined,
           },
         ];
@@ -315,6 +316,7 @@ export class GrowspaceAdapter {
       maxCyclesPerDay: irrigationConfigRaw.max_cycles_per_day,
       skipDuringDark: irrigationConfigRaw.skip_during_dark,
       pauseOnLowTank: irrigationConfigRaw.pause_on_low_tank,
+      tankUnknownGraceMinutes: irrigationConfigRaw.tank_unknown_grace_minutes,
       logToLogbook: irrigationConfigRaw.log_to_logbook,
       autoAdvanceP1ToP2: irrigationConfigRaw.auto_advance_p1_to_p2,
       autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,

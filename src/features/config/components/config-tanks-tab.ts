@@ -23,6 +23,10 @@ import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/gm-entity-picker';
 import './config-section-header';
 import type { TankDraftFields } from '../../../dialogs/config-dialog-sm';
+import {
+  TANK_STALE_AFTER_HINT,
+  parseStaleAfterMinutes,
+} from '../../../slices/irrigation/tank-staleness';
 import type { TankEditVM, TankRowVM, TanksTabViewModel } from '../viewmodels/tanks-tab.viewmodel';
 
 @customElement('config-tanks-tab')
@@ -95,7 +99,7 @@ export class ConfigTanksTab extends LitElement {
           >
             ${tank.sensorEntity}
             ${tank.volumeLiters != null ? html` · ${tank.volumeLiters} L` : nothing} · warn at
-            ${tank.warningLevel}%
+            ${tank.warningLevel}%${tank.staleLabel ? html` · ${tank.staleLabel}` : nothing}
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -189,6 +193,34 @@ export class ConfigTanksTab extends LitElement {
             />
           </div>
         </div>
+        ${draft.staleAfterMinutes !== null
+          ? html`
+              <div>
+                <div class="md3-input-group" style="margin-bottom:0;">
+                  <label class="md3-label" for="config-tank-stale-after">Stale After (min)</label>
+                  <input
+                    id="config-tank-stale-after"
+                    class="md3-input"
+                    data-field="stale_after_minutes"
+                    type="number"
+                    min="0"
+                    step="1"
+                    aria-describedby="config-tank-stale-after-hint"
+                    .value=${String(draft.staleAfterMinutes)}
+                    @input=${(e: Event) =>
+                      this._updateDraft({
+                        staleAfterMinutes: parseStaleAfterMinutes(
+                          (e.target as HTMLInputElement).value
+                        ),
+                      })}
+                  />
+                </div>
+                <div class="md3-supporting-text" id="config-tank-stale-after-hint">
+                  ${TANK_STALE_AFTER_HINT}
+                </div>
+              </div>
+            `
+          : nothing}
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
           <button class="md3-button tonal" @click=${() => this._emit('cancel-tank')}>Cancel</button>
           <button class="md3-button primary" @click=${() => this._emit('save-tank-requested')}>

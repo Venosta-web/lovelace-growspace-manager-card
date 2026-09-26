@@ -29,6 +29,7 @@ import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../../features/shared/ui/md3-switch';
 import '../../../features/shared/ui/gs-help-tooltip';
 import type { ConfigDraft } from '../../../dialogs/irrigation-dialog-sm';
+import { parseTankGraceMinutes } from '../../../slices/irrigation/tank-staleness';
 import type { ConfigTabViewModel, PumpEntityOptionVM } from '../viewmodels/config-tab.viewmodel';
 
 @customElement('irrigation-config-tab')
@@ -90,6 +91,10 @@ export class IrrigationConfigTab extends LitElement {
         opacity: 0.6;
         margin-top: 2px;
       }
+      .stub-row .md3-input.minutes {
+        width: 88px;
+        flex-shrink: 0;
+      }
     `,
   ];
 
@@ -100,6 +105,39 @@ export class IrrigationConfigTab extends LitElement {
   /** Merge a field change into the SM config draft via the shell. */
   private _updateDraft(partial: Partial<ConfigDraft>): void {
     this._emit('config-draft-changed', { partial });
+  }
+
+  /**
+   * The Tank Grace Period (GSM#790), beside the toggle whose pause it delays.
+   * Hidden when the backend does not report it: that backend would refuse it.
+   */
+  private _renderTankGraceRow(minutes: number | null): TemplateResult | typeof nothing {
+    if (minutes === null) return nothing;
+    return html`
+      <div class="stub-row" style="margin-bottom:8px;">
+        <div>
+          <label class="stub-row-label" for="tank-grace">Tank Grace Period (min)</label>
+          <div class="stub-row-desc">
+            How long a tank may go without a usable level before cycles pause on it and an offline
+            alert is sent
+          </div>
+        </div>
+        <input
+          id="tank-grace"
+          class="md3-input minutes"
+          data-field="tank_unknown_grace_minutes"
+          type="number"
+          min="0"
+          max="120"
+          step="1"
+          .value=${String(minutes)}
+          @change=${(e: Event) =>
+            this._updateDraft({
+              tankUnknownGraceMinutes: parseTankGraceMinutes((e.target as HTMLInputElement).value),
+            })}
+        />
+      </div>
+    `;
   }
 
   private _renderEntitySelect(
@@ -250,15 +288,17 @@ export class IrrigationConfigTab extends LitElement {
               ${[
                 {
                   label: 'Pause on Tank Low',
-                  desc: 'Halt cycles when any tank is below warning level',
+                  desc: 'Halt cycles when any tank is below warning level or its level is unknown',
                   get: () => draft.pauseOnLowTank,
                   set: (v: boolean) => this._updateDraft({ pauseOnLowTank: v }),
+                  after: this._renderTankGraceRow(draft.tankUnknownGraceMinutes),
                 },
                 {
                   label: 'Log to Logbook',
                   desc: 'Record start, duration, and moisture delta per cycle',
                   get: () => draft.logToLogbook,
                   set: (v: boolean) => this._updateDraft({ logToLogbook: v }),
+                  after: nothing,
                 },
               ].map(
                 (row) => html`
@@ -274,6 +314,7 @@ export class IrrigationConfigTab extends LitElement {
                       }}
                     ></md3-switch>
                   </div>
+                  ${row.after}
                 `
               )}
             </div>

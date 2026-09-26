@@ -94,6 +94,12 @@ export interface ConfigDraft {
   maxCyclesPerDay: number | null;
   skipDuringDark: boolean;
   pauseOnLowTank: boolean;
+  /**
+   * The Tank Grace Period (GSM#790). `null` when the backend does not report
+   * it — an older integration that would refuse it — so the control is hidden
+   * and the save omits it.
+   */
+  tankUnknownGraceMinutes: number | null;
   logToLogbook: boolean;
   autoAdvanceP1ToP2: boolean;
   autoAdvanceP2ToP3: boolean;
@@ -113,6 +119,12 @@ export interface TankDraft {
   name: string;
   volumeLiters: number | null;
   warningLevel: number;
+  /**
+   * The tank's staleness window, `0` for never (GSM#790). `null` when the
+   * backend does not report it, which hides the field and leaves it off the
+   * save.
+   */
+  staleAfterMinutes: number | null;
 }
 
 /**
@@ -470,6 +482,7 @@ function defaultConfigDraft(): ConfigDraft {
     maxCyclesPerDay: null,
     skipDuringDark: false,
     pauseOnLowTank: true,
+    tankUnknownGraceMinutes: null,
     logToLogbook: true,
     autoAdvanceP1ToP2: false,
     autoAdvanceP2ToP3: false,
@@ -594,6 +607,7 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
     maxCyclesPerDay: config.maxCyclesPerDay ?? null,
     skipDuringDark: config.skipDuringDark ?? false,
     pauseOnLowTank: config.pauseOnLowTank ?? true,
+    tankUnknownGraceMinutes: config.tankUnknownGraceMinutes ?? null,
     logToLogbook: config.logToLogbook ?? true,
     autoAdvanceP1ToP2: config.autoAdvanceP1ToP2 ?? false,
     autoAdvanceP2ToP3: config.autoAdvanceP2ToP3 ?? false,
@@ -694,6 +708,7 @@ export function isConfigDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
     d.maxCyclesPerDay !== (c.maxCyclesPerDay ?? null) ||
     d.skipDuringDark !== (c.skipDuringDark ?? false) ||
     d.pauseOnLowTank !== (c.pauseOnLowTank ?? true) ||
+    d.tankUnknownGraceMinutes !== (c.tankUnknownGraceMinutes ?? null) ||
     d.logToLogbook !== (c.logToLogbook ?? true) ||
     d.autoAdvanceP1ToP2 !== (c.autoAdvanceP1ToP2 ?? false) ||
     d.autoAdvanceP2ToP3 !== (c.autoAdvanceP2ToP3 ?? false) ||
@@ -813,6 +828,7 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
             maxCyclesPerDay: config.maxCyclesPerDay ?? null,
             skipDuringDark: config.skipDuringDark ?? false,
             pauseOnLowTank: config.pauseOnLowTank ?? true,
+            tankUnknownGraceMinutes: config.tankUnknownGraceMinutes ?? null,
             logToLogbook: config.logToLogbook ?? true,
             autoAdvanceP1ToP2: config.autoAdvanceP1ToP2 ?? false,
             autoAdvanceP2ToP3: config.autoAdvanceP2ToP3 ?? false,
