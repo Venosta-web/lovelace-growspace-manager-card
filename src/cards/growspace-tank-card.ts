@@ -16,8 +16,8 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import type { IrrigationTank } from '../services/types';
-import { deriveSafetyView, tankHoldReasons } from '../slices/safety';
-import { localize } from '../localize/localize';
+import { deriveSafetyView, formatSince, tankHoldReasons } from '../slices/safety';
+import { localize, localizeWithParams } from '../localize/localize';
 
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 import '../features/shared/ui/error-boundary';
@@ -530,17 +530,23 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
                   : nothing}
             </div>
 
-            ${holds.map(
-              (reason) => html`
+            ${holds.map((reason) => {
+              const since = formatSince(reason.since, Date.now(), language);
+              return html`
                 <p class="hold-note" role="status" data-code=${reason.code}>
                   <strong
                     >${localize('safety.tank_irrigation_held', '', '', language)} ·
                     ${reason.label}</strong
                   >
                   <span>${reason.detail}</span>
+                  ${since
+                    ? html`<span class="hold-since"
+                        >${localizeWithParams('safety.since', { time: since }, language)}</span
+                      >`
+                    : nothing}
                 </p>
-              `
-            )}
+              `;
+            })}
             ${tanks.length === 0
               ? html`
                   <div class="empty-state">

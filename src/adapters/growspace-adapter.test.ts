@@ -42,6 +42,20 @@ describe('GrowspaceAdapter irrigation strategy', () => {
     expect(device?.irrigationConfig.pumpFlowRateMlPerSec).toBe(12.5);
   });
 
+  it('deserializes the Tank Grace Period, and leaves it undefined on an older backend', () => {
+    const reported = GrowspaceAdapter.transformGrowspace(null, {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      irrigation: { irrigation_config: { tank_unknown_grace_minutes: 0 } },
+    } as unknown as GrowspaceAPIResponse);
+    const older = GrowspaceAdapter.transformGrowspace(null, {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      irrigation: { irrigation_config: {} },
+    } as unknown as GrowspaceAPIResponse);
+
+    expect(reported?.irrigationConfig.tankUnknownGraceMinutes).toBe(0);
+    expect(older?.irrigationConfig.tankUnknownGraceMinutes).toBeUndefined();
+  });
+
   it('deserializes per-phase shot, sizing-mode, and declared-mode fields', () => {
     const device = GrowspaceAdapter.transformGrowspace(
       null,
@@ -543,6 +557,7 @@ describe('GrowspaceAdapter irrigation tanks through the wire schema', () => {
     hours_remaining: 18.25,
     depletion_status: 'depleting',
     volume_liters: 200,
+    stale_after_minutes: 0,
     water_history: {
       buckets_24h: [{ ts: '2026-08-11T05:00:00+00:00', liters: 0.4125 }],
       daily_7d: [{ date: '2026-08-10', consumed: 6.125, refilled: 0 }],
@@ -583,8 +598,14 @@ describe('GrowspaceAdapter irrigation tanks through the wire schema', () => {
       hoursRemaining: 18.25,
       depletionStatus: 'depleting',
       volumeLiters: 200,
+      staleAfterMinutes: 0,
       waterHistory: REAL_TANK.water_history,
     });
+  });
+
+  it('reads a missing staleness window as null: that backend would not take one back', () => {
+    const { stale_after_minutes: _omitted, ...older } = REAL_TANK;
+    expect(hydrate([older])?.[0].staleAfterMinutes).toBeNull();
   });
 
   it('keeps a null fill_level distinct from a zero reading', () => {

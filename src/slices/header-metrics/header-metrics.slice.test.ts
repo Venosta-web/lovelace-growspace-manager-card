@@ -393,6 +393,56 @@ describe('Cycle 6 — tank level chips', () => {
     expect(chip!.status).toBe('optimal');
   });
 
+  describe('while irrigation is held on a tank', () => {
+    const HOLD = 'Irrigation held · Tank level unknown: no report (12 minutes ago)';
+    const tankChip = (tanks: IrrigationTank[], hold: string | null) =>
+      computeHeaderMetrics(
+        null,
+        [],
+        null,
+        tanks,
+        'main',
+        undefined,
+        undefined,
+        null,
+        null,
+        null,
+        undefined,
+        hold
+      ).chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+    it('turns the chip danger and leads its tooltip with the hold', () => {
+      const chip = tankChip(
+        [makeTank({ fillLevel: 80, hoursRemaining: 72, depletionStatus: 'depleting' })],
+        HOLD
+      );
+      expect(chip!.status).toBe('danger');
+      expect(chip!.value).toBe('80% 3d');
+      expect(chip!.tooltip!.split('\n')).toEqual([HOLD, 'Main Tank: 80% (72h remaining)']);
+    });
+
+    it('keeps the chip up with no readable level, where it used to vanish', () => {
+      expect(tankChip([makeTank({ fillLevel: null })], null)).toBeUndefined();
+
+      const chip = tankChip([makeTank({ fillLevel: null })], HOLD);
+      expect(chip!.value).toBe('—');
+      expect(chip!.status).toBe('danger');
+      expect(chip!.tooltip).toBe(HOLD);
+    });
+
+    it('marks a multi-tank chip danger too', () => {
+      const chip = tankChip(
+        [
+          makeTank({ sensorEntity: 'sensor.tank_1', fillLevel: 80 }),
+          makeTank({ sensorEntity: 'sensor.tank_2', fillLevel: null }),
+        ],
+        HOLD
+      );
+      expect(chip!.status).toBe('danger');
+      expect(chip!.tooltip).toBe(`${HOLD}\n2 tanks`);
+    });
+  });
+
   it('omits the tank chip when tankLevels is empty', () => {
     const { chips } = computeHeaderMetrics(null, [], null, [], 'main');
 

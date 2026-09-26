@@ -285,6 +285,31 @@ describe('Irrigation Command — strict outbound validation', () => {
     ).toThrow(IrrigationCommandError);
   });
 
+  it.each([-1, 121, 2.5])(
+    'refuses a Tank Grace Period of %s the action would reject',
+    (minutes) => {
+      expect(() =>
+        compileIrrigationCommand({
+          kind: 'settings',
+          type: 'test',
+          growspaceId: 'gs1',
+          settings: { tankUnknownGraceMinutes: minutes },
+        })
+      ).toThrow(IrrigationCommandError);
+    }
+  );
+
+  it('refuses to clear the Tank Grace Period: the action has no clear for it', () => {
+    expect(() =>
+      compileIrrigationCommand({
+        kind: 'settings',
+        type: 'test',
+        growspaceId: 'gs1',
+        settings: { tankUnknownGraceMinutes: null as unknown as number },
+      })
+    ).toThrow(IrrigationCommandError);
+  });
+
   it('refuses a NaN a number input can produce', () => {
     expect(() =>
       compileIrrigationCommand({
@@ -474,6 +499,7 @@ describe('Irrigation Command — the wire payload each named mutator sends', () 
       maxCyclesPerDay: 8,
       skipDuringDark: true,
       pauseOnLowTank: true,
+      tankUnknownGraceMinutes: 15,
       logToLogbook: true,
       autoAdvanceP1ToP2: true,
       autoAdvanceP2ToP3: true,
@@ -492,6 +518,7 @@ describe('Irrigation Command — the wire payload each named mutator sends', () 
       max_cycles_per_day: 8,
       skip_during_dark: true,
       pause_on_low_tank: true,
+      tank_unknown_grace_minutes: 15,
       log_to_logbook: true,
       auto_advance_p1_to_p2: true,
       auto_advance_p2_to_p3: true,

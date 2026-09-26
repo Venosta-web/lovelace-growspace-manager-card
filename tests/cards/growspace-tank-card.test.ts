@@ -394,6 +394,7 @@ describe('GrowspaceTankCard', () => {
       expect(note?.textContent).toContain('Irrigation held');
       expect(note?.textContent).toContain('Tank level unknown');
       expect(note?.textContent).toContain(detail);
+      expect(note?.querySelector('.hold-since')?.textContent).toMatch(/^since .+ ago$/);
       handle.unmount();
     });
 

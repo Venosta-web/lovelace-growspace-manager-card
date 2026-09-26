@@ -317,12 +317,39 @@ function _formatTimeRemaining(hours: number | null | undefined): string {
   return ` ${Math.round(hours)}h`;
 }
 
+/**
+ * The Tank chip. A `holdNote` — irrigation held on a tank, most often because
+ * its level is unknown (ADR-0050) — turns it danger and leads its tooltip, and
+ * keeps the chip up with "—" when no level is readable: that is exactly when the
+ * grower needs it, and the one moment it used to disappear.
+ */
 function _buildTankChip(
   tanks: IrrigationTank[],
   activeEnvGraphs: Set<string>,
-  linkedGraphGroups: string[][]
+  linkedGraphGroups: string[][],
+  holdNote: string | null = null
 ): HeaderChip | null {
   if (tanks.length === 0) return null;
+
+  const validLevels = tanks.filter((t) => t.fillLevel != null);
+  if (validLevels.length === 0) {
+    if (!holdNote) return null;
+    return _makeChip(
+      MetricKey.IRRIGATION_TANK_LEVEL,
+      mdiBarrel,
+      '—',
+      {
+        label: 'Tank',
+        status: 'danger',
+        tooltip: holdNote,
+        entityIds: tanks.map((t) => t.sensorEntity),
+      },
+      activeEnvGraphs,
+      linkedGraphGroups
+    );
+  }
+  const withHold = (tooltip: string | undefined): string | undefined =>
+    holdNote ? [holdNote, tooltip].filter(Boolean).join('\n') : tooltip;
 
   if (tanks.length === 1) {
     const tank = tanks[0];
@@ -338,16 +365,18 @@ function _buildTankChip(
       MetricKey.IRRIGATION_TANK_LEVEL,
       mdiBarrel,
       `${fillPct}%${timeStr}`,
-      { label: 'Tank', status, tooltip, entityIds: [tank.sensorEntity] },
+      {
+        label: 'Tank',
+        status: holdNote ? 'danger' : status,
+        tooltip: withHold(tooltip),
+        entityIds: [tank.sensorEntity],
+      },
       activeEnvGraphs,
       linkedGraphGroups
     );
   }
 
   // Multiple tanks: average fill level + individual multiValues
-  const validLevels = tanks.filter((t) => t.fillLevel != null);
-  if (validLevels.length === 0) return null;
-
   const multiValues = validLevels.map(
     (t) => `${Math.round(t.fillLevel!)}%${_formatTimeRemaining(t.hoursRemaining)}`
   );
@@ -358,7 +387,7 @@ function _buildTankChip(
     .filter(Boolean) as TankStatus[];
 
   let status: TankStatus;
-  if (statuses.includes('danger')) status = 'danger';
+  if (holdNote || statuses.includes('danger')) status = 'danger';
   else if (statuses.includes('warning')) status = 'warning';
   else if (statuses.includes('optimal')) status = 'optimal';
 
@@ -371,7 +400,7 @@ function _buildTankChip(
       status,
       multiValues,
       entityIds: tanks.map((t) => t.sensorEntity),
-      tooltip: `${tanks.length} tanks`,
+      tooltip: withHold(`${tanks.length} tanks`),
     },
     activeEnvGraphs,
     linkedGraphGroups
@@ -547,7 +576,9 @@ export function computeHeaderMetrics(
   irrigationStrategy: IrrigationStrategy | null = null,
   deviceSnapshot: DeviceSnapshot | null = null,
   litersToday: number | null = null,
-  timeZone?: string
+  timeZone?: string,
+  /** `tankHoldNote()` of the growspace's safety view; see `_buildTankChip`. */
+  tankHoldNote: string | null = null
 ): HeaderMetricsResult {
   // --- Dominant stage ---
   let dominant: DominantStageInfo | undefined;
@@ -686,7 +717,7 @@ export function computeHeaderMetrics(
   const chips: HeaderChip[] = [];
 
   // Tank levels
-  const tankChip = _buildTankChip(tankLevels, activeEnvGraphs, linkedGraphGroups);
+  const tankChip = _buildTankChip(tankLevels, activeEnvGraphs, linkedGraphGroups, tankHoldNote);
   if (tankChip) chips.push(tankChip);
 
   // Tank-Derived Water Chip (calendar-day consumption; see ADR-0020)

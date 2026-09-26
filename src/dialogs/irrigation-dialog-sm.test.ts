@@ -1167,6 +1167,32 @@ describe('isConfigDirty', () => {
     expect(isConfigDirty(sm, device)).toBe(true);
   });
 
+  describe('the Tank Grace Period', () => {
+    const withGrace = (minutes?: number) =>
+      makeDevice({
+        irrigationConfig: { irrigationTimes: [], drainTimes: [], tankUnknownGraceMinutes: minutes },
+      });
+
+    it('seeds from the backend, and is null for one that does not report it', () => {
+      expect(createInitialSM(withGrace(15)).tabs.config.draft.tankUnknownGraceMinutes).toBe(15);
+      expect(createInitialSM(withGrace()).tabs.config.draft.tankUnknownGraceMinutes).toBeNull();
+      expect(createInitialSM().tabs.config.draft.tankUnknownGraceMinutes).toBeNull();
+    });
+
+    it('is dirty once changed, and clean again when discarded', () => {
+      const device = withGrace(10);
+      let sm = createInitialSM(device);
+      expect(isConfigDirty(sm, device)).toBe(false);
+      sm = transition(sm, { type: 'SWITCH_TAB', tab: 'config' });
+      sm = transition(sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { tankUnknownGraceMinutes: 0 } });
+      expect(isConfigDirty(sm, device)).toBe(true);
+
+      sm = transition(sm, { type: 'REQUEST_TAB', tab: 'schedules' });
+      const next = discardAndSwitch(sm, device);
+      expect(next.tabs.config.draft.tankUnknownGraceMinutes).toBe(10);
+    });
+  });
+
   it('returns true when maxCyclesPerDay changes from null', () => {
     const device = makeDevice();
     let sm = createInitialSM(device);
@@ -1731,6 +1757,7 @@ describe('tanks tab', () => {
     name: 'Tank A',
     volumeLiters: 200,
     warningLevel: 30,
+    staleAfterMinutes: 120,
   };
 
   it('starts idle', () => {

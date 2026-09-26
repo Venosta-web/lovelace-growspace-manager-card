@@ -26,7 +26,12 @@ import { PlantUtils } from '../../../utils/plant-utils';
 import { ViewMode, ConfigTab } from '../../../constants';
 import { todayISO } from '../../../utils/local-date-time';
 import { localizePlural, localizeWithParams } from '../../../localize/localize';
-import { deriveSafetyView, type SafetyView } from '../../../slices/safety';
+import {
+  deriveSafetyView,
+  tankHoldNote,
+  tankLevelHolds,
+  type SafetyView,
+} from '../../../slices/safety';
 import { deriveRunView, type RunView } from '../../../slices/grow-run';
 
 import '../components/growspace-header-ui';
@@ -183,7 +188,8 @@ export class GrowspaceHeaderContainer extends LitElement {
       irrigationStrategy,
       deviceSnapshot,
       this.device.waterUsage?.litersToday ?? null,
-      this.hass.config?.time_zone
+      this.hass.config?.time_zone,
+      tankHoldNote(tankLevelHolds(this._safetyView), Date.now(), this.hass?.language ?? 'en')
     );
 
     const hidden = this.config?.hidden_chips;

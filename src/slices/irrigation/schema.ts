@@ -104,6 +104,7 @@ export const SaveIrrigationSettingsPayloadSchema = growspaceIdPayload
     max_cycles_per_day: z.number().int().nullable().optional(),
     skip_during_dark: z.boolean().optional(),
     pause_on_low_tank: z.boolean().optional(),
+    tank_unknown_grace_minutes: z.number().int().min(0).max(120).optional(),
     log_to_logbook: z.boolean().optional(),
     auto_advance_p1_to_p2: z.boolean().optional(),
     auto_advance_p2_to_p3: z.boolean().optional(),
@@ -306,6 +307,14 @@ export const IrrigationTankRowSchema = z.object({
   hours_remaining: z.number().nullable().optional(),
   depletion_status: TankDepletionStatusSchema.nullable().optional(),
   volume_liters: z.number().nullable().optional(),
+  /**
+   * How long the sensor may go without reporting before its level is stale
+   * (GSM#790, ADR-0050); `0` turns staleness off for a sensor that only reports
+   * on change. Read back so a tank save can restate it: every save sends the
+   * whole item, and a field the card cannot see resets to the backend default.
+   * Optional because older backends omit it.
+   */
+  stale_after_minutes: z.number().optional(),
   water_history: TankWaterHistorySchema.optional(),
 });
 

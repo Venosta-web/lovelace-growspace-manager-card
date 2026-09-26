@@ -72,6 +72,7 @@ describe('createTanksTabViewModel — editing sub-state', () => {
       name: 'Main',
       volumeLiters: 100,
       warningLevel: 20,
+      staleAfterMinutes: null,
     });
     const vm = createTanksTabViewModel(s, noDeps);
     expect(vm.editing).toMatchObject({
@@ -94,5 +95,46 @@ describe('createTanksTabViewModel — editing sub-state', () => {
       sensorEntity: 'sensor.new',
       name: 'T',
     });
+  });
+});
+
+describe('createTanksTabViewModel — staleness window (GSM#790)', () => {
+  const tank = { sensorEntity: 'sensor.a', name: 'Main', volumeLiters: null, warningLevel: 20 };
+
+  it('labels only a window that is not the default', () => {
+    const vm = createTanksTabViewModel(
+      withTanks([
+        { ...tank, staleAfterMinutes: 0 },
+        { ...tank, staleAfterMinutes: 45 },
+        { ...tank, staleAfterMinutes: 120 },
+        { ...tank, staleAfterMinutes: null },
+      ]),
+      noDeps
+    );
+    expect(vm.tanks.map((t) => t.staleLabel)).toEqual([
+      'Never stale',
+      'Stale after 45 min',
+      null,
+      null,
+    ]);
+  });
+
+  it('seeds the edit form with the tank window', () => {
+    const s = transition(withTanks([{ ...tank, staleAfterMinutes: 0 }]), {
+      type: 'BEGIN_EDIT_TANK',
+      index: 0,
+      ...tank,
+      staleAfterMinutes: 0,
+    });
+    expect(createTanksTabViewModel(s, noDeps).editing?.staleAfterMinutes).toBe(0);
+  });
+
+  it('offers a new tank the default window only when the backend reports windows', () => {
+    const adding = (tanks: unknown[]) =>
+      createTanksTabViewModel(transition(withTanks(tanks), { type: 'BEGIN_ADD_TANK' }), noDeps)
+        .editing?.staleAfterMinutes;
+    expect(adding([{ ...tank, staleAfterMinutes: 0 }])).toBe(120);
+    expect(adding([{ ...tank, staleAfterMinutes: null }])).toBeNull();
+    expect(adding([])).toBeNull();
   });
 });

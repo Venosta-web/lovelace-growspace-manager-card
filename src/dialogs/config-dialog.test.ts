@@ -169,12 +169,14 @@ describe('_seedFromDevice irrigation tanks mapping', () => {
       name: 'Main Tank',
       volumeLiters: 50,
       warningLevel: 20,
+      staleAfterMinutes: null,
     });
     expect(tanks[1]).toEqual({
       sensorEntity: 'sensor.tank2',
       name: 'Tank',
       volumeLiters: null,
       warningLevel: 30,
+      staleAfterMinutes: null,
     });
   });
 });

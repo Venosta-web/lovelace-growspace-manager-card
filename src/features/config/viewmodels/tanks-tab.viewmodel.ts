@@ -16,6 +16,7 @@
  */
 
 import type { ConfigDialogSM, TankDraftFields } from '../../../dialogs/config-dialog-sm';
+import { staleWindowLabel } from '../../../slices/irrigation/tank-staleness';
 
 /** One configured tank, formatted for the list row. */
 export interface TankRowVM {
@@ -25,6 +26,8 @@ export interface TankRowVM {
   sensorEntity: string;
   volumeLiters: number | null;
   warningLevel: number;
+  /** "Never stale" / "Stale after 30 min", or null at the default window. */
+  staleLabel: string | null;
 }
 
 /** The open add/edit form's current draft (the SM sub-state's fields). */
@@ -60,6 +63,7 @@ export function createTanksTabViewModel(sm: ConfigDialogSM, deps: TanksTabDeps):
           name: sub.name,
           volumeLiters: sub.volumeLiters,
           warningLevel: sub.warningLevel,
+          staleAfterMinutes: sub.staleAfterMinutes,
         }
       : null;
   return {
@@ -69,6 +73,7 @@ export function createTanksTabViewModel(sm: ConfigDialogSM, deps: TanksTabDeps):
       sensorEntity: t.sensorEntity,
       volumeLiters: t.volumeLiters ?? null,
       warningLevel: t.warningLevel ?? 30,
+      staleLabel: staleWindowLabel(t.staleAfterMinutes),
     })),
     editing,
     sensorOptions: deps.entityOptions(['sensor', 'input_number'], null),

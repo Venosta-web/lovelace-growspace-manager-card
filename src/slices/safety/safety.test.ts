@@ -15,7 +15,9 @@ import {
   resolveSafetyEntities,
   setIrrigationArmed,
   stateLabel,
+  tankHoldNote,
   tankHoldReasons,
+  tankLevelHolds,
 } from './index';
 import { IrrigationControllerSchema } from './schema';
 
@@ -305,6 +307,48 @@ describe('tankHoldReasons', () => {
   it('is empty unless the controller is held', () => {
     expect(tankHoldReasons(null)).toEqual([]);
     expect(tankHoldReasons(deriveSafetyView('flower', makeHass(controller('ready'))))).toEqual([]);
+  });
+});
+
+describe('tankLevelHolds', () => {
+  it('keeps only the holds a tank setting answers for', () => {
+    const view = deriveSafetyView(
+      'flower',
+      makeHass(
+        controller('inhibited', [
+          { code: 'tank_unknown' },
+          { code: 'sensor_stale:sensor.moisture' },
+          { code: 'tank_low' },
+        ])
+      )
+    );
+    expect(tankLevelHolds(view).map((r) => r.kind)).toEqual(['tank_unknown', 'tank_low']);
+  });
+});
+
+describe('tankHoldNote', () => {
+  const now = Date.parse('2026-09-24T12:00:00Z');
+
+  it('says why irrigation is held on a tank, and since when', () => {
+    const view = deriveSafetyView(
+      'flower',
+      makeHass(
+        controller('inhibited', [
+          {
+            code: 'tank_unknown',
+            detail: "tank 'Main' has not reported for over 120 minutes",
+            since: '2026-09-24T11:48:00Z',
+          },
+        ])
+      )
+    );
+    expect(tankHoldNote(tankHoldReasons(view), now)).toBe(
+      "Irrigation held · Tank level unknown: tank 'Main' has not reported for over 120 minutes (12 minutes ago)"
+    );
+  });
+
+  it('is null when nothing holds irrigation on a tank', () => {
+    expect(tankHoldNote([], now)).toBeNull();
   });
 });
 

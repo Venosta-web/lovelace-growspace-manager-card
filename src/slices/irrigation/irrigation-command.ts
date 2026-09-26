@@ -77,6 +77,7 @@ export interface IrrigationSettingsChange {
   maxCyclesPerDay?: number | null;
   skipDuringDark?: boolean;
   pauseOnLowTank?: boolean;
+  tankUnknownGraceMinutes?: number;
   logToLogbook?: boolean;
   autoAdvanceP1ToP2?: boolean;
   autoAdvanceP2ToP3?: boolean;
@@ -155,6 +156,11 @@ const SETTINGS_FIELDS = {
   maxCyclesPerDay: { owner: 'wire', wireKey: 'max_cycles_per_day', clear: 'send' },
   skipDuringDark: { owner: 'wire', wireKey: 'skip_during_dark', clear: 'refuse' },
   pauseOnLowTank: { owner: 'wire', wireKey: 'pause_on_low_tank', clear: 'refuse' },
+  tankUnknownGraceMinutes: {
+    owner: 'wire',
+    wireKey: 'tank_unknown_grace_minutes',
+    clear: 'refuse',
+  },
   logToLogbook: { owner: 'wire', wireKey: 'log_to_logbook', clear: 'refuse' },
   autoAdvanceP1ToP2: { owner: 'wire', wireKey: 'auto_advance_p1_to_p2', clear: 'refuse' },
   autoAdvanceP2ToP3: { owner: 'wire', wireKey: 'auto_advance_p2_to_p3', clear: 'refuse' },

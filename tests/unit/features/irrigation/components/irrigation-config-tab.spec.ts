@@ -33,6 +33,7 @@ function draft(overrides: Partial<ConfigDraft> = {}): ConfigDraft {
     maxCyclesPerDay: null,
     skipDuringDark: false,
     pauseOnLowTank: true,
+    tankUnknownGraceMinutes: null,
     logToLogbook: true,
     autoAdvanceP1ToP2: false,
     autoAdvanceP2ToP3: false,

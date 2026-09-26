@@ -363,6 +363,7 @@ describe('GrowspaceAdapter', () => {
       hoursRemaining: null,
       depletionStatus: null,
       volumeLiters: null,
+      staleAfterMinutes: null,
       waterHistory: undefined,
     });
   });

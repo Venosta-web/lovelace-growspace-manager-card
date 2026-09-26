@@ -91,6 +91,10 @@ function tankConfigs(value: unknown): unknown {
     name: tank.name,
     warning_level: tank.warningLevel,
     ...(tank.volumeLiters != null ? { volume_liters: tank.volumeLiters } : {}),
+    // Restated whenever the backend reported it, because a tank save replaces
+    // the whole item and an omitted window resets to the default. Never sent
+    // when it did not: an older backend neither reports nor accepts it.
+    ...(tank.staleAfterMinutes != null ? { stale_after_minutes: tank.staleAfterMinutes } : {}),
   }));
 }
 
