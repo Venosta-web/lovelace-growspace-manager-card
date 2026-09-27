@@ -76,6 +76,8 @@ export class PlantOverviewContainer extends LitElement {
   @state() private _isEditing = true;
   @state() private _showAllDates = false;
   @state() private _showDeleteConfirmation = false;
+  @state() private _deleteOutcomeChoice: 'no_usable_yield' | 'incomplete' | '' = '';
+  @state() private _deleteOutcomeReason = '';
   @state() private _logbookEvents: GrowspaceEvent[] = [];
 
   // ViewModel state managed via atoms
@@ -936,6 +938,7 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _renderDeleteOverlay(vm: PlantOverviewViewModel): TemplateResult {
+    const hasSourceRun = Boolean(this.plant.attributes?.harvest_source_run_id);
     return html`
       <div class="delete-overlay">
         <div class="delete-confirm-card">
@@ -944,9 +947,49 @@ export class PlantOverviewContainer extends LitElement {
             Are you sure you want to delete <strong>${vm.displayName}</strong>? This action cannot
             be undone.
           </p>
+          ${hasSourceRun
+            ? html`<p>
+                  The source Run keeps this plant's harvest snapshot. Choose how its outcome should
+                  be recorded.
+                </p>
+                <label>
+                  Outcome
+                  <select
+                    aria-label="Harvest outcome on deletion"
+                    .value=${this._deleteOutcomeChoice}
+                    @change=${(event: Event) =>
+                      (this._deleteOutcomeChoice = (event.target as HTMLSelectElement).value as
+                        | 'no_usable_yield'
+                        | 'incomplete'
+                        | '')}
+                  >
+                    <option value="">Choose an outcome</option>
+                    <option value="no_usable_yield">No Usable Yield (0 g)</option>
+                    <option value="incomplete">Incomplete (dry weight unknown)</option>
+                  </select>
+                </label>
+                ${this._deleteOutcomeChoice === 'no_usable_yield'
+                  ? html`<input
+                      aria-label="Reason for no usable yield"
+                      placeholder="Required reason"
+                      .value=${this._deleteOutcomeReason}
+                      @input=${(event: InputEvent) =>
+                        (this._deleteOutcomeReason = (event.target as HTMLInputElement).value)}
+                    />`
+                  : nothing}`
+            : nothing}
           <div class="delete-actions">
             <button class="md3-button outlined" @click=${this._cancelDelete}>Cancel</button>
-            <button class="md3-button danger" @click=${this._confirmDelete}>Delete</button>
+            <button
+              class="md3-button danger"
+              ?disabled=${hasSourceRun &&
+              (!this._deleteOutcomeChoice ||
+                (this._deleteOutcomeChoice === 'no_usable_yield' &&
+                  !this._deleteOutcomeReason.trim()))}
+              @click=${this._confirmDelete}
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>
@@ -1021,7 +1064,12 @@ export class PlantOverviewContainer extends LitElement {
     const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
     // Optimistic delete + undo are owned by the slice mutator; close the dialog
     // immediately and surface any backend failure via showError.
-    void deletePlant(plantId).catch((e) => showError(e, 'Failed to delete plant'));
+    const outcome =
+      this.plant.attributes?.harvest_source_run_id && this._deleteOutcomeChoice
+        ? { choice: this._deleteOutcomeChoice, reason: this._deleteOutcomeReason }
+        : undefined;
+    const deletion = outcome ? deletePlant(plantId, outcome) : deletePlant(plantId);
+    void deletion.catch((e) => showError(e, 'Failed to delete plant'));
     this._handleClose();
   }
 

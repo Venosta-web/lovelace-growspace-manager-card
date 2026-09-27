@@ -46,7 +46,27 @@ import {
   setDevices,
 } from '../grid';
 import { fetchNutrientInventory } from '../nutrient';
-import { UpdatePlantPayloadSchema, type UpdatePlantUpdates } from './schema';
+import {
+  RemovePlantPayloadSchema,
+  UpdatePlantPayloadSchema,
+  type UpdatePlantUpdates,
+} from './schema';
+
+/** Record an explicit harvest outcome while the source Run is still editable. */
+export async function setHarvestOutcome(
+  plantId: string,
+  state: 'no_usable_yield' | 'incomplete',
+  reason?: string
+): Promise<void> {
+  if (state === 'no_usable_yield' && !reason?.trim()) {
+    throw new Error('No Usable Yield requires a reason');
+  }
+  await wsVoid('growspace_manager/set_harvest_outcome', {
+    plant_id: plantId,
+    state,
+    ...(reason && { reason: reason.trim() }),
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Atoms (public read)
@@ -352,7 +372,17 @@ export async function updatePlant(plantId: string, updates: UpdatePlantUpdates):
  * Apply: calls growspace_manager.remove_plant.
  * Inverse: restores the plant to plants$ and removes from optimistic deletes.
  */
-export async function deletePlant(plantId: string): Promise<void> {
+export async function deletePlant(
+  plantId: string,
+  outcome?: { choice: 'no_usable_yield' | 'incomplete'; reason?: string }
+): Promise<void> {
+  const payload = RemovePlantPayloadSchema.parse({
+    plant_id: plantId,
+    ...(outcome && {
+      harvest_outcome_choice: outcome.choice,
+      harvest_outcome_reason: outcome.reason,
+    }),
+  });
   const originalList = plants$.get();
   const growspaceId = _growspaceIdFor(plantId);
   const deleted = originalList.find(
@@ -382,7 +412,7 @@ export async function deletePlant(plantId: string): Promise<void> {
           console.error('[Undo delete failed]', e)
         );
       },
-      apply: () => wsVoid('growspace_manager/remove_plant', { plant_id: plantId }),
+      apply: () => wsVoid('growspace_manager/remove_plant', payload),
     },
     growspaceId
   );

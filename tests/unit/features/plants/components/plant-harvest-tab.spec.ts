@@ -4,12 +4,13 @@ import { ContextProvider } from '@lit/context';
 import { storeContext } from '../../../../../src/context';
 import { PlantHarvestTab } from '../../../../../src/features/plants/components/plant-harvest-tab';
 import type { PlantEntity } from '../../../../../src/types';
-import { saveHarvestMetrics, scorePlant } from '../../../../../src/slices/plant';
+import { saveHarvestMetrics, scorePlant, setHarvestOutcome } from '../../../../../src/slices/plant';
 
 // The tab now calls the Plant slice mutators directly (the dispatcher's `plant`
 // domain is retired).
 vi.mock('../../../../../src/slices/plant', () => ({
   saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
+  setHarvestOutcome: vi.fn().mockResolvedValue(undefined),
   scorePlant: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -25,6 +26,7 @@ describe('PlantHarvestTab', () => {
   beforeEach(async () => {
     vi.mocked(saveHarvestMetrics).mockClear().mockResolvedValue(undefined);
     vi.mocked(scorePlant).mockClear().mockResolvedValue(undefined);
+    vi.mocked(setHarvestOutcome).mockClear().mockResolvedValue(undefined);
     mockStore = {
       refreshData: vi.fn().mockResolvedValue(undefined),
     };
@@ -83,6 +85,35 @@ describe('PlantHarvestTab', () => {
       .querySelector('span[style*="text-align:right;"]')
       ?.textContent?.trim();
     expect(vigorScore).toBe('4 / 5');
+  });
+
+  it('shows attribution and records No Usable Yield with a reason', async () => {
+    element.plant = {
+      ...mockPlant,
+      attributes: {
+        ...mockPlant.attributes,
+        harvest_source_growspace_id: 'flower',
+        harvest_source_run_id: 'run-1',
+        harvest_outcome_state: 'pending',
+      },
+    };
+    await element.updateComplete;
+    expect(
+      element.shadowRoot?.querySelector('[data-testid="harvest-attribution"]')?.textContent
+    ).toContain('Dry weight unknown');
+    const reason = element.shadowRoot?.querySelector(
+      'input[aria-label="No Usable Yield reason"]'
+    ) as HTMLInputElement;
+    const button = [...element.shadowRoot!.querySelectorAll('button')].find((candidate) =>
+      candidate.textContent?.includes('No Usable Yield')
+    ) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    reason.value = 'mold';
+    reason.dispatchEvent(new InputEvent('input'));
+    await element.updateComplete;
+    button.click();
+    await element.updateComplete;
+    expect(setHarvestOutcome).toHaveBeenCalledWith('p123', 'no_usable_yield', 'mold');
   });
 
   it('updates harvest metrics on input', async () => {
