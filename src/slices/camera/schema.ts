@@ -202,6 +202,9 @@ export const VisionCaptureResultSchema = z
     capture_id: z.string(),
     camera_id: z.string(),
     captured_at: z.string(),
+    // The Framing Epoch the capture was compared within. Optional: backends
+    // before GSM 24cf0e6 ("restart one camera visual baseline") do not send it.
+    framing_epoch_id: z.string().optional(),
     analysis_state: z.enum(['pending', 'analyzed', 'rejected', 'failed']),
     image: z
       .object({
@@ -248,11 +251,47 @@ const VisionHistoryItemSchema = z.discriminatedUnion('result_schema', [
 
 export type VisionHistoryItem = z.infer<typeof VisionHistoryItemSchema>;
 
+const VisionFramingEpochSchema = z
+  .object({
+    epoch_id: z.string(),
+    started_at: z.string(),
+    reason: z.enum(['initial', 'manual_restart', 'grow_run_boundary', 'model_version_change']),
+  })
+  .strict();
+
+// `collecting` is the backend's answer for a window with no Baseline Bucket yet
+// in the current epoch; the other three are the bucket's own state.
+const VisionBaselineWindowSchema = z
+  .object({
+    state: z.enum(['collecting', 'monitoring', 'ready', 'stale']),
+    samples_collected: z.number().int(),
+    samples_required: z.number().int(),
+  })
+  .strict();
+
+const VisionCameraBaselineSchema = z
+  .object({
+    camera_id: z.string(),
+    grow_run_id: z.string().nullable(),
+    epoch: VisionFramingEpochSchema.nullable(),
+    windows: z
+      .object({
+        early: VisionBaselineWindowSchema,
+        mid: VisionBaselineWindowSchema,
+        late: VisionBaselineWindowSchema,
+      })
+      .strict(),
+  })
+  .strict();
+
 export const GetVisionHistoryV2ResponseSchema = z
   .object({
     history: z.array(VisionHistoryItemSchema),
     total: z.number().int(),
     capture_total: z.number().int(),
+    // Each configured camera's current epoch and per-window baseline readiness.
+    // Optional: backends before GSM 24cf0e6 do not send it.
+    camera_baselines: z.array(VisionCameraBaselineSchema).optional(),
   })
   .strict();
 
