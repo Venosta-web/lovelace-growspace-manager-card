@@ -15,6 +15,7 @@ import type {
   SerializedIrrigationStrategy,
   SerializedShotComposition,
   SerializedSubstrateMetrics,
+  SetupModules,
 } from '../slices/growspace/schema';
 import type {
   CropSteeringRecipeValues,
@@ -528,6 +529,10 @@ export interface GrowspaceDevice {
   capabilities?: { atomicPlantLayout: boolean };
   lastUpdated?: string;
   notificationTarget?: string | null;
+  /** The Setup Preset last stamped (GSM ADR-0064); null when never stamped. */
+  setupPreset?: string | null;
+  /** The offered Setup Modules; null when never stamped, which offers them all. */
+  setupModules?: SetupModules | null;
 
   // Structured Groups
   biologicalMetrics: BiologicalMetrics;
