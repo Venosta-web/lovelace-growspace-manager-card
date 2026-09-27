@@ -33,6 +33,7 @@ function view(state: RunView['state'], extra: Partial<RunView> = {}): RunView {
   const base: RunView = {
     growspaceId: 'flower',
     entityId: 'sensor.flower_active_run',
+    runId: null,
     state,
     sequenceNumber: null,
     label: null,
@@ -46,6 +47,7 @@ function view(state: RunView['state'], extra: Partial<RunView> = {}): RunView {
 }
 
 const ACTIVE = view('active', {
+  runId: 'run-4',
   sequenceNumber: 4,
   label: 'Autumn',
   durationDays: 61,
@@ -90,6 +92,21 @@ describe('growspace-run-chip', () => {
   });
 
   it('shows the Active Run compactly and opens its details', async () => {
+    hassCallMock.mockResolvedValue({
+      outcome: 'found',
+      run: {
+        ...SUMMARY,
+        participations: [
+          { plant_id: 'plant-1', opened_at: '2026-09-26T08:00:00+00:00', closed_at: null },
+        ],
+        movement_history: [
+          {
+            fact_id: 'fact-1', plant_id: 'plant-1', at: '2026-09-27T08:00:00+00:00',
+            kind: 'entry', source_growspace_id: null, target_growspace_id: 'flower',
+          },
+        ],
+      },
+    });
     const chip = await renderChip(ACTIVE);
     const button = $(chip, '.chip')!;
     expect(button.dataset.state).toBe('active');
@@ -98,10 +115,16 @@ describe('growspace-run-chip', () => {
       'Active grow run: Run #4 · Autumn · 61 days · 17 plants. Open details.'
     );
 
-    const opened = vi.fn();
-    chip.addEventListener('hass-more-info', (event) => opened((event as CustomEvent).detail));
     button.click();
-    expect(opened).toHaveBeenCalledWith({ entityId: 'sensor.flower_active_run' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await chip.updateComplete;
+    expect(hassCallMock).toHaveBeenCalledWith(
+      'growspace_manager/get_grow_run',
+      { growspace_id: 'flower', run_id: 'run-4' },
+      expect.anything()
+    );
+    expect($(chip, '[data-testid="run-participations"]')?.textContent).toContain('plant-1');
+    expect($(chip, '[data-testid="run-movements"]')?.textContent).toContain('entered');
   });
 
   it('says an unreadable history is unavailable, never that there is no run', async () => {

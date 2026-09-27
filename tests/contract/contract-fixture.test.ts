@@ -28,7 +28,11 @@ import {
   UpdatePlantRequestContractSchema,
 } from '../../src/slices/plant/schema';
 import { IrrigationControllerSchema } from '../../src/slices/safety/schema';
-import { ActiveRunSensorSchema, StartGrowRunResultSchema } from '../../src/slices/grow-run/schema';
+import {
+  ActiveRunSensorSchema,
+  GetGrowRunResultSchema,
+  StartGrowRunResultSchema,
+} from '../../src/slices/grow-run/schema';
 
 interface FixtureContract {
   name: string;
@@ -153,6 +157,13 @@ const CONTRACTS: FixtureContract[] = [
     schema: StartGrowRunResultSchema,
     leadingVariable: 'GSM_PRERELEASE_GROW_RUN_REFUSED_FIXTURE',
     releaseVariable: 'GSM_RELEASE_GROW_RUN_REFUSED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run details',
+    schema: GetGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_DETAILS_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_DETAILS_FIXTURE',
     releaseRequired: false,
   },
   // Growspace Manager TC is a separate repository that owns its own WebSocket

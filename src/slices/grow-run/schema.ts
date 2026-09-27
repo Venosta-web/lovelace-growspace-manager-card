@@ -66,3 +66,33 @@ export const StartGrowRunPayloadSchema = z.strictObject({
   label: z.string().max(80).optional(),
   goals: z.string().max(2000).optional(),
 });
+
+const ParticipationSchema = z.object({
+  plant_id: z.string(),
+  opened_at: z.string(),
+  closed_at: z.string().nullable(),
+});
+
+const MovementFactSchema = z.object({
+  fact_id: z.string(),
+  plant_id: z.string(),
+  at: z.string(),
+  kind: z.string(),
+  source_growspace_id: z.string().nullable(),
+  target_growspace_id: z.string().nullable(),
+  source_run_id: z.string().nullable(),
+  target_run_id: z.string().nullable(),
+  projected: z.boolean(),
+});
+
+export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
+  z.object({ outcome: z.literal('not_found') }),
+  z.object({
+    outcome: z.literal('found'),
+    run: RunSummarySchema.extend({
+      participations: z.array(ParticipationSchema),
+      movement_history: z.array(MovementFactSchema),
+    }),
+  }),
+]);
+export type GetGrowRunResult = z.infer<typeof GetGrowRunResultSchema>;

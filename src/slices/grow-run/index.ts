@@ -17,13 +17,16 @@ import { hassCall } from '../../services/hass-call';
 import { localize, localizePlural, localizeWithParams } from '../../localize/localize';
 import {
   ActiveRunSensorSchema,
+  GetGrowRunResultSchema,
   StartGrowRunPayloadSchema,
   StartGrowRunResultSchema,
   type RunRefusal,
+  type GetGrowRunResult,
   type StartGrowRunResult,
 } from './schema';
 
 export type { RunRefusal, StartGrowRunResult } from './schema';
+export type { GetGrowRunResult } from './schema';
 
 const DOMAIN = 'growspace_manager';
 const TRANSLATION_KEY = 'active_run';
@@ -88,6 +91,7 @@ type RunViewState = 'none' | 'active' | 'unavailable';
 export interface RunView {
   growspaceId: string;
   entityId: string;
+  runId: string | null;
   state: RunViewState;
   sequenceNumber: number | null;
   label: string | null;
@@ -116,6 +120,7 @@ export function deriveRunView(
   if (!parsed.success) {
     return {
       ...base,
+      runId: null,
       state: 'unavailable',
       sequenceNumber: null,
       label: null,
@@ -130,6 +135,7 @@ export function deriveRunView(
   if (state === 'none') {
     return {
       ...base,
+      runId: null,
       state: 'none',
       sequenceNumber: null,
       label: null,
@@ -143,6 +149,7 @@ export function deriveRunView(
   const sequenceNumber = Number(state);
   const view: RunView = {
     ...base,
+    runId: attributes.run_id,
     state: 'active',
     sequenceNumber,
     label: attributes.label,
@@ -189,6 +196,15 @@ export function startGrowRun(
     ...(goals ? { goals } : {}),
   });
   return hassCall('growspace_manager/start_grow_run', payload, StartGrowRunResultSchema);
+}
+
+/** Read the selected Run's durable movement and participation projection. */
+export function getGrowRun(growspaceId: string, runId: string): Promise<GetGrowRunResult> {
+  return hassCall(
+    'growspace_manager/get_grow_run',
+    { growspace_id: growspaceId, run_id: runId },
+    GetGrowRunResultSchema
+  );
 }
 
 const KNOWN_REFUSALS = new Set([

@@ -3,15 +3,21 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { mdiHelpCircleOutline, mdiPlus, mdiSprout } from '@mdi/js';
 
 import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
-import { refusalText, startGrowRun, type RunView } from '../../../slices/grow-run';
+import {
+  getGrowRun,
+  refusalText,
+  startGrowRun,
+  type GetGrowRunResult,
+  type RunView,
+} from '../../../slices/grow-run';
 
 /**
  * The Active Run chip (GSM#668, GSM#797 "UI placement").
  *
  * The main card carries no more of Grow Runs than this: the Active Run as one
  * compact chip beside the growspace name — `Run #4 · 61 days · 17 plants` —
- * or, without one, a `Start run` chip. The Active Run opens its sensor's
- * details; the Grow Run View it will open instead is GSM#675.
+ * or, without one, a `Start run` chip. Selecting an Active Run shows its
+ * Participants and movement history.
  *
  * Starting is one small dialog: an optional name and goals, and the number of
  * Plants that will take part. Nothing is optimistic. The chip changes when the
@@ -28,6 +34,9 @@ export class GrowspaceRunChip extends LitElement {
   @state() private _open = false;
   @state() private _busy = false;
   @state() private _refusal: string | null = null;
+  @state() private _detailsOpen = false;
+  @state() private _details: GetGrowRunResult | null = null;
+  @state() private _detailError: string | null = null;
 
   @query('#run-label') private _labelInput?: HTMLInputElement;
   @query('#run-goals') private _goalsInput?: HTMLTextAreaElement;
@@ -163,8 +172,24 @@ export class GrowspaceRunChip extends LitElement {
       : localize(`grow_run.${key}`, '', '', this.language);
   }
 
-  private _openDetails(): void {
+  private _movementKind(kind: string): string {
+    const known = ['entry', 'removal', 'move', 're_entry', 'harvest', 'transplant'];
+    return known.includes(kind) ? this._t(`movement_${kind}`) : kind.replaceAll('_', ' ');
+  }
+
+  private async _openDetails(): Promise<void> {
     if (!this.view) return;
+    if (this.view.state === 'active' && this.view.runId) {
+      this._detailsOpen = true;
+      this._details = null;
+      this._detailError = null;
+      try {
+        this._details = await getGrowRun(this.view.growspaceId, this.view.runId);
+      } catch (error) {
+        this._detailError = String(error);
+      }
+      return;
+    }
     this.dispatchEvent(
       new CustomEvent('hass-more-info', {
         detail: { entityId: this.view.entityId },
@@ -172,6 +197,59 @@ export class GrowspaceRunChip extends LitElement {
         composed: true,
       })
     );
+  }
+
+  private _renderDetails() {
+    const run = this._details?.outcome === 'found' ? this._details.run : null;
+    return html`
+      <ha-dialog
+        open
+        width="medium"
+        .headerTitle=${this._t('details_title', { number: this.view?.sequenceNumber ?? '' })}
+        @closed=${() => (this._detailsOpen = false)}
+      >
+        ${this._detailError
+          ? html`<p class="refusal" role="alert">${this._detailError}</p>`
+          : this._details?.outcome === 'not_found'
+            ? html`<p>${this._t('details_missing')}</p>`
+            : !run
+              ? html`<p>${this._t('details_loading')}</p>`
+              : html`
+                  <h3>${this._t('participants_heading')}</h3>
+                  ${run.participations.length
+                    ? html`<ul data-testid="run-participations">
+                        ${run.participations.map(
+                          (row) =>
+                            html`<li>
+                              ${row.plant_id} · ${new Date(row.opened_at).toLocaleString()}
+                              ${row.closed_at
+                                ? html`– ${new Date(row.closed_at).toLocaleString()}`
+                                : html`– ${this._t('present')}`}
+                            </li>`
+                        )}
+                      </ul>`
+                    : html`<p>${this._t('none_yet')}</p>`}
+                  <h3>${this._t('movement_heading')}</h3>
+                  ${run.movement_history.length
+                    ? html`<ul data-testid="run-movements">
+                        ${run.movement_history.map(
+                          (row) =>
+                            html`<li>
+                              ${new Date(row.at).toLocaleString()} · ${row.plant_id} ·
+                              ${this._movementKind(row.kind)} (${row.source_growspace_id ?? '—'} →
+                              ${row.target_growspace_id ?? '—'})
+                            </li>`
+                        )}
+                      </ul>`
+                    : html`<p>${this._t('none_yet')}</p>`}
+                `}
+        <div class="row">
+          <button type="button" @click=${() => (this._detailsOpen = false)}>
+            ${this._t('close')}
+          </button>
+        </div>
+      </ha-dialog>
+    `;
   }
 
   private _close(): void {
@@ -273,6 +351,7 @@ export class GrowspaceRunChip extends LitElement {
         data-state=${view.state}
         aria-label=${label}
         title=${active ? view.summary : this._t('unavailable_label')}
+        aria-haspopup=${active ? 'dialog' : 'false'}
         @click=${this._openDetails}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -280,6 +359,7 @@ export class GrowspaceRunChip extends LitElement {
         </svg>
         <span>${view.summary}</span>
       </button>
+      ${this._detailsOpen ? this._renderDetails() : nothing}
     `;
   }
 }

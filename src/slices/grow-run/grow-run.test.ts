@@ -2,8 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HomeAssistant } from 'custom-card-helpers';
 
 import { hassCall } from '../../services/hass-call';
-import { deriveRunView, refusalText, resolveActiveRunSensor, startGrowRun } from './index';
-import { ActiveRunSensorSchema, StartGrowRunResultSchema } from './schema';
+import {
+  deriveRunView,
+  getGrowRun,
+  refusalText,
+  resolveActiveRunSensor,
+  startGrowRun,
+} from './index';
+import { ActiveRunSensorSchema, GetGrowRunResultSchema, StartGrowRunResultSchema } from './schema';
 
 vi.mock('../../services/hass-call', () => ({
   hassCall: vi.fn(),
@@ -196,6 +202,41 @@ describe('startGrowRun', () => {
   it('refuses a name longer than the backend accepts before sending it', () => {
     expect(() => startGrowRun('flower', 0, { label: 'x'.repeat(81) })).toThrow();
     expect(hassCall).not.toHaveBeenCalled();
+  });
+});
+
+describe('getGrowRun', () => {
+  it('reads a selected Run and parses Participants and movements', async () => {
+    const response = {
+      outcome: 'found' as const,
+      run: {
+        ...STARTED_FIXTURE.active_run,
+        participations: [
+          { plant_id: 'p1', opened_at: '2026-07-24T20:30:00+00:00', closed_at: null },
+        ],
+        movement_history: [
+          {
+            fact_id: 'fact-1',
+            plant_id: 'p1',
+            at: '2026-07-25T20:30:00+00:00',
+            kind: 'entry',
+            source_growspace_id: null,
+            target_growspace_id: 'flower',
+            source_run_id: null,
+            target_run_id: 'run-1',
+            projected: true,
+          },
+        ],
+      },
+    };
+    expect(GetGrowRunResultSchema.parse(response)).toEqual(response);
+    vi.mocked(hassCall).mockResolvedValue(response);
+    await expect(getGrowRun('flower', 'run-1')).resolves.toEqual(response);
+    expect(hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_grow_run',
+      { growspace_id: 'flower', run_id: 'run-1' },
+      GetGrowRunResultSchema
+    );
   });
 });
 
