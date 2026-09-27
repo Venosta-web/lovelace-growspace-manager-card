@@ -3,12 +3,13 @@ import { atom } from 'nanostores';
 import { hassCall, callService } from '../../services/hass-call';
 import { mutate } from '../../services/mutate';
 import { GrowspaceAdapter } from '../../adapters/growspace-adapter';
-import { devices$, patchDeviceEnvironmentAttributes } from '../grid';
+import { devices$, patchDeviceEnvironmentAttributes, patchDeviceSetup } from '../grid';
 import {
   GrowspaceAPICollectionSchema,
   GrowReportSchema,
   type GrowReport,
   type CirculationFanConfig,
+  type SetupModules,
 } from './schema';
 import type { GrowspaceDevice, GrowspaceAPIResponse } from '../../services/types';
 
@@ -84,6 +85,73 @@ export async function updateGrowspace(data: {
     },
     data.growspaceId
   );
+}
+
+export type SetupModule = keyof SetupModules;
+
+/**
+ * Offer or stop offering one Setup Module on a growspace's setup checklist.
+ *
+ * A partial `setup_modules` edit, merged over the stamp by the backend (GSM
+ * ADR-0064), so it never disturbs the other modules or the preset label. Undo
+ * re-issues the previous value, because the edit has committed by then.
+ */
+export async function setSetupModule(
+  growspaceId: string,
+  module: SetupModule,
+  offered: boolean
+): Promise<void> {
+  const device = devices$.get().find((d) => d.deviceId === growspaceId);
+  const previousModules = device?.setupModules ?? null;
+  const wasOffered = previousModules?.[module] ?? true;
+  const send = (value: boolean) =>
+    callService('growspace_manager', 'update_growspace', {
+      growspace_id: growspaceId,
+      setup_modules: { [module]: value },
+    });
+  await mutate(
+    {
+      type: 'setSetupModule',
+      label: offered ? 'Setup step offered' : 'Setup step skipped',
+      optimistic: () =>
+        patchDeviceSetup(growspaceId, {
+          setupModules: { ...(previousModules ?? {}), [module]: offered },
+        }),
+      inverse: () => patchDeviceSetup(growspaceId, { setupModules: previousModules }),
+      undoInverse: () => {
+        patchDeviceSetup(growspaceId, { setupModules: previousModules });
+        void send(wasOffered).catch((err: unknown) =>
+          console.error('[setSetupModule undo failed]', err)
+        );
+      },
+      apply: () => send(offered),
+    },
+    growspaceId
+  );
+}
+
+/**
+ * Stamp a Setup Preset on a growspace: the backend rewrites its offered Setup
+ * Modules from its own table (GSM ADR-0064) and the card learns the result on
+ * the next device sync, so only the label moves optimistically.
+ *
+ * Not a `mutate`: a stamp cannot be undone by re-issuing anything — the label
+ * has no "unset" and re-stamping the previous preset would discard whatever
+ * hand edits the grower had made before. Choosing the previous preset again is
+ * the grower's undo, which is exactly what the stamp semantics promise.
+ */
+export async function stampSetupPreset(growspaceId: string, preset: string): Promise<void> {
+  const previous = devices$.get().find((d) => d.deviceId === growspaceId)?.setupPreset ?? null;
+  patchDeviceSetup(growspaceId, { setupPreset: preset });
+  try {
+    await callService('growspace_manager', 'update_growspace', {
+      growspace_id: growspaceId,
+      setup_preset: preset,
+    });
+  } catch (err) {
+    patchDeviceSetup(growspaceId, { setupPreset: previous });
+    throw err;
+  }
 }
 
 export async function exportGrowReport(

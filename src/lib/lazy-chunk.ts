@@ -155,6 +155,13 @@ export const LAZY_CHUNKS = {
     feature: 'The tissue culture dialog',
     onDemandOnly: true,
   },
+  // The Setup Checklist only ever renders for a growspace still being set up,
+  // so every established dashboard would otherwise carry it in the entry.
+  setupChecklist: {
+    name: 'growspace-setup-checklist.container',
+    feature: 'The setup checklist',
+    onDemandOnly: true,
+  },
   heatmap3d: {
     name: 'heatmap-3d',
     feature: 'The 3D heatmap',

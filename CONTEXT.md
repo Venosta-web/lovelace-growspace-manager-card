@@ -258,6 +258,16 @@ Cycles automatically through multiple selected growspaces.
 
 ## UI Structure
 
+**Setup Checklist** (`growspace-setup-checklist`, #973)
+What the main card shows in place of an empty grid until a growspace has its core configuration: one step per offered [[Setup Module]] plus "Add or import plants", ending in "Dashboard ready", with AI, Vision, label printing and TC listed separately as extras. Each step opens the dialog that already configures it; the checklist edits nothing itself except which modules are offered and which [[Setup Preset]] is stamped. Lights, air and plants are core; climate, irrigation and substrate are optional and never block "Dashboard ready". A growspace with a stamped preset keeps it until the offered core steps are done. One that was never stamped — made before presets, or a canonical room — shows it only while fresh (no plants, nothing mapped), so an established tent never grows one. It replaces the grid while there are no plants and sits above it once there are, and steps aside for a task or a transplant, which need the grid. Derived purely by `deriveSetupChecklist` (`features/setup/setup-checklist.ts`).
+_Avoid_: onboarding wizard, empty state
+
+**Setup Preset**
+The kind of room a growspace is (`simple_soil_tent` … `curing_room`), declared by the backend and stamped there (GSM ADR-0064): choosing one rewrites the growspace's [[Setup Module]]s once and then survives as a label. The card names presets and asks before a re-stamp, because re-stamping discards the grower's own "Not using this" choices; it holds no copy of the table. Never writes a cultivation target.
+
+**Setup Module**
+One subsystem the [[Setup Checklist]] can offer — `lights`, `air`, `climate`, `irrigation`, `substrate`. Carried on `GrowspaceDevice.setupModules`; `null` (never stamped) offers them all. "Not using this" and "Offer again" edit one module through `update_growspace`'s partial `setup_modules`.
+
 **Hero Card**
 The large metric display at the top of the main card and subarea card. Shows an aggregated sensor value (e.g. temperature, VPD). Clicking a hero card opens the Env Graph for that metric. Implemented in `growspace-header-hero-ui.ts`. Each hero item is itself a [[Chip]] (carries a `MetricKey`), so it can be hidden via `hidden_chips` the same way a regular chip can — there is no separate hero-specific visibility setting. When every hero metric is hidden, the hero deck collapses entirely rather than rendering empty. The VPD hero icon colour is stage-and-cycle-aware: the Environment slice resolves [[EnvSnapshot]]'s `vpdStatus` from the overview entity's backend-computed `vpd_status` (falling back to the current-period `vpd_target_*` / `vpd_danger_*` thresholds); the backend pre-computes those per grow stage (veg, flower, etc.) and day/night cycle, so the frontend gets both dimensions for free.
 

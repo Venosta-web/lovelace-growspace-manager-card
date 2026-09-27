@@ -26,6 +26,7 @@ import {
   CirculationFanConfigSchema,
   GrowLightConfigSchema,
   ExhaustFanConfigSchema,
+  SetupModulesSchema,
 } from './schema';
 
 describe('CirculationFanConfigSchema', () => {
@@ -1202,5 +1203,67 @@ describe('climate_fail_safe_config (Climate Fail-Safe, GSM#792)', () => {
     });
     expect(parsed.environment.climate_fail_safe_config).toBeUndefined();
     expect(parsed.subareas?.[0]?.environment_config.climate_fail_safe_config).toBeUndefined();
+  });
+});
+
+describe('identity setup fields (GSM ADR-0064)', () => {
+  const base = { grid: { rows: 2, plants_per_row: 2 } };
+
+  it('keeps the stamped preset and modules', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      ...base,
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        type: 'normal',
+        setup_preset: 'drying_room',
+        setup_modules: {
+          lights: false,
+          air: true,
+          climate: true,
+          irrigation: false,
+          substrate: false,
+        },
+      },
+    });
+    expect(parsed.identity.setup_preset).toBe('drying_room');
+    expect(parsed.identity.setup_modules).toEqual({
+      lights: false,
+      air: true,
+      climate: true,
+      irrigation: false,
+      substrate: false,
+    });
+  });
+
+  it('accepts a backend that sends neither, and one that sends null', () => {
+    const absent = GrowspaceAPIResponseSchema.parse({
+      ...base,
+      identity: { growspace_id: 'gs1', name: 'Tent', type: 'normal' },
+    });
+    expect(absent.identity.setup_preset).toBeUndefined();
+    const unset = GrowspaceAPIResponseSchema.parse({
+      ...base,
+      identity: {
+        growspace_id: 'gs1',
+        name: 'Tent',
+        type: 'normal',
+        setup_preset: null,
+        setup_modules: null,
+      },
+    });
+    expect(unset.identity.setup_modules).toBeNull();
+  });
+
+  it('does not fail the whole parse on a preset this card has never heard of', () => {
+    const parsed = GrowspaceAPIResponseSchema.parse({
+      ...base,
+      identity: { growspace_id: 'gs1', name: 'Tent', type: 'normal', setup_preset: 'greenhouse' },
+    });
+    expect(parsed.identity.setup_preset).toBe('greenhouse');
+  });
+
+  it('refuses a module flag that is not a boolean', () => {
+    expect(() => SetupModulesSchema.parse({ lights: 'yes' })).toThrow(ZodError);
   });
 });

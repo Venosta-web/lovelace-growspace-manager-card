@@ -152,6 +152,8 @@ test('the registry declares every on-demand-only chunk it should', async () => {
     'harvest-scoring-dialog',
     'snapshots-dialog',
     'tc-dialog',
+    // Only a growspace still being set up renders it (#973).
+    'growspace-setup-checklist.container',
     'label-templates',
     'tc',
   ]);

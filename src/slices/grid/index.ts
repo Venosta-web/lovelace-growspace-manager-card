@@ -301,6 +301,20 @@ export function patchDeviceEnvironmentAttributes(
 }
 
 /**
+ * Patch the Setup Preset label and offered Setup Modules a device carries, so
+ * the setup checklist answers a skip or a stamp before the next device sync.
+ */
+export function patchDeviceSetup(
+  growspaceId: string,
+  patch: Partial<Pick<GrowspaceDevice, 'setupPreset' | 'setupModules'>>
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(current.map((d, i) => (i === idx ? { ...d, ...patch } : d)));
+}
+
+/**
  * Create a per-card GridSliceRef with an isolated $selectedDevice atom.
  *
  * Shared module atoms (devices$, optimisticDeletedPlantIds$) are the data

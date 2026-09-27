@@ -15,6 +15,7 @@ vi.mock('../../../../src/features/plants/components/transplant-source-panel', ()
 vi.mock('../../../../src/features/plants/containers/growspace-grid.container', () => ({}));
 vi.mock('../../../../src/features/environment/components/heatmap-3d', () => ({}));
 vi.mock('../../../../src/features/shared/ui/error-boundary', () => ({}));
+vi.mock('../../../../src/features/setup/growspace-setup-checklist.container', () => ({}));
 
 @customElement('growspace-header')
 class MockHeader extends LitElement {
@@ -48,6 +49,12 @@ class MockGridContainer extends LitElement {
     return { plants: { type: Array }, rows: { type: Number }, cols: { type: Number } };
   }
   focusPlant(_index: number) {}
+}
+@customElement('growspace-setup-checklist-container')
+class MockSetupChecklist extends LitElement {
+  static get properties() {
+    return { device: { type: Object } };
+  }
 }
 @customElement('heatmap-3d')
 class MockHeatmap extends LitElement {
@@ -83,11 +90,19 @@ describe('GrowspaceView', () => {
     };
   }
 
-  async function createElement(): Promise<GrowspaceView> {
+  // An established growspace: something is mapped, so no Setup Checklist.
+  const ESTABLISHED = {
+    deviceId: 'gs1',
+    name: 'GS1',
+    plants: [],
+    environmentAttributes: { exhaustFanEntities: ['fan.exhaust'] },
+  };
+
+  async function createElement(device: object = ESTABLISHED): Promise<GrowspaceView> {
     const el = new GrowspaceView();
     Object.defineProperty(el, 'store', { value: mockStore, writable: true });
     document.body.appendChild(el);
-    el.device = { deviceId: 'gs1', name: 'GS1', plants: [] } as never;
+    el.device = device as never;
     el.grid = [];
     el.rows = 4;
     el.cols = 4;
@@ -105,6 +120,70 @@ describe('GrowspaceView', () => {
   afterEach(() => {
     if (element?.isConnected) document.body.removeChild(element);
     vi.restoreAllMocks();
+  });
+
+  // ── Setup Checklist placement (#973) ──────────────────────────────────────
+
+  describe('setup checklist', () => {
+    const plant = { entity_id: 'sensor.p1', attributes: { stage: 'veg' } };
+    const stamped = {
+      deviceId: 'gs1',
+      name: 'Dry Room',
+      setupPreset: 'drying_room',
+      setupModules: {
+        lights: false,
+        air: true,
+        climate: true,
+        irrigation: false,
+        substrate: false,
+      },
+      environmentAttributes: {},
+    };
+    const q = (sel: string) => element.shadowRoot?.querySelector(sel);
+
+    it('stands in for the grid of a fresh growspace', async () => {
+      element = await createElement({ deviceId: 'gs1', name: 'GS1', plants: [] });
+
+      expect(q('growspace-setup-checklist-container')).toBeTruthy();
+      expect(q('growspace-grid-container')).toBeNull();
+    });
+
+    it('sits above the grid once plants exist but the core is not done', async () => {
+      element = await createElement({ ...stamped, plants: [plant] });
+
+      expect(q('growspace-setup-checklist-container')).toBeTruthy();
+      expect(q('growspace-grid-container')).toBeTruthy();
+    });
+
+    it('is gone once the core is done', async () => {
+      element = await createElement({
+        ...stamped,
+        plants: [plant],
+        environmentAttributes: { exhaustFanEntities: ['fan.exhaust'] },
+      });
+
+      expect(q('growspace-setup-checklist-container')).toBeNull();
+    });
+
+    it('gives the grid back to a transplant, which is one way to add plants', async () => {
+      gridInteraction$.set({ status: 'transplanting' } as never);
+      element = await createElement({ ...stamped, plants: [] });
+
+      expect(q('growspace-setup-checklist-container')).toBeTruthy();
+      expect(q('growspace-grid-container')).toBeTruthy();
+    });
+
+    it('steps aside while a task needs the grid', async () => {
+      element = new GrowspaceView();
+      Object.defineProperty(element, 'store', { value: mockStore, writable: true });
+      element.taskState = { kind: 'select_plants' } as never;
+      document.body.appendChild(element);
+      element.device = { ...stamped, plants: [] } as never;
+      await element.updateComplete;
+
+      expect(q('growspace-setup-checklist-container')).toBeNull();
+      expect(q('growspace-grid-container')).toBeTruthy();
+    });
   });
 
   // ── STANDARD mode ─────────────────────────────────────────────────────────
