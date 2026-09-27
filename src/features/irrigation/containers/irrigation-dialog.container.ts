@@ -181,6 +181,15 @@ import '../components/irrigation-substrate-ec-tab';
 import '../components/irrigation-steering-tab';
 import '../components/irrigation-recipes-tab';
 import '../components/irrigation-program-tab';
+// PROTOTYPE #864 — throwaway, never merge.
+import {
+  zpBind,
+  zpHeader,
+  zpNav,
+  zpNavIds,
+  zpTab,
+  zpTabTop,
+} from '../../../prototype/zones-864/hooks';
 
 type TabId =
   | 'overview'
@@ -803,7 +812,7 @@ export class IrrigationDialog extends LitElement {
     // growspace a recipe, and a recipe without a pump has nothing to write to.
     if (hasPump) tabs.push('program');
 
-    return tabs;
+    return [...tabs, ...(zpNavIds() as TabId[])];
   }
 
   private get _setupHints(): Array<{ icon: string; text: string }> {
@@ -1392,6 +1401,7 @@ export class IrrigationDialog extends LitElement {
 
   protected render() {
     if (!this.open) return nothing;
+    zpBind(this);
 
     // Dialog chrome, not data: the same role print-label and batch-print pass as
     // their stageColor. No consumer concatenates onto it, so var() is safe here
@@ -1402,7 +1412,7 @@ export class IrrigationDialog extends LitElement {
     const visible = this._visibleTabs;
     const tankCount = this.device?.environmentAttributes?.irrigationTanks?.length ?? 0;
 
-    const NAV: NavDef[] = [
+    const NAV: NavDef[] = zpNav<NavDef>([
       { id: 'overview', label: 'Overview', group: 'Crop Steering', icon: mdiCompassOutline },
       { id: 'steering', label: 'Steering', group: 'Crop Steering', icon: mdiLeaf },
       {
@@ -1425,7 +1435,12 @@ export class IrrigationDialog extends LitElement {
       { id: 'water_analytics', label: 'Water Analytics', group: 'Telemetry', icon: mdiChartBar },
       { id: 'drain_ec', label: 'Drain EC', group: 'Telemetry', icon: mdiArrowDownCircle },
       { id: 'ec_ramp', label: 'EC Ramp', group: 'Telemetry', icon: mdiTrendingUp },
-    ];
+    ]);
+    if (String(this._sm.activeTab).startsWith('zp_') && !visible.includes(this._sm.activeTab)) {
+      queueMicrotask(() => {
+        this._sm = requestTabSwitch(this._sm, 'overview', this.device!);
+      });
+    }
     const visibleNav = NAV.filter((n) => visible.includes(n.id));
     const currentLabel = visibleNav.find((n) => n.id === this._sm.activeTab)?.label ?? '';
 
@@ -1447,7 +1462,7 @@ export class IrrigationDialog extends LitElement {
             <div class="v1-content">
               <div class="v1-content-header">
                 <div class="growspace-crumb">Growspace</div>
-                <div class="growspace-pill">${this.growspaceName}</div>
+                ${zpHeader(html`<div class="growspace-pill">${this.growspaceName}</div>`)}
                 <div style="flex:1;"></div>
                 <div class="content-section-title">${currentLabel}</div>
               </div>
@@ -1604,6 +1619,12 @@ export class IrrigationDialog extends LitElement {
   }
 
   private _renderActiveTab(_color: string) {
+    const proto = zpTab(this._sm.activeTab);
+    if (proto) return proto;
+    return html`${zpTabTop(this._sm.activeTab)}${this._renderRealTab(_color)}`;
+  }
+
+  private _renderRealTab(_color: string) {
     switch (this._sm.activeTab) {
       case 'overview':
         // Decomposed via the per-tab ViewModel adapter (ADR-0019). All other

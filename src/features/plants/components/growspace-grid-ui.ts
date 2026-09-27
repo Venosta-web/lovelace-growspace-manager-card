@@ -17,6 +17,8 @@ import { GridOverlayMode } from '../../../features/environment/constants';
 import { variables } from '../../../styles/variables';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { localizeWithParams } from '../../../localize/localize';
+// PROTOTYPE #864 — throwaway, never merge.
+import { zpBind, zpCell } from '../../../prototype/zones-864/hooks';
 
 /**
  * Grid interaction events
@@ -513,6 +515,7 @@ export class GrowspaceGridUI extends LitElement {
   }
 
   render() {
+    zpBind(this);
     const gridStyle = this.isListView
       ? ''
       : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
@@ -560,6 +563,7 @@ export class GrowspaceGridUI extends LitElement {
         ${this.overlayMode !== GridOverlayMode.NONE
           ? html`<div class="grid-overlay" style="background-color: ${cell.overlayColor}"></div>`
           : nothing}
+        ${zpCell(cell.row, cell.col)}
       </div>
     `;
   }
@@ -610,6 +614,7 @@ export class GrowspaceGridUI extends LitElement {
           </svg>
         </div>
         <div style="font-weight: 500; opacity: 0.8;">${label}</div>
+        ${zpCell(row, col)}
       </div>
     `;
   }
