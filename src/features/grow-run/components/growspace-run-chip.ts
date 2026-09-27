@@ -219,12 +219,13 @@ export class GrowspaceRunChip extends LitElement {
                   ${run.participations.length
                     ? html`<ul data-testid="run-participations">
                         ${run.participations.map(
-                          (row) => html`<li>
-                            ${row.plant_id} · ${new Date(row.opened_at).toLocaleString()}
-                            ${row.closed_at
-                              ? html`– ${new Date(row.closed_at).toLocaleString()}`
-                              : html`– ${this._t('present')}`}
-                          </li>`
+                          (row) =>
+                            html`<li>
+                              ${row.plant_id} · ${new Date(row.opened_at).toLocaleString()}
+                              ${row.closed_at
+                                ? html`– ${new Date(row.closed_at).toLocaleString()}`
+                                : html`– ${this._t('present')}`}
+                            </li>`
                         )}
                       </ul>`
                     : html`<p>${this._t('none_yet')}</p>`}
@@ -232,11 +233,12 @@ export class GrowspaceRunChip extends LitElement {
                   ${run.movement_history.length
                     ? html`<ul data-testid="run-movements">
                         ${run.movement_history.map(
-                          (row) => html`<li>
-                            ${new Date(row.at).toLocaleString()} · ${row.plant_id} ·
-                            ${this._movementKind(row.kind)}
-                            (${row.source_growspace_id ?? '—'} → ${row.target_growspace_id ?? '—'})
-                          </li>`
+                          (row) =>
+                            html`<li>
+                              ${new Date(row.at).toLocaleString()} · ${row.plant_id} ·
+                              ${this._movementKind(row.kind)} (${row.source_growspace_id ?? '—'} →
+                              ${row.target_growspace_id ?? '—'})
+                            </li>`
                         )}
                       </ul>`
                     : html`<p>${this._t('none_yet')}</p>`}

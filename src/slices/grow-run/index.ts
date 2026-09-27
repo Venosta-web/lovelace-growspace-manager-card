@@ -199,10 +199,7 @@ export function startGrowRun(
 }
 
 /** Read the selected Run's durable movement and participation projection. */
-export function getGrowRun(
-  growspaceId: string,
-  runId: string
-): Promise<GetGrowRunResult> {
+export function getGrowRun(growspaceId: string, runId: string): Promise<GetGrowRunResult> {
   return hassCall(
     'growspace_manager/get_grow_run',
     { growspace_id: growspaceId, run_id: runId },

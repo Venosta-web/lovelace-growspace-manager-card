@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HomeAssistant } from 'custom-card-helpers';
 
 import { hassCall } from '../../services/hass-call';
-import { deriveRunView, getGrowRun, refusalText, resolveActiveRunSensor, startGrowRun } from './index';
+import {
+  deriveRunView,
+  getGrowRun,
+  refusalText,
+  resolveActiveRunSensor,
+  startGrowRun,
+} from './index';
 import { ActiveRunSensorSchema, GetGrowRunResultSchema, StartGrowRunResultSchema } from './schema';
 
 vi.mock('../../services/hass-call', () => ({
@@ -205,12 +211,22 @@ describe('getGrowRun', () => {
       outcome: 'found' as const,
       run: {
         ...STARTED_FIXTURE.active_run,
-        participations: [{ plant_id: 'p1', opened_at: '2026-07-24T20:30:00+00:00', closed_at: null }],
-        movement_history: [{
-          fact_id: 'fact-1', plant_id: 'p1', at: '2026-07-25T20:30:00+00:00',
-          kind: 'entry', source_growspace_id: null, target_growspace_id: 'flower',
-          source_run_id: null, target_run_id: 'run-1', projected: true,
-        }],
+        participations: [
+          { plant_id: 'p1', opened_at: '2026-07-24T20:30:00+00:00', closed_at: null },
+        ],
+        movement_history: [
+          {
+            fact_id: 'fact-1',
+            plant_id: 'p1',
+            at: '2026-07-25T20:30:00+00:00',
+            kind: 'entry',
+            source_growspace_id: null,
+            target_growspace_id: 'flower',
+            source_run_id: null,
+            target_run_id: 'run-1',
+            projected: true,
+          },
+        ],
       },
     };
     expect(GetGrowRunResultSchema.parse(response)).toEqual(response);
