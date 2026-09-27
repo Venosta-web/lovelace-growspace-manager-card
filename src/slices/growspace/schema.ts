@@ -417,6 +417,17 @@ const WaterUsageSchema = z.object({
   liters_today: z.number().nullable().optional(),
 });
 
+// The Setup Modules a Setup Preset stamped (GSM ADR-0064): which subsystems the
+// setup checklist offers. Absent means the module is offered.
+export const SetupModulesSchema = z.object({
+  lights: z.boolean().optional(),
+  air: z.boolean().optional(),
+  climate: z.boolean().optional(),
+  irrigation: z.boolean().optional(),
+  substrate: z.boolean().optional(),
+});
+export type SetupModules = z.infer<typeof SetupModulesSchema>;
+
 export const GrowspaceAPIResponseSchema = z.object({
   layout_revision: z.number().int().nonnegative().optional(),
   capabilities: z
@@ -431,6 +442,10 @@ export const GrowspaceAPIResponseSchema = z.object({
       name: z.string(),
       type: z.enum(['normal', 'mother', 'clone', 'dry', 'cure', 'flower', 'veg']),
       notification_target: z.string().nullable().optional(),
+      // Optional: backends before GSM#873 do not send either. A string rather
+      // than an enum, so a preset added upstream cannot fail this parse.
+      setup_preset: z.string().nullish(),
+      setup_modules: SetupModulesSchema.nullish(),
     })
     .optional()
     .default({ growspace_id: '', name: '', type: 'normal' }),

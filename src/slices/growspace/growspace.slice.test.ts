@@ -18,6 +18,8 @@ import {
   setHumidifierControl,
   updateSensorCoordinates,
   configureCirculationFan,
+  setSetupModule,
+  stampSetupPreset,
 } from './index';
 import type { CirculationFanConfig } from './schema';
 
@@ -515,3 +517,69 @@ describe('configureCirculationFan', () => {
 });
 
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Setup Presets and Modules (GSM ADR-0064)
+// ---------------------------------------------------------------------------
+
+describe('setSetupModule', () => {
+  const stamped = { lights: true, air: true, climate: true, irrigation: false, substrate: true };
+
+  beforeEach(() => {
+    devices$.set([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'Tent',
+        setupPreset: 'simple_soil_tent',
+        setupModules: stamped,
+      }),
+    ]);
+  });
+
+  it('sends a partial module edit and patches the device optimistically', async () => {
+    await setSetupModule('gs1', 'lights', false);
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'update_growspace',
+      { growspace_id: 'gs1', setup_modules: { lights: false } }
+    );
+    expect(devices$.get()[0].setupModules).toEqual({ ...stamped, lights: false });
+    expect(devices$.get()[0].setupPreset).toBe('simple_soil_tent');
+  });
+
+  it('restores the modules when the backend refuses', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('nope'));
+
+    await expect(setSetupModule('gs1', 'irrigation', true)).rejects.toThrow('nope');
+
+    expect(devices$.get()[0].setupModules).toEqual(stamped);
+  });
+});
+
+describe('stampSetupPreset', () => {
+  beforeEach(() => {
+    devices$.set([
+      createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent', setupPreset: 'living_soil' }),
+    ]);
+  });
+
+  it('asks the backend to stamp and moves only the label', async () => {
+    await stampSetupPreset('gs1', 'drying_room');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'update_growspace',
+      { growspace_id: 'gs1', setup_preset: 'drying_room' }
+    );
+    expect(devices$.get()[0].setupPreset).toBe('drying_room');
+  });
+
+  it('puts the previous label back when the stamp fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('nope'));
+
+    await expect(stampSetupPreset('gs1', 'drying_room')).rejects.toThrow('nope');
+
+    expect(devices$.get()[0].setupPreset).toBe('living_soil');
+  });
+});

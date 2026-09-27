@@ -553,6 +553,8 @@ export class GrowspaceAdapter {
         ? { atomicPlantLayout: wsData.capabilities.atomic_plant_layout ?? false }
         : undefined,
       notificationTarget: identity?.notification_target,
+      setupPreset: identity?.setup_preset ?? null,
+      setupModules: identity?.setup_modules ?? null,
       notificationSettings,
       timedNotifications,
       dimensions: gridData?.dimensions

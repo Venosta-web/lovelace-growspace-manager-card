@@ -43,6 +43,7 @@ import { sharedStyles } from '../../../styles/shared.styles';
 import { uiStyles } from '../../../styles/ui.styles';
 import { variables } from '../../../styles/variables';
 import type { CardTaskState } from '../../tasks/task-state';
+import { deriveSetupChecklist } from '../../setup/setup-checklist';
 import '../../tasks/growspace-task-bar';
 
 @customElement('growspace-view')
@@ -69,6 +70,8 @@ export class GrowspaceView extends LitElement {
 
   /** Set once the 3D heatmap chunk has failed; `<heatmap-3d>` never upgrades. */
   @state() private _heatmapMissing = false;
+  /** Set once the Setup Checklist chunk has failed. */
+  @state() private _setupMissing = false;
 
   // ── Internal store subscriptions ──────────────────────────────────────────
 
@@ -227,8 +230,11 @@ export class GrowspaceView extends LitElement {
       `;
     }
 
+    const transplanting = this._gridInteractionController?.value?.status === 'transplanting';
+    const setup = this._setupPlacement(transplanting);
+
     return html`
-      ${this._gridInteractionController?.value?.status === 'transplanting'
+      ${transplanting
         ? html`
             <transplant-source-panel
               .clonePlants=${this._getPlantsByStage('clone')}
@@ -236,12 +242,15 @@ export class GrowspaceView extends LitElement {
             ></transplant-source-panel>
           `
         : ''}
-      <growspace-grid-container
-        .plants=${this.grid}
-        .rows=${this.rows}
-        .cols=${this.cols}
-        @transplant-drop=${(e: CustomEvent) => this._handleTransplantDrop(e)}
-      ></growspace-grid-container>
+      ${setup !== 'hidden' ? this._renderSetupChecklist() : ''}
+      ${setup === 'replace-grid'
+        ? ''
+        : html`<growspace-grid-container
+            .plants=${this.grid}
+            .rows=${this.rows}
+            .cols=${this.cols}
+            @transplant-drop=${(e: CustomEvent) => this._handleTransplantDrop(e)}
+          ></growspace-grid-container>`}
       ${this.config?.initial_view_mode === 'header'
         ? html`
             <button
@@ -260,6 +269,35 @@ export class GrowspaceView extends LitElement {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private _renderSetupChecklist(): TemplateResult {
+    if (this._setupMissing) {
+      return html`<growspace-lazy-chunk-error
+        .chunk=${LAZY_CHUNKS.setupChecklist}
+      ></growspace-lazy-chunk-error>`;
+    }
+    void loadLazyChunk(
+      LAZY_CHUNKS.setupChecklist,
+      () => import('../../setup/growspace-setup-checklist.container')
+    ).then((chunk) => {
+      if (!chunk) this._setupMissing = true;
+    });
+    return html`<growspace-setup-checklist-container
+      .device=${this.device}
+    ></growspace-setup-checklist-container>`;
+  }
+
+  /**
+   * Where the [[Setup Checklist]] goes, if anywhere. It stands in for an empty
+   * grid, but never while a task or a transplant needs the grid itself — a
+   * transplant into an empty growspace is one way of adding its first plants.
+   */
+  private _setupPlacement(transplanting: boolean): 'hidden' | 'replace-grid' | 'panel' {
+    if (!this.device || this.taskState.kind !== 'idle') return 'hidden';
+    const checklist = deriveSetupChecklist(this.device, { aiEnabled: null, tcPresent: false });
+    if (!checklist.visible) return 'hidden';
+    return transplanting ? 'panel' : checklist.placement;
+  }
 
   private _getPlantsByStage(stage: string): (PlantEntity & { _growspaceName?: string })[] {
     const devices = this._viewStandardController?.value?.devices || [];
