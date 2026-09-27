@@ -53,6 +53,7 @@ export function zpNav<T extends ProtoNavDef>(nav: T[]): T[] {
   const bad = w.zones.filter(needsAttention).length || undefined;
   switch (ui.variant) {
     case 'A':
+    case 'D':
       return insertAfter(nav, 'config', {
         id: 'zp_zones',
         label: 'Zones',
@@ -88,7 +89,7 @@ export const zpNavIds = (): string[] => zpNav([] as ProtoNavDef[]).map((n) => n.
 /** Replaces (A) or joins (B) the growspace pill in the content header. */
 export function zpHeader(pill: TemplateResult): TemplateResult {
   if (!protoActive() || world().implicit) return pill;
-  if (ui.variant === 'A') return html`<zp-a-scope></zp-a-scope>`;
+  if (ui.variant === 'A' || ui.variant === 'D') return html`<zp-a-scope></zp-a-scope>`;
   if (ui.variant === 'B') return html`${pill}<zp-b-summary></zp-b-summary>`;
   return pill;
 }
@@ -114,11 +115,12 @@ export function zpTabTop(tab: string) {
   if (!protoActive()) return nothing;
   const w = world();
   if (tab === 'overview') {
-    if (ui.variant === 'A') return html`<zp-a-overview></zp-a-overview>`;
+    if (ui.variant === 'A' || ui.variant === 'D') return html`<zp-a-overview></zp-a-overview>`;
     if (ui.variant === 'B') return html`<zp-b-deliveries></zp-b-deliveries>`;
     return html`<zp-c-overview></zp-c-overview>`;
   }
-  if (tab === 'config' && ui.variant === 'A' && w.implicit) return html`<zp-a-split></zp-a-split>`;
+  if (tab === 'config' && (ui.variant === 'A' || ui.variant === 'D') && w.implicit)
+    return html`<zp-a-split></zp-a-split>`;
   return nothing;
 }
 

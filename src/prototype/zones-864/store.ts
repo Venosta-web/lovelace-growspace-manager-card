@@ -7,11 +7,12 @@
  */
 import { buildWorld, type ProtoWorld, type ProtoZone, type Scenario, ZONE_COLORS } from './fixture';
 
-export type Variant = 'A' | 'B' | 'C';
+export type Variant = 'A' | 'B' | 'C' | 'D';
 export const VARIANTS: { key: Variant; label: string }[] = [
   { key: 'A', label: 'Zone scope switcher' },
   { key: 'B', label: 'Zone board' },
   { key: 'C', label: 'Map + day timeline' },
+  { key: 'D', label: "A's scope + C's timeline" },
 ];
 
 const params = () => new URLSearchParams(window.location.search);
@@ -40,7 +41,7 @@ interface UiState {
 
 const initialVariant = (): Variant => {
   const v = params().get('variant')?.toUpperCase();
-  return v === 'B' || v === 'C' ? v : 'A';
+  return v === 'B' || v === 'C' || v === 'D' ? v : 'A';
 };
 const initialScenario = (): Scenario => (params().get('scenario') as Scenario) || 'multi';
 

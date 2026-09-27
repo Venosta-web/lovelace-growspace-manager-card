@@ -162,6 +162,10 @@ class ZpCCell extends ZpBase {
 
 /* ── Dialog › Today: swimlane timeline ────────────────────────────────────── */
 class ZpCToday extends ZpBase {
+  /** D: embedded in A's scoped Overview — one zone's lane, or every lane. */
+  static properties = { only: { type: String }, embedded: { type: Boolean } };
+  declare only: string | undefined;
+  declare embedded: boolean;
   static styles = [
     baseStyles,
     css`
@@ -201,12 +205,13 @@ class ZpCToday extends ZpBase {
     const laneH = 50;
     const top = 22;
     const capH = 70;
-    const H = top + laneH * w.zones.length + capH + 12;
+    const lanes = this.only ? w.zones.filter((z) => z.id === this.only) : w.zones;
+    const H = top + laneH * lanes.length + capH + 12;
     const x = (m: number) => L + ((m - w.lightsOn) / (w.lightsOff - w.lightsOn)) * (R - L);
     const hours = [];
     for (let h = w.lightsOn; h <= w.lightsOff; h += 120) hours.push(h);
     const sel = w.attempts.find((a) => a.id === ui.selectedAttempt);
-    const troubled = w.zones.filter((z) => troubleSentence(z, w));
+    const troubled = this.embedded ? [] : w.zones.filter((z) => troubleSentence(z, w));
 
     const mark = (a: ProtoAttempt, laneY: number, z: ProtoZone) => {
       const h = Math.max(4, Math.min(34, a.chargedL * 20));
@@ -242,7 +247,7 @@ class ZpCToday extends ZpBase {
     };
 
     // Cumulative charge for the cap lane.
-    const capY0 = top + laneH * w.zones.length + 10;
+    const capY0 = top + laneH * lanes.length + 10;
     const yCap = (l: number) => capY0 + capH - 14 - (l / w.cap.capL) * (capH - 26);
     let run = 0;
     const pts: string[] = [`${x(w.lightsOn)},${yCap(0)}`];
@@ -253,10 +258,27 @@ class ZpCToday extends ZpBase {
       pts.push(`${x(a.at)},${yCap(run)}`);
     }
     pts.push(`${x(w.now)},${yCap(run)}`);
+    // Zone scope: that zone's own share of the shared cap, in its colour.
+    const own: string[] = [];
+    const ownZone = this.only ? w.zones.find((z) => z.id === this.only) : undefined;
+    if (ownZone) {
+      let r2 = 0;
+      own.push(`${x(w.lightsOn)},${yCap(0)}`);
+      for (const a of w.attempts) {
+        if (a.zoneId !== ownZone.id || a.outcome === 'suppressed' || a.outcome === 'queued')
+          continue;
+        own.push(`${x(a.at)},${yCap(r2)}`);
+        r2 += a.chargedL;
+        own.push(`${x(a.at)},${yCap(r2)}`);
+      }
+      own.push(`${x(w.now)},${yCap(r2)}`);
+    }
 
-    return html`<div class="protonote">
-        PROTOTYPE C · Crop Steering › Today — click a mark for its attempt
-      </div>
+    return html`${this.embedded
+        ? nothing
+        : html`<div class="protonote">
+            PROTOTYPE C · Crop Steering › Today — click a mark for its attempt
+          </div>`}
       ${troubled.map(
         (z) =>
           html`<div class="banner ${statusTone(z) === 'err' ? 'err' : 'warn'}">
@@ -294,11 +316,11 @@ class ZpCToday extends ZpBase {
           x=${x(w.p2Stop)}
           y=${top}
           width=${R - x(w.p2Stop)}
-          height=${laneH * w.zones.length}
+          height=${laneH * lanes.length}
           fill="rgba(0,0,0,0.25)"
         />
         <text x=${x(w.p2Stop) + 4} y=${top + 10} fill="var(--zp-muted)" font-size="9">P3</text>
-        ${w.zones.map((z, i) => {
+        ${lanes.map((z, i) => {
           const y = top + i * laneH;
           const band =
             (z.status === 'degraded' || z.status === 'fallback') && z.since !== undefined
@@ -315,7 +337,7 @@ class ZpCToday extends ZpBase {
             ${w.attempts.filter((a) => a.zoneId === z.id).map((a) => mark(a, y, z))}`;
         })}
         <text x="16" y=${capY0 + 24} fill="var(--primary-text-color)" font-size="11">
-          Daily cap
+          ${ownZone ? 'Tent cap' : 'Daily cap'}
         </text>
         <text x="16" y=${capY0 + 38} fill="var(--zp-muted)" font-size="9">
           ${w.cap.liters.toFixed(1)} / ${w.cap.capL} L
@@ -329,6 +351,9 @@ class ZpCToday extends ZpBase {
           stroke-dasharray="4 3"
         />
         <polyline points=${pts.join(' ')} fill="none" stroke="var(--zp-info)" stroke-width="1.6" />
+        ${ownZone
+          ? svg`<polyline points=${own.join(' ')} fill="none" stroke=${ownZone.color} stroke-width="2"/>`
+          : nothing}
         ${w.cap.cappedAt !== undefined
           ? svg`<circle cx=${x(w.cap.cappedAt)} cy=${yCap(w.cap.capL)} r="4" fill="var(--zp-err)"/>
              <text x=${x(w.cap.cappedAt) + 6} y=${yCap(w.cap.capL) - 5} font-size="10" fill="var(--zp-err)">cap reached ${hm(w.cap.cappedAt)}</text>`

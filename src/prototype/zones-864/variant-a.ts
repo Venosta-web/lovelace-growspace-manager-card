@@ -177,7 +177,10 @@ class ZpAOverview extends ZpBase {
         : html`<div class="protonote">PROTOTYPE A · single zone: nothing new on Overview</div>`;
     }
     const z = w.zones.find((x) => x.id === ui.scope);
-    return html`<div class="protonote">PROTOTYPE A · scope: ${z ? z.name : 'Whole tent'}</div>
+    return html`<div class="protonote">
+        PROTOTYPE ${ui.variant} · scope:
+        ${z ? z.name : 'Whole tent'}${ui.variant === 'D' ? ' — click a mark for its attempt' : ''}
+      </div>
       ${z ? this._zone(w, z) : this._tent(w)}`;
   }
 
@@ -221,7 +224,7 @@ class ZpAOverview extends ZpBase {
       </div>
       <div class="card">
         <h4>Today's deliveries</h4>
-        ${this._log(w, null)}
+        ${ui.variant === 'D' ? html`<zp-c-today embedded></zp-c-today>` : this._log(w, null)}
       </div>
     `;
   }
@@ -265,7 +268,9 @@ class ZpAOverview extends ZpBase {
       </div>
       <div class="card">
         <h4>${z.name} · today's deliveries</h4>
-        ${this._log(w, z.id)}
+        ${ui.variant === 'D'
+          ? html`<zp-c-today embedded .only=${z.id}></zp-c-today>${this._log(w, z.id)}`
+          : this._log(w, z.id)}
       </div>
     `;
   }
