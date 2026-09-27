@@ -184,6 +184,8 @@ import '../components/irrigation-substrate-ec-tab';
 import '../components/irrigation-steering-tab';
 import '../components/irrigation-recipes-tab';
 import '../components/irrigation-program-tab';
+import '../prototype-864'; // PROTOTYPE #864
+import { protoEnabled } from '../prototype-864/state';
 
 type TabId =
   | 'overview'
@@ -196,7 +198,8 @@ type TabId =
   | 'substrate_ec'
   | 'ec_ramp'
   | 'recipes'
-  | 'program';
+  | 'program'
+  | 'zones'; // PROTOTYPE #864
 
 interface NavDef {
   id: TabId;
@@ -758,6 +761,7 @@ export class IrrigationDialog extends LitElement {
 
     const tabs: TabId[] = [];
     const env = this.device?.environmentAttributes;
+    if (protoEnabled()) tabs.push('zones'); // PROTOTYPE #864
 
     const hasPump = this._hasPump;
 
@@ -936,6 +940,8 @@ export class IrrigationDialog extends LitElement {
       this._cropSteeringHistoryFetched = false;
       if (this.initialTab) {
         this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
+      } else if (protoEnabled()) {
+        this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: 'zones' });
       }
     }
     if (!this._visibleTabs.includes(this._sm.activeTab)) {
@@ -1428,6 +1434,7 @@ export class IrrigationDialog extends LitElement {
     const tankCount = this.device?.environmentAttributes?.irrigationTanks?.length ?? 0;
 
     const NAV: NavDef[] = [
+      { id: 'zones', label: 'Zones', group: 'Prototype #864', icon: mdiWater },
       { id: 'overview', label: 'Overview', group: 'Crop Steering', icon: mdiCompassOutline },
       { id: 'steering', label: 'Steering', group: 'Crop Steering', icon: mdiLeaf },
       {
@@ -1630,6 +1637,10 @@ export class IrrigationDialog extends LitElement {
 
   private _renderActiveTab(_color: string) {
     switch (this._sm.activeTab) {
+      case 'zones':
+        return html`<irrigation-zones-prototype
+          .device=${this.device}
+        ></irrigation-zones-prototype>`;
       case 'overview':
         // Decomposed via the per-tab ViewModel adapter (ADR-0019). All other
         // tabs below still render through their inline `_renderXTab()` methods.

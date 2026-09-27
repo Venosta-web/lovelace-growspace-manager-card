@@ -31,7 +31,8 @@ export type TabId =
   | 'substrate_ec'
   | 'ec_ramp'
   | 'recipes'
-  | 'program';
+  | 'program'
+  | 'zones'; // PROTOTYPE #864
 
 // ─── Overview tab (read-only crop-steering diagnostics) ─────────────────────────
 

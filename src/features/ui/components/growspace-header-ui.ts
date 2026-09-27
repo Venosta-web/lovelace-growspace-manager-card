@@ -24,6 +24,7 @@ import './growspace-header-actions-ui';
 import './growspace-header-hero-ui';
 import './growspace-header-secondary-ui';
 import '../../safety/components/growspace-safety-chip';
+import '../../irrigation/prototype-864/header-chip'; // PROTOTYPE #864
 import '../../grow-run/components/growspace-run-chip';
 
 @customElement('growspace-header-ui')
@@ -246,6 +247,7 @@ export class GrowspaceHeaderUI extends LitElement {
                     .language=${this.hass?.language ?? 'en'}
                   ></growspace-safety-chip>`
                 : nothing}
+              <proto864-header-chip .device=${this.device}></proto864-header-chip>
               ${this.run
                 ? html`<growspace-run-chip
                     .view=${this.run}
