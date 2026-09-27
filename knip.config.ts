@@ -55,6 +55,13 @@ const config: KnipConfig = {
     // src/ so co-located schema tests can use it too. Never shipped by design.
     'src/contract-fixture/key-set-diff.ts',
   ],
+  // Used only by the stable channel. knip's semantic-release plugin evaluates
+  // release.config.js, which builds the config for GITHUB_REF_NAME, and the
+  // prerelease config (dev) deliberately leaves the changelog plugin out. So on
+  // a push to dev, and only there, the package reads as unused: every dev push
+  // failed lint while every PR passed. Scoped to that ref so that anywhere else
+  // knip still checks it, and does not hint that the exception is stale.
+  ignoreDependencies: process.env.GITHUB_REF_NAME === 'dev' ? ['@semantic-release/changelog'] : [],
   ignoreIssues: {
     // SubareaResponseSchema aliases SubareaSchema on purpose, so that every
     // subarea command reads `<Command>ResponseSchema` at its call site.
