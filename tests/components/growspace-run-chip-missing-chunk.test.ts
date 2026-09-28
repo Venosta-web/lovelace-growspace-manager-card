@@ -1,0 +1,73 @@
+import { fixture, html } from '@open-wc/testing-helpers';
+import { describe, expect, it, vi } from 'vitest';
+
+import { hassCall } from '../../src/services/hass-call';
+import type { GrowspaceRunChip } from '../../src/features/grow-run/components/growspace-run-chip';
+import type { RunView } from '../../src/slices/grow-run';
+import '../../src/features/grow-run/components/growspace-run-chip';
+
+vi.mock('../../src/services/hass-call', () => ({
+  hassCall: vi.fn(),
+  callService: vi.fn(),
+  setHass: vi.fn(),
+  getHass: vi.fn(),
+}));
+
+// A stale HACS install: the entry is current, the completion chunk is not there.
+vi.mock('../../src/lib/lazy-chunk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/lib/lazy-chunk')>()),
+  loadLazyChunk: vi.fn(async () => null),
+}));
+
+const ACTIVE: RunView = {
+  growspaceId: 'flower',
+  entityId: 'sensor.flower_active_run',
+  runId: 'run-4',
+  state: 'active',
+  sequenceNumber: 4,
+  label: null,
+  startedAt: '2026-07-24T20:30:00+00:00',
+  durationDays: 70,
+  participantCount: 3,
+  runRevision: 4,
+  summary: 'Run #4 · 70 days · 3 plants',
+};
+
+describe('growspace-run-chip with a missing completion chunk', () => {
+  it('names the missing file instead of doing nothing', async () => {
+    vi.mocked(hassCall).mockResolvedValueOnce({
+      outcome: 'found',
+      run: {
+        run_id: 'run-4',
+        sequence_number: 4,
+        label: null,
+        status: 'active',
+        started_at: ACTIVE.startedAt,
+        completed_at: null,
+        timezone: 'Europe/Berlin',
+        participant_count: 3,
+        metrics_state: 'live',
+        run_revision: 4,
+        notes: null,
+        participations: [],
+        movement_history: [],
+      },
+    });
+    const chip = await fixture<GrowspaceRunChip>(html`
+      <growspace-run-chip .view=${ACTIVE}></growspace-run-chip>
+    `);
+    chip.shadowRoot!.querySelector<HTMLButtonElement>('.chip')!.click();
+    await vi.waitFor(() =>
+      expect(chip.shadowRoot!.querySelector('[data-action="complete-run"]')).not.toBeNull()
+    );
+    chip.shadowRoot!.querySelector<HTMLButtonElement>('[data-action="complete-run"]')!.click();
+    await vi.waitFor(() =>
+      expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).not.toBeNull()
+    );
+    expect(chip.shadowRoot!.querySelector('growspace-run-completion-dialog')).toBeNull();
+
+    chip.shadowRoot!.querySelector('ha-dialog')!.dispatchEvent(new CustomEvent('closed'));
+    await chip.updateComplete;
+    expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).toBeNull();
+  });
+});

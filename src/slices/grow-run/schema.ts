@@ -22,16 +22,32 @@ export const ActiveRunSensorSchema = z.object({
   attributes: ActiveRunAttributesSchema,
 });
 
-/** One Run's compact summary at one Run Revision, as the WS commands return it. */
+/**
+ * Which metrics a Run's status gives it (GSM#671): Live Run Metrics while
+ * Active, Pending Run Metrics once Completed, a frozen snapshot once Finalized.
+ */
+const MetricsStateSchema = z.enum(['live', 'pending', 'frozen', 'excluded']);
+
+const RunStatusSchema = z.enum(['active', 'completed', 'finalized', 'voided']);
+
+/**
+ * One Run's compact summary at one Run Revision, as the WS commands return it.
+ * `status`, `completed_at` and `metrics_state` arrived with completion
+ * (GSM#671); a backend before it omits them, and every Run it knows is Active.
+ */
 export const RunSummarySchema = z.object({
   run_id: z.string(),
   sequence_number: z.number().int().min(1),
   label: z.string().nullable(),
+  status: RunStatusSchema.optional(),
   started_at: z.string(),
+  completed_at: z.string().nullable().optional(),
   timezone: z.string(),
   participant_count: z.number().int().min(0),
+  metrics_state: MetricsStateSchema.optional(),
   run_revision: z.number().int().min(0),
 });
+export type RunSummary = z.infer<typeof RunSummarySchema>;
 
 export const ParticipationSchema = z.object({
   plant_id: z.string(),
@@ -74,6 +90,7 @@ export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
   z.object({
     outcome: z.literal('found'),
     run: RunSummarySchema.extend({
+      notes: z.string().nullable().optional(),
       participations: z.array(ParticipationSchema),
       movement_history: z.array(MovementFactSchema),
       harvest_outcomes: z.array(HarvestOutcomeSchema).optional().default([]),

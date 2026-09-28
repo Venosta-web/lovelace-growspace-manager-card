@@ -16,7 +16,7 @@ import { MovementFactSchema, ParticipationSchema, RunSummarySchema } from './sch
  * stays a string so a refusal a newer backend adds still renders in the
  * backend's own words.
  */
-const RunRefusalSchema = z.object({
+export const RunRefusalSchema = z.object({
   code: z.string().min(1),
   message: z.string(),
   current_revision: z.number().int().min(0).nullable(),
