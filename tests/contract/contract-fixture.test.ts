@@ -33,7 +33,6 @@ import {
   PreviewGrowRunStartResultSchema,
   StartGrowRunResultSchema,
 } from '../../src/slices/grow-run/start-schema';
-} from '../../src/slices/grow-run/schema';
 import {
   CompleteGrowRunResultSchema,
   PreviewCompletionResultSchema,
@@ -192,6 +191,8 @@ const CONTRACTS: FixtureContract[] = [
     schema: StartGrowRunResultSchema,
     leadingVariable: 'GSM_PRERELEASE_GROW_RUN_BEYOND_RETENTION_FIXTURE',
     releaseVariable: 'GSM_RELEASE_GROW_RUN_BEYOND_RETENTION_FIXTURE',
+    releaseRequired: false,
+  },
   // Completing a Run (GSM#671): the preview, both outcomes of the command, and
   // a Completed Run's details with its Pending metrics.
   {
