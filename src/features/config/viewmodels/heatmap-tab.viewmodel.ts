@@ -25,6 +25,6 @@ export interface HeatmapTabViewModel {
  * dependency. Testable with no DOM and no host.
  */
 export function createHeatmapTabViewModel(sm: ConfigDialogSM): HeatmapTabViewModel {
-  const groups = sm.environmentDraft.sensorGroups;
+  const groups = sm.environment.values.sensorGroups;
   return { groups, showEmpty: groups.length === 0 };
 }

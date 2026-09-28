@@ -75,7 +75,7 @@ describe('createGrowlightTabViewModel', () => {
       entityOptions: (_domains, deviceClass) =>
         deviceClass === 'illuminance' ? ['sensor.room_lux'] : ['sensor.other', 'sensor.room_lux'],
     });
-    expect(vm.lightLeakConfig).toEqual(s.environmentDraft.lightLeakConfig);
+    expect(vm.lightLeakConfig).toEqual(s.environment.values.lightLeakConfig);
     expect(vm.illuminanceSensorOptions).toEqual(['sensor.room_lux', 'sensor.other']);
     expect(vm.disabled).toBe(true);
   });

@@ -87,7 +87,7 @@ export function createIrrigationTabViewModel(
   sm: ConfigDialogSM,
   deps: IrrigationTabDeps
 ): IrrigationTabViewModel {
-  const draft = sm.environmentDraft;
+  const draft = sm.environment.values;
   return {
     monitoring: project(draft, deps, MONITORING_FIELDS),
     substrate: project(draft, deps, SUBSTRATE_FIELDS),

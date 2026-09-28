@@ -880,7 +880,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
     (element as any).envTemperatureSensors = ['sensor.temp'];
     (element as any).envHumiditySensors = ['sensor.hum'];
     const envSpy = vi.fn();
-    element.addEventListener('environment-change-requested', envSpy);
+    element.addEventListener('environment-write-plan-requested', envSpy);
     (element as any)._submitGrowspaceAndEnv();
     expect(envSpy).toHaveBeenCalled();
   });
@@ -982,7 +982,7 @@ describe('ConfigDialog - Fan Controller Panel coverage', () => {
   }
 
   function fanCfg() {
-    return (element as any)._sm.environmentDraft.circulationFanConfig;
+    return (element as any)._sm.environment.values.circulationFanConfig;
   }
 
   beforeEach(async () => {
@@ -1335,7 +1335,7 @@ describe('ConfigDialog - misc branch coverage (getters/setters/guards/setInitial
 
   it('_seedFromDevice without a device leaves draft at defaults', () => {
     (element as any)._seedFromDevice();
-    expect((element as any)._sm.environmentDraft.selectedGrowspaceId).toBe('');
+    expect((element as any)._sm.environment.values.selectedGrowspaceId).toBe('');
   });
 
   it('_seedFromDevice maps legacy single-sensor fields to arrays', () => {
@@ -1347,9 +1347,9 @@ describe('ConfigDialog - misc branch coverage (getters/setters/guards/setInitial
         vpdSensor: 'sensor.vpd',
       },
     });
-    expect((element as any)._sm.environmentDraft.temperatureSensors).toEqual(['sensor.temp']);
-    expect((element as any)._sm.environmentDraft.humiditySensors).toEqual(['sensor.hum']);
-    expect((element as any)._sm.environmentDraft.vpdSensors).toEqual(['sensor.vpd']);
+    expect((element as any)._sm.environment.values.temperatureSensors).toEqual(['sensor.temp']);
+    expect((element as any)._sm.environment.values.humiditySensors).toEqual(['sensor.hum']);
+    expect((element as any)._sm.environment.values.vpdSensors).toEqual(['sensor.vpd']);
   });
 
   it('_editTank with empty/null fields uses || and ?? fallbacks (lines 1363–1366)', () => {
@@ -1382,7 +1382,7 @@ describe('ConfigDialog - misc branch coverage (getters/setters/guards/setInitial
       new CustomEvent('save-sensor-group', { detail: { group: updated } })
     );
 
-    const groups = (element as any)._sm.environmentDraft.sensorGroups;
+    const groups = (element as any)._sm.environment.values.sensorGroups;
     expect(groups).toHaveLength(1);
     expect(groups[0].name).toBe('Group A Renamed');
   });

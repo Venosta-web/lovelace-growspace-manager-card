@@ -361,13 +361,13 @@ describe('ConfigDialog', () => {
       await element.updateComplete;
 
       const listener = vi.fn();
-      element.addEventListener('environment-change-requested', listener);
+      element.addEventListener('environment-write-plan-requested', listener);
 
       const btn = element.shadowRoot?.querySelector('button.md3-button.primary');
       (btn as HTMLElement)?.click();
 
       expect(listener).toHaveBeenCalled();
-      expect(listener.mock.calls[0][0].detail.draft.temperatureSensors).toEqual(['sensor.new']);
+      expect(listener.mock.calls[0][0].detail[0].fields.temperatureSensors).toEqual(['sensor.new']);
     });
   });
 
@@ -1262,10 +1262,10 @@ describe('ConfigDialog', () => {
       expect(submitSpy).toHaveBeenCalledOnce();
       const detail = (submitSpy.mock.calls[0][0] as CustomEvent).detail;
       expect(detail.growspaceId).toBe('tent1');
-      expect(detail.visionCheckupConfig.enabled).toBe(true);
-      expect(detail.visionCheckupConfig.early_check_offset_minutes).toBe(90);
-      expect(detail.visionCheckupConfig.mid_check_hours).toBe(8);
-      expect(detail.visionCheckupConfig.late_check_offset_minutes).toBe(45);
+      expect(detail.config.visionEnabled).toBe(true);
+      expect(detail.config.visionEarlyOffset).toBe(90);
+      expect(detail.config.visionMidHours).toBe(8);
+      expect(detail.config.visionLateOffset).toBe(45);
     });
 
     it('does not dispatch event when the vision group is untouched', async () => {
@@ -1319,15 +1319,17 @@ describe('ConfigDialog', () => {
       await element.updateComplete;
 
       const listener = vi.fn();
-      element.addEventListener('environment-change-requested', listener);
+      element.addEventListener('environment-write-plan-requested', listener);
       const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
       saveBtn?.click();
 
       expect(listener).toHaveBeenCalled();
       const detail = listener.mock.calls[0][0].detail;
-      expect(detail.kind).toBe('shared-environment-draft');
-      expect(detail.draft.exhaustFanConfig.enabled).toBe(true);
-      expect(detail.dirty.has('exhaustFanConfig')).toBe(true);
+      expect(detail.map((command: { kind: string }) => command.kind)).toEqual([
+        'configure-environment',
+        'configure-exhaust',
+      ]);
+      expect(detail[1].config.enabled).toBe(true);
     });
   });
 });

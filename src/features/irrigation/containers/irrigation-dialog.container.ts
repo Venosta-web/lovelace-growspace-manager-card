@@ -71,7 +71,7 @@ import {
 } from '../../../slices/irrigation';
 import { resetWaterTracking } from '../../../slices/growspace';
 import { createEnvironmentChangeAdapter } from '../../../slices/growspace/environment-change.adapter';
-import { applyEnvironmentChange } from '../../config/environment-change';
+import { applyTankConfigChange } from '../../config/environment-change';
 import type {
   IrrigationConfig,
   SteeringMode,
@@ -1867,16 +1867,14 @@ export class IrrigationDialog extends LitElement {
 
   /** Effect: persist a narrow Tank Config Change. Reads only snapshotted params. */
   private async _effectSaveTank(params: SaveTankParams) {
-    await applyEnvironmentChange(
+    await applyTankConfigChange(
       {
-        kind: 'tank-config-change',
         growspaceId: params.growspaceId,
         irrigationTanks: params.irrigationTanks,
       },
-      createEnvironmentChangeAdapter(async () => {
-        await this.store.refreshData();
-      })
+      createEnvironmentChangeAdapter()
     );
+    await this.store.refreshData();
   }
 
   // ─── EC Ramp tab: Tab Intent → SM-event translation (ADR-0019) ─────────────

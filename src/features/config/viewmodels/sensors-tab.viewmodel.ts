@@ -249,7 +249,7 @@ export function createSensorsTabViewModel(
   sm: ConfigDialogSM,
   deps: SensorsTabDeps
 ): SensorsTabViewModel {
-  const draft = sm.environmentDraft;
+  const draft = sm.environment.values;
   const fields = SENSOR_FIELDS.map((def) => ({
     key: def.key,
     label: def.label,

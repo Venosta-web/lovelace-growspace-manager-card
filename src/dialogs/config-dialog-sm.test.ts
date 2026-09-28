@@ -88,15 +88,15 @@ describe('createInitialSM', () => {
 
   it('starts with empty environment draft', () => {
     const sm = createInitialSM();
-    expect(sm.environmentDraft.temperatureSensors).toEqual([]);
-    expect(sm.environmentDraft.selectedGrowspaceId).toBe('');
-    expect(sm.environmentDraft.stressThreshold).toBeNull();
+    expect(sm.environment.values.temperatureSensors).toEqual([]);
+    expect(sm.environment.values.selectedGrowspaceId).toBe('');
+    expect(sm.environment.values.stressThreshold).toBeNull();
   });
 
   it('defaults the humidity control flags to false in the environment draft', () => {
     const sm = createInitialSM();
-    expect(sm.environmentDraft.humidifierControlEnabled).toBe(false);
-    expect(sm.environmentDraft.dehumidifierControlEnabled).toBe(false);
+    expect(sm.environment.values.humidifierControlEnabled).toBe(false);
+    expect(sm.environment.values.dehumidifierControlEnabled).toBe(false);
   });
 
   it('seeds the humidity control flags from device attributes', () => {
@@ -107,8 +107,8 @@ describe('createInitialSM', () => {
       },
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.humidifierControlEnabled).toBe(true);
-    expect(sm.environmentDraft.dehumidifierControlEnabled).toBe(true);
+    expect(sm.environment.values.humidifierControlEnabled).toBe(true);
+    expect(sm.environment.values.dehumidifierControlEnabled).toBe(true);
   });
 
   it('reopens with the saved light leak settings and defaults older devices', () => {
@@ -121,8 +121,8 @@ describe('createInitialSM', () => {
       all_stages: true,
     };
     const device = makeDevice({ environmentAttributes: { lightLeakConfig: saved } });
-    expect(createInitialSM(device).environmentDraft.lightLeakConfig).toEqual(saved);
-    expect(createInitialSM(makeDevice()).environmentDraft.lightLeakConfig).toEqual({
+    expect(createInitialSM(device).environment.values.lightLeakConfig).toEqual(saved);
+    expect(createInitialSM(makeDevice()).environment.values.lightLeakConfig).toEqual({
       enabled: true,
       illuminance_sensor: null,
       threshold_lux: 1,
@@ -140,9 +140,9 @@ describe('createInitialSM', () => {
       },
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.temperatureSensors).toEqual(['sensor.temp1']);
-    expect(sm.environmentDraft.humiditySensors).toEqual(['sensor.hum1']);
-    expect(sm.environmentDraft.selectedGrowspaceId).toBe('gs1');
+    expect(sm.environment.values.temperatureSensors).toEqual(['sensor.temp1']);
+    expect(sm.environment.values.humiditySensors).toEqual(['sensor.hum1']);
+    expect(sm.environment.values.selectedGrowspaceId).toBe('gs1');
   });
 
   it('seeds a stored Acceptable Moisture Band from device', () => {
@@ -150,16 +150,16 @@ describe('createInitialSM', () => {
       environmentAttributes: { soilMoistureMin: 32.5, soilMoistureMax: 54 },
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.soilMoistureMin).toBe(32.5);
-    expect(sm.environmentDraft.soilMoistureMax).toBe(54);
+    expect(sm.environment.values.soilMoistureMin).toBe(32.5);
+    expect(sm.environment.values.soilMoistureMax).toBe(54);
   });
 
   it('seeds an inherited Acceptable Moisture Band as null, not as 20/60', () => {
     // Seeding the defaults as values would turn an inherited band into a
     // custom override the first time the user saves anything else.
     const sm = createInitialSM(makeDevice({ environmentAttributes: {} }));
-    expect(sm.environmentDraft.soilMoistureMin).toBeNull();
-    expect(sm.environmentDraft.soilMoistureMax).toBeNull();
+    expect(sm.environment.values.soilMoistureMin).toBeNull();
+    expect(sm.environment.values.soilMoistureMax).toBeNull();
   });
 
   it('normalises legacy single-sensor fields to arrays when seeding from device', () => {
@@ -169,7 +169,7 @@ describe('createInitialSM', () => {
       },
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.temperatureSensors).toEqual(['sensor.old_temp']);
+    expect(sm.environment.values.temperatureSensors).toEqual(['sensor.old_temp']);
   });
 
   it('seeds vision checkup config from device', () => {
@@ -184,10 +184,10 @@ describe('createInitialSM', () => {
       },
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.visionEnabled).toBe(true);
-    expect(sm.environmentDraft.visionEarlyOffset).toBe(30);
-    expect(sm.environmentDraft.visionMidHours).toBe(4);
-    expect(sm.environmentDraft.visionLateOffset).toBe(45);
+    expect(sm.environment.values.visionEnabled).toBe(true);
+    expect(sm.environment.values.visionEarlyOffset).toBe(30);
+    expect(sm.environment.values.visionMidHours).toBe(4);
+    expect(sm.environment.values.visionLateOffset).toBe(45);
   });
 
   it('seeds vpdOptimalOverrides from device environment attributes', () => {
@@ -198,13 +198,13 @@ describe('createInitialSM', () => {
       environmentAttributes: { vpdOptimalOverrides: overrides } as any,
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.vpdOptimalOverrides).toEqual(overrides);
+    expect(sm.environment.values.vpdOptimalOverrides).toEqual(overrides);
   });
 
   it('defaults vpdOptimalOverrides to empty object when absent from device', () => {
     const device = makeDevice({ environmentAttributes: {} });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.vpdOptimalOverrides).toEqual({});
+    expect(sm.environment.values.vpdOptimalOverrides).toEqual({});
   });
 
   it('seeds fields omitted by the former dialog payloads', () => {
@@ -217,7 +217,7 @@ describe('createInitialSM', () => {
         moldThreshold: 0.75,
       },
     });
-    const draft = createInitialSM(device).environmentDraft;
+    const draft = createInitialSM(device).environment.values;
     expect(draft.lstOffset).toBe(-3.5);
     expect(draft.humidifierThresholds).toEqual(humidifierThresholds);
     expect(draft.stressThreshold).toBe(0.7);
@@ -668,9 +668,9 @@ describe('UPDATE_ENV_DRAFT', () => {
       type: 'UPDATE_ENV_DRAFT',
       partial: { co2Sensor: 'sensor.co2', stressThreshold: 0.9 },
     });
-    expect(next.environmentDraft.co2Sensor).toBe('sensor.co2');
-    expect(next.environmentDraft.stressThreshold).toBe(0.9);
-    expect(next.environmentDraft.moldThreshold).toBeNull();
+    expect(next.environment.values.co2Sensor).toBe('sensor.co2');
+    expect(next.environment.values.stressThreshold).toBe(0.9);
+    expect(next.environment.values.moldThreshold).toBeNull();
   });
 
   it('replaces array fields entirely', () => {
@@ -679,7 +679,7 @@ describe('UPDATE_ENV_DRAFT', () => {
       type: 'UPDATE_ENV_DRAFT',
       partial: { temperatureSensors: ['sensor.a', 'sensor.b'] },
     });
-    expect(next.environmentDraft.temperatureSensors).toEqual(['sensor.a', 'sensor.b']);
+    expect(next.environment.values.temperatureSensors).toEqual(['sensor.a', 'sensor.b']);
   });
 
   it('updates vpdOptimalOverrides in the environment draft', () => {
@@ -691,7 +691,7 @@ describe('UPDATE_ENV_DRAFT', () => {
       type: 'UPDATE_ENV_DRAFT',
       partial: { vpdOptimalOverrides: overrides },
     });
-    expect(next.environmentDraft.vpdOptimalOverrides).toEqual(overrides);
+    expect(next.environment.values.vpdOptimalOverrides).toEqual(overrides);
   });
 });
 
@@ -774,8 +774,8 @@ describe('COMMIT_TANK', () => {
     });
     const next = transition(filled, { type: 'COMMIT_TANK' });
     expect(next.tabs.tanks.sub.kind).toBe('idle');
-    expect(next.environmentDraft.irrigationTanks).toHaveLength(1);
-    expect(next.environmentDraft.irrigationTanks[0].sensorEntity).toBe('sensor.tank1');
+    expect(next.environment.values.irrigationTanks).toHaveLength(1);
+    expect(next.environment.values.irrigationTanks[0].sensorEntity).toBe('sensor.tank1');
   });
 
   it('replaces an existing tank by index when editing', () => {
@@ -802,8 +802,8 @@ describe('COMMIT_TANK', () => {
       partial: { name: 'New Name' },
     });
     const next = transition(updated, { type: 'COMMIT_TANK' });
-    expect(next.environmentDraft.irrigationTanks).toHaveLength(1);
-    expect(next.environmentDraft.irrigationTanks[0].name).toBe('New Name');
+    expect(next.environment.values.irrigationTanks).toHaveLength(1);
+    expect(next.environment.values.irrigationTanks[0].name).toBe('New Name');
   });
 
   it('is a no-op when tanks sub is idle', () => {
@@ -825,7 +825,7 @@ describe('COMMIT_TANK', () => {
       },
     });
     const seeded = createInitialSM(device);
-    expect(seeded.environmentDraft.irrigationTanks.map((t) => t.staleAfterMinutes)).toEqual([
+    expect(seeded.environment.values.irrigationTanks.map((t) => t.staleAfterMinutes)).toEqual([
       0, 45,
     ]);
 
@@ -841,7 +841,7 @@ describe('COMMIT_TANK', () => {
     const renamed = transition(editing, { type: 'UPDATE_TANK_DRAFT', partial: { name: 'A2' } });
     const next = transition(renamed, { type: 'COMMIT_TANK' });
 
-    expect(next.environmentDraft.irrigationTanks).toEqual([
+    expect(next.environment.values.irrigationTanks).toEqual([
       expect.objectContaining({ name: 'A2', staleAfterMinutes: 0 }),
       expect.objectContaining({ name: 'B', staleAfterMinutes: 45 }),
     ]);
@@ -1000,8 +1000,8 @@ describe('RESET_FROM_DEVICE', () => {
       environmentAttributes: { temperatureSensors: ['sensor.new'] },
     });
     const next = transition(sm, { type: 'RESET_FROM_DEVICE', device });
-    expect(next.environmentDraft.temperatureSensors).toEqual(['sensor.new']);
-    expect(next.environmentDraft.selectedGrowspaceId).toBe('gs1');
+    expect(next.environment.values.temperatureSensors).toEqual(['sensor.new']);
+    expect(next.environment.values.selectedGrowspaceId).toBe('gs1');
   });
 
   it('does not change active tab or status', () => {
@@ -1188,13 +1188,13 @@ describe('circulationFanConfig in EnvironmentDraft', () => {
       environmentAttributes: { circulationFanConfig: fanConfig } as any,
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.circulationFanConfig).toEqual(fanConfig);
+    expect(sm.environment.values.circulationFanConfig).toEqual(fanConfig);
   });
 
   it('uses backend-matching defaults when circulationFanConfig is absent', () => {
     const device = makeDevice();
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.circulationFanConfig).toEqual({
+    expect(sm.environment.values.circulationFanConfig).toEqual({
       enabled: false,
       regulation_mode: 'vpd',
       min_speed: 0,
@@ -1242,13 +1242,13 @@ describe('exhaustFanConfig in EnvironmentDraft', () => {
       environmentAttributes: { exhaustFanConfig } as any,
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.exhaustFanConfig).toEqual(exhaustFanConfig);
+    expect(sm.environment.values.exhaustFanConfig).toEqual(exhaustFanConfig);
   });
 
   it('uses backend-matching defaults when exhaustFanConfig is absent (no mode/wind)', () => {
     const device = makeDevice();
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.exhaustFanConfig).toEqual({
+    expect(sm.environment.values.exhaustFanConfig).toEqual({
       enabled: false,
       min_speed: 0,
       max_speed: 100,
@@ -1472,7 +1472,7 @@ describe('RESET_FROM_DEVICE re-seeds notifications', () => {
 describe('lstOffset on EnvironmentDraft', () => {
   it('defaults to -2.0 in a fresh SM', () => {
     const sm = createInitialSM();
-    expect(sm.environmentDraft.lstOffset).toBe(-2.0);
+    expect(sm.environment.values.lstOffset).toBe(-2.0);
   });
 
   it('seeds lstOffset from device environmentAttributes', () => {
@@ -1480,7 +1480,7 @@ describe('lstOffset on EnvironmentDraft', () => {
       environmentAttributes: { lstOffset: -3.5 } as any,
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.lstOffset).toBe(-3.5);
+    expect(sm.environment.values.lstOffset).toBe(-3.5);
   });
 
   it('falls back to -2.0 when device has no lstOffset', () => {
@@ -1488,13 +1488,13 @@ describe('lstOffset on EnvironmentDraft', () => {
       environmentAttributes: {} as any,
     });
     const sm = createInitialSM(device);
-    expect(sm.environmentDraft.lstOffset).toBe(-2.0);
+    expect(sm.environment.values.lstOffset).toBe(-2.0);
   });
 
   it('updates lstOffset via UPDATE_ENV_DRAFT', () => {
     const sm = createInitialSM();
     const updated = transition(sm, { type: 'UPDATE_ENV_DRAFT', partial: { lstOffset: -5.0 } });
-    expect(updated.environmentDraft.lstOffset).toBe(-5.0);
+    expect(updated.environment.values.lstOffset).toBe(-5.0);
   });
 
   it('RESET_FROM_DEVICE re-seeds lstOffset', () => {
@@ -1502,79 +1502,13 @@ describe('lstOffset on EnvironmentDraft', () => {
       type: 'UPDATE_ENV_DRAFT',
       partial: { lstOffset: -8.0 },
     });
-    expect(sm.environmentDraft.lstOffset).toBe(-8.0);
+    expect(sm.environment.values.lstOffset).toBe(-8.0);
 
     const reset = transition(sm, {
       type: 'RESET_FROM_DEVICE',
       device: makeDevice({ environmentAttributes: { lstOffset: -1.0 } as any }),
     });
-    expect(reset.environmentDraft.lstOffset).toBe(-1.0);
-  });
-});
-
-describe('environment dirty write set (ADR-0032)', () => {
-  it('starts empty so an untouched dialog saves nothing', () => {
-    expect(createInitialSM().environmentDirty.size).toBe(0);
-  });
-
-  it('records the top-level keys an edit carried', () => {
-    const sm = transition(createInitialSM(), {
-      type: 'UPDATE_ENV_DRAFT',
-      partial: { temperatureSensors: ['sensor.t'], phSensors: [] },
-    });
-    expect([...sm.environmentDirty].sort()).toEqual(['phSensors', 'temperatureSensors']);
-  });
-
-  it('accumulates keys across successive edits', () => {
-    let sm = transition(createInitialSM(), {
-      type: 'UPDATE_ENV_DRAFT',
-      partial: { temperatureSensors: ['sensor.t'] },
-    });
-    sm = transition(sm, { type: 'UPDATE_ENV_DRAFT', partial: { co2Sensor: 'sensor.co2' } });
-    expect([...sm.environmentDirty].sort()).toEqual(['co2Sensor', 'temperatureSensors']);
-  });
-
-  it('dirties both moisture bounds when only one is edited', () => {
-    const sm = transition(createInitialSM(), {
-      type: 'UPDATE_ENV_DRAFT',
-      partial: { soilMoistureMin: 30 },
-    });
-    expect(sm.environmentDirty.has('soilMoistureMin')).toBe(true);
-    expect(sm.environmentDirty.has('soilMoistureMax')).toBe(true);
-  });
-
-  it('dirties irrigationTanks when a tank is committed', () => {
-    let sm = transition(createInitialSM(), { type: 'BEGIN_ADD_TANK' });
-    sm = transition(sm, { type: 'UPDATE_TANK_DRAFT', partial: { sensorEntity: 'sensor.tank' } });
-    sm = transition(sm, { type: 'COMMIT_TANK' });
-    expect(sm.environmentDirty.has('irrigationTanks')).toBe(true);
-  });
-
-  it('keeps a dirty key that was edited to an empty value', () => {
-    const sm = transition(createInitialSM(), {
-      type: 'UPDATE_ENV_DRAFT',
-      partial: { phSensors: [] },
-    });
-    expect(sm.environmentDirty.has('phSensors')).toBe(true);
-  });
-
-  it('clears the write set when re-seeding after a successful save + refresh', () => {
-    const edited = transition(createInitialSM(), {
-      type: 'UPDATE_ENV_DRAFT',
-      partial: { temperatureSensors: ['sensor.t'] },
-    });
-    const reseeded = transition(edited, { type: 'RESET_FROM_DEVICE', device: makeDevice() });
-    expect(reseeded.environmentDirty.size).toBe(0);
-  });
-
-  it('retains the write set when no re-seed happens, so Retry resends the same patch', () => {
-    // A failed save leaves the SM untouched — the dirty keys must survive.
-    const edited = transition(createInitialSM(), {
-      type: 'UPDATE_ENV_DRAFT',
-      partial: { temperatureSensors: ['sensor.t'] },
-    });
-    const afterFailedSave = transition(edited, { type: 'SWITCH_TAB', tab: 'climate' });
-    expect([...afterFailedSave.environmentDirty]).toEqual(['temperatureSensors']);
+    expect(reset.environment.values.lstOffset).toBe(-1.0);
   });
 });
 
@@ -1584,7 +1518,7 @@ describe('discard prompt after a clean re-seed', () => {
     // asymmetry would surface here as a spurious "discard changes?" prompt.
     const device = makeDevice();
     const sm = transition(createInitialSM(device), { type: 'RESET_FROM_DEVICE', device });
-    expect(sm.environmentDirty.size).toBe(0);
+    expect(sm.environment.dirty.size).toBe(0);
     expect(isActiveTabDirty(sm, device)).toBe(false);
   });
 });

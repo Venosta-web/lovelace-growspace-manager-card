@@ -1,6 +1,6 @@
 /**
  * GrowspaceDialogHost – watering submit handler, IPM apply handler,
- * log-pollination handler, _handleEnvironmentChange handler, and
+ * log-pollination handler, _handleEnvironmentWritePlan handler, and
  * _initControllers idempotency guard.
  */
 
@@ -10,7 +10,7 @@ import {
   removeEnvironment as mockRemoveEnvironment,
   updateGrowspace as mockUpdateGrowspace,
 } from '../../../slices/growspace';
-import { applyEnvironmentChange as mockApplyEnvironmentChange } from '../../config/environment-change';
+import { executeEnvironmentWritePlan as mockExecuteEnvironmentWritePlan } from '../../config/environment-change';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { saveNotificationSettings as mockSaveNotificationSettings } from '../../../slices/notification';
 import { notification$, activeDialog$, pendingDeepLinkPlantId$ } from '../../../slices/ui';
@@ -58,7 +58,7 @@ vi.mock('../../../slices/growspace', async (importOriginal) => ({
 
 vi.mock('../../config/environment-change', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../config/environment-change')>()),
-  applyEnvironmentChange: vi.fn().mockResolvedValue(undefined),
+  executeEnvironmentWritePlan: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../slices/genetics', () => ({
@@ -288,6 +288,7 @@ describe('GrowspaceDialogHost – _handleApplyIPM', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(mockExecuteEnvironmentWritePlan).mockResolvedValue(undefined);
     el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
     store = makeMockStoreWithIPM();
     (el as any).store = store;
@@ -639,10 +640,10 @@ describe('GrowspaceDialogHost – render() device-ownership guard', () => {
 });
 
 // ---------------------------------------------------------------------------
-// _handleEnvironmentChange
+// _handleEnvironmentWritePlan
 // ---------------------------------------------------------------------------
 
-describe('GrowspaceDialogHost – _handleEnvironmentChange', () => {
+describe('GrowspaceDialogHost – _handleEnvironmentWritePlan', () => {
   function makeEnvStore() {
     return {
       ui: { $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) } },
@@ -669,14 +670,33 @@ describe('GrowspaceDialogHost – _handleEnvironmentChange', () => {
   });
 
   it('forwards one request to the Environment Change interface', async () => {
-    const request = {
-      kind: 'tank-config-change' as const,
-      growspaceId: 'gs-1',
-      irrigationTanks: [],
-    };
-    await (el as any)._handleEnvironmentChange(request);
+    const request = [{ kind: 'configure-environment' as const, growspaceId: 'gs-1', fields: {} }];
+    await (el as any)._handleEnvironmentWritePlan(request);
 
-    expect(mockApplyEnvironmentChange).toHaveBeenCalledWith(request, expect.any(Object));
+    expect(mockExecuteEnvironmentWritePlan).toHaveBeenCalledWith(request, expect.any(Object));
+    expect(store.refreshData).toHaveBeenCalledOnce();
+  });
+
+  it('refreshes only after command execution succeeds', async () => {
+    const order: string[] = [];
+    vi.mocked(mockExecuteEnvironmentWritePlan).mockImplementation(async () => {
+      order.push('commands');
+    });
+    store.refreshData.mockImplementation(async () => {
+      order.push('refresh');
+    });
+    await (el as any)._handleEnvironmentWritePlan([
+      { kind: 'configure-environment', growspaceId: 'gs-1', fields: {} },
+    ]);
+    expect(order).toEqual(['commands', 'refresh']);
+  });
+
+  it('suppresses refresh after a failed command', async () => {
+    vi.mocked(mockExecuteEnvironmentWritePlan).mockRejectedValueOnce(new Error('exhaust offline'));
+    await (el as any)._handleEnvironmentWritePlan([
+      { kind: 'configure-environment', growspaceId: 'gs-1', fields: {} },
+    ]);
+    expect(store.refreshData).not.toHaveBeenCalled();
   });
 });
 
