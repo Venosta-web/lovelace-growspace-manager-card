@@ -3,6 +3,8 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { mdiHelpCircleOutline, mdiPlus, mdiSprout } from '@mdi/js';
 
 import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
+import { LAZY_CHUNKS, loadLazyChunk } from '../../../lib/lazy-chunk';
+import '../../shared/ui/lazy-chunk-error';
 import {
   getGrowRun,
   refusalText,
@@ -23,6 +25,10 @@ import {
  * Plants that will take part. Nothing is optimistic. The chip changes when the
  * Active Run Sensor does, and a refusal — someone else started a run, this
  * user may not — is said in words while the chip catches up.
+ *
+ * Completing starts from the Active Run's details (GSM#671), and opens the Run
+ * Completion Preview in its own lazy chunk. It stays open after the sensor
+ * reads `none`, so the grower sees the completed Run and its Pending metrics.
  */
 @customElement('growspace-run-chip')
 export class GrowspaceRunChip extends LitElement {
@@ -37,6 +43,8 @@ export class GrowspaceRunChip extends LitElement {
   @state() private _detailsOpen = false;
   @state() private _details: GetGrowRunResult | null = null;
   @state() private _detailError: string | null = null;
+  /** The completion dialog's chunk: not asked for, arriving, here, or missing. */
+  @state() private _completion: 'closed' | 'loading' | 'ready' | 'missing' = 'closed';
 
   @query('#run-label') private _labelInput?: HTMLInputElement;
   @query('#run-goals') private _goalsInput?: HTMLTextAreaElement;
@@ -199,6 +207,35 @@ export class GrowspaceRunChip extends LitElement {
     );
   }
 
+  private async _openCompletion(): Promise<void> {
+    this._detailsOpen = false;
+    this._completion = 'loading';
+    const loaded = await loadLazyChunk(
+      LAZY_CHUNKS.runCompletionDialog,
+      () => import('./growspace-run-completion-dialog')
+    );
+    if (this._completion === 'loading') this._completion = loaded ? 'ready' : 'missing';
+  }
+
+  private _renderCompletion(growspaceId: string) {
+    const close = () => (this._completion = 'closed');
+    if (this._completion === 'ready') {
+      return html`<growspace-run-completion-dialog
+        .growspaceId=${growspaceId}
+        .language=${this.language}
+        @closed=${close}
+      ></growspace-run-completion-dialog>`;
+    }
+    if (this._completion === 'missing') {
+      return html`<ha-dialog open .headerTitle=${this._t('complete')} @closed=${close}>
+        <growspace-lazy-chunk-error
+          .chunk=${LAZY_CHUNKS.runCompletionDialog}
+        ></growspace-lazy-chunk-error>
+      </ha-dialog>`;
+    }
+    return nothing;
+  }
+
   private _renderDetails() {
     const run = this._details?.outcome === 'found' ? this._details.run : null;
     return html`
@@ -215,6 +252,11 @@ export class GrowspaceRunChip extends LitElement {
             : !run
               ? html`<p>${this._t('details_loading')}</p>`
               : html`
+                  ${run.metrics_state === 'live'
+                    ? html`<p class="muted" data-testid="run-metrics-state">
+                        ${this._t('metrics_live')}
+                      </p>`
+                    : nothing}
                   <h3>${this._t('participants_heading')}</h3>
                   ${run.participations.length
                     ? html`<ul data-testid="run-participations">
@@ -244,6 +286,11 @@ export class GrowspaceRunChip extends LitElement {
                     : html`<p>${this._t('none_yet')}</p>`}
                 `}
         <div class="row">
+          ${run?.status === 'active'
+            ? html`<button type="button" data-action="complete-run" @click=${this._openCompletion}>
+                ${this._t('complete_run')}
+              </button>`
+            : nothing}
           <button type="button" @click=${() => (this._detailsOpen = false)}>
             ${this._t('close')}
           </button>
@@ -324,7 +371,12 @@ export class GrowspaceRunChip extends LitElement {
   render() {
     const view = this.view;
     if (!view) return nothing;
+    // One stable slot, so the completion dialog outlives the chip's own switch
+    // from the Active Run to `Start run` when the sensor catches up.
+    return html`${this._renderChip(view)}${this._renderCompletion(view.growspaceId)}`;
+  }
 
+  private _renderChip(view: RunView) {
     if (view.state === 'none') {
       return html`
         <button

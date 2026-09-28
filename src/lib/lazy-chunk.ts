@@ -155,6 +155,13 @@ export const LAZY_CHUNKS = {
     feature: 'The tissue culture dialog',
     onDemandOnly: true,
   },
+  // Completing a Grow Run (GSM#671) is rare and deliberate; the header's run
+  // chip carries only the button that fetches it.
+  runCompletionDialog: {
+    name: 'growspace-run-completion-dialog',
+    feature: 'The run completion dialog',
+    onDemandOnly: true,
+  },
   // The Setup Checklist only ever renders for a growspace still being set up,
   // so every established dashboard would otherwise carry it in the entry.
   setupChecklist: {

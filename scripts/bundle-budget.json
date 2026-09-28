@@ -5,7 +5,7 @@
       "id": "entry",
       "label": "Entry",
       "match": "growspace-manager-card.js",
-      "maxGzipBytes": 205000
+      "maxGzipBytes": 206000
     },
     {
       "id": "three",
@@ -45,6 +45,11 @@
       "date": "2026-09-26",
       "rules": ["entry"],
       "change": "GSM#668 raises the entry from 200,000 to 205,000 bytes gzip for the Active Grow Run chip in the header, its Start dialog, the grow-run slice and its localized labels. Measured at dev df785598: entry 199,162 bytes gzip; with the run chip 201,300, 2,138 bytes over dev and 1,300 over the old limit. The chip is part of the header the entry already renders, beside the safety chip. The remaining 3.7 KB is headroom for the rest of the Grow Run MVP's header surface (#669, #671); the Grow Run View itself (#675) belongs in a lazy chunk."
+    },
+    {
+      "date": "2026-09-28",
+      "rules": ["entry"],
+      "change": "GSM#671 raises the entry from 205,000 to 206,000 bytes gzip for completing a Grow Run: the Complete run action and Live metrics line in the run chip's details, the lazy-chunk wiring that fetches the Run Completion Preview, the new refusal codes and the localized labels. Measured at dev 1220d029: entry 204,503 bytes gzip; with completion 205,433, 930 bytes over dev and 433 over the old limit. The dialog itself, its schemas and its two WebSocket calls are a lazy chunk of their own (runCompletionDialog, 3,570 bytes gzip), so what stays in the entry is the button, the chunk registration and the strings, which the card keeps in one eagerly bundled locale file. #668's reserved headroom was spent by #669."
     }
   ]
 }

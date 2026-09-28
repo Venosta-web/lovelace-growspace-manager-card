@@ -212,6 +212,9 @@ const KNOWN_REFUSALS = new Set([
   'grow_run.already_active',
   'grow_run.not_authorized',
   'grow_run.store_unreadable',
+  'grow_run.not_active',
+  'grow_run.irrigation_delivering',
+  'grow_run.acknowledgement_required',
 ]);
 
 /**

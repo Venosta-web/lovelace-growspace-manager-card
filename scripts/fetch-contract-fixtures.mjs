@@ -48,12 +48,17 @@ const PLANT_FIXTURES = ['update_plant_request_v1'];
 // whole read side (GSM#783). Prerelease-first like the two above.
 const SAFETY_FIXTURES = ['irrigation_controller_v1'];
 // The Active Run Sensor and the start_grow_run results (GSM#668): the run
-// chip's read side and the one command it sends. Prerelease-first as well.
+// chip's read side and the one command it sends. Prerelease-first as well, and
+// so are the Run Completion Preview and complete_grow_run's results (GSM#671).
 const GROW_RUN_FIXTURES = [
   'active_run_sensor_v1',
   'grow_run_started_v1',
   'grow_run_refused_v1',
   'grow_run_details_v1',
+  'grow_run_completion_preview_v1',
+  'grow_run_completed_v1',
+  'grow_run_completion_refused_v1',
+  'grow_run_completed_details_v1',
 ];
 // Every payload the card's TC chunk parses, and the local file each is written
 // to. One entry per contract, so adding a TC command is one line here rather

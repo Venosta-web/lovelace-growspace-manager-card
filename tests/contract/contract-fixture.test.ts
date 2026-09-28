@@ -33,6 +33,10 @@ import {
   GetGrowRunResultSchema,
   StartGrowRunResultSchema,
 } from '../../src/slices/grow-run/schema';
+import {
+  CompleteGrowRunResultSchema,
+  PreviewCompletionResultSchema,
+} from '../../src/slices/grow-run/completion-schema';
 
 interface FixtureContract {
   name: string;
@@ -164,6 +168,36 @@ const CONTRACTS: FixtureContract[] = [
     schema: GetGrowRunResultSchema,
     leadingVariable: 'GSM_PRERELEASE_GROW_RUN_DETAILS_FIXTURE',
     releaseVariable: 'GSM_RELEASE_GROW_RUN_DETAILS_FIXTURE',
+    releaseRequired: false,
+  },
+  // Completing a Run (GSM#671): the preview, both outcomes of the command, and
+  // a Completed Run's details with its Pending metrics.
+  {
+    name: 'Grow Run completion preview',
+    schema: PreviewCompletionResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_COMPLETION_PREVIEW_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_COMPLETION_PREVIEW_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run completed',
+    schema: CompleteGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_COMPLETED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_COMPLETED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run completion refused',
+    schema: CompleteGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_COMPLETION_REFUSED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_COMPLETION_REFUSED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Completed Grow Run details',
+    schema: GetGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_COMPLETED_DETAILS_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_COMPLETED_DETAILS_FIXTURE',
     releaseRequired: false,
   },
   // Growspace Manager TC is a separate repository that owns its own WebSocket
