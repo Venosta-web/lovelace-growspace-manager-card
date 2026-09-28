@@ -333,7 +333,10 @@ describe('growspace-run-chip completion', () => {
   }
 
   async function openDetails(result: unknown): Promise<GrowspaceRunChip> {
-    hassCallMock.mockResolvedValueOnce(result);
+    // The chip reads the Run list as it renders (GSM#673), then the details.
+    hassCallMock
+      .mockResolvedValueOnce({ outcome: 'listed', run_revision: 4, runs: [] })
+      .mockResolvedValueOnce(result);
     const chip = await fixture<GrowspaceRunChip>(html`
       <growspace-run-chip .view=${ACTIVE}></growspace-run-chip>
     `);

@@ -19,15 +19,15 @@ import {
   StartGrowRunPayloadSchema,
   StartGrowRunResultSchema,
   type PreviewGrowRunStartResult,
-  type RunRefusal,
   type StartConflict,
   type StartGrowRunResult,
 } from './start-schema';
+import type { RunRefusal } from './schema';
 
+export type { RunRefusal } from './schema';
 export type {
   CoverageGap,
   PreviewGrowRunStartResult,
-  RunRefusal,
   StartGrowRunResult,
   StartPreview,
 } from './start-schema';
@@ -101,6 +101,8 @@ const KNOWN_REFUSALS = new Set([
   'grow_run.not_active',
   'grow_run.irrigation_delivering',
   'grow_run.acknowledgement_required',
+  'grow_run.not_found',
+  'grow_run.not_completed',
 ]);
 
 /**

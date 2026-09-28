@@ -6,13 +6,21 @@
  * and device registries by its language-independent `translation_key` and the
  * growspace device identifier, never by guessing an entity ID from a name.
  *
- * The write side lives in `./start`, which only the lazy start dialog loads.
+ * The write side lives in `./start`, `./completion` and `./finalization`,
+ * which only their lazy dialogs load. The header asks for the Run list alone,
+ * to offer finalizing a Completed Run (GSM#673).
  */
 
 import type { HomeAssistant } from 'custom-card-helpers';
 import { hassCall } from '../../services/hass-call';
 import { localize, localizePlural, localizeWithParams } from '../../localize/localize';
-import { ActiveRunSensorSchema, GetGrowRunResultSchema, type GetGrowRunResult } from './schema';
+import {
+  ActiveRunSensorSchema,
+  GetGrowRunResultSchema,
+  ListGrowRunsResultSchema,
+  type GetGrowRunResult,
+  type ListGrowRunsResult,
+} from './schema';
 
 export type { GetGrowRunResult } from './schema';
 
@@ -175,5 +183,14 @@ export function getGrowRun(growspaceId: string, runId: string): Promise<GetGrowR
     'growspace_manager/get_grow_run',
     { growspace_id: growspaceId, run_id: runId },
     GetGrowRunResultSchema
+  );
+}
+
+/** Every Run a growspace's ledger holds, newest first (GSM#673). */
+export function listGrowRuns(growspaceId: string): Promise<ListGrowRunsResult> {
+  return hassCall(
+    'growspace_manager/list_grow_runs',
+    { growspace_id: growspaceId },
+    ListGrowRunsResultSchema
   );
 }

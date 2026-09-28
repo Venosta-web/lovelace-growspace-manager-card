@@ -9,20 +9,12 @@
 
 import { z } from 'zod';
 
-import { MovementFactSchema, ParticipationSchema, RunSummarySchema } from './schema';
-
-/**
- * Every refusal is a result, carrying where the ledger really is. `code`
- * stays a string so a refusal a newer backend adds still renders in the
- * backend's own words.
- */
-export const RunRefusalSchema = z.object({
-  code: z.string().min(1),
-  message: z.string(),
-  current_revision: z.number().int().min(0).nullable(),
-  active_run: RunSummarySchema.nullable(),
-});
-export type RunRefusal = z.infer<typeof RunRefusalSchema>;
+import {
+  MovementFactSchema,
+  ParticipationSchema,
+  RunRefusalSchema,
+  RunSummarySchema,
+} from './schema';
 
 export const StartGrowRunResultSchema = z.discriminatedUnion('outcome', [
   z.object({

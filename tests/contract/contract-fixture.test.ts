@@ -28,7 +28,15 @@ import {
   UpdatePlantRequestContractSchema,
 } from '../../src/slices/plant/schema';
 import { IrrigationControllerSchema } from '../../src/slices/safety/schema';
-import { ActiveRunSensorSchema, GetGrowRunResultSchema } from '../../src/slices/grow-run/schema';
+import {
+  ActiveRunSensorSchema,
+  GetGrowRunResultSchema,
+  ListGrowRunsResultSchema,
+} from '../../src/slices/grow-run/schema';
+import {
+  FinalizeGrowRunResultSchema,
+  PreviewFinalizationResultSchema,
+} from '../../src/slices/grow-run/finalization-schema';
 import {
   PreviewGrowRunStartResultSchema,
   StartGrowRunResultSchema,
@@ -221,6 +229,43 @@ const CONTRACTS: FixtureContract[] = [
     schema: GetGrowRunResultSchema,
     leadingVariable: 'GSM_PRERELEASE_GROW_RUN_COMPLETED_DETAILS_FIXTURE',
     releaseVariable: 'GSM_RELEASE_GROW_RUN_COMPLETED_DETAILS_FIXTURE',
+    releaseRequired: false,
+  },
+  // Finalizing a Run (GSM#673): the snapshot preview, both outcomes of the
+  // command, a Finalized Run's details, and the Run list the chip reads.
+  {
+    name: 'Grow Run finalization preview',
+    schema: PreviewFinalizationResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_FINALIZATION_PREVIEW_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_FINALIZATION_PREVIEW_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run finalized',
+    schema: FinalizeGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_FINALIZED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_FINALIZED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run finalization refused',
+    schema: FinalizeGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_FINALIZATION_REFUSED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_FINALIZATION_REFUSED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Finalized Grow Run details',
+    schema: GetGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_FINALIZED_DETAILS_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_FINALIZED_DETAILS_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run list',
+    schema: ListGrowRunsResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_LIST_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_LIST_FIXTURE',
     releaseRequired: false,
   },
   // Growspace Manager TC is a separate repository that owns its own WebSocket
