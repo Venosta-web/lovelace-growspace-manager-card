@@ -1290,7 +1290,7 @@
     "completion_outcomes_one": "{count} harvested plant has no dry weight, so yield stays incomplete.",
     "completion_outcomes_other": "{count} harvested plants have no dry weight, so yield stays incomplete.",
     "completion_outcome_no_dry_weight": "no dry weight",
-    "completion_outcome_removed": "plant removed",
+    "completion_outcome_incomplete": "recorded as incomplete",
     "completion_gaps_heading": "Attribution gaps",
     "completion_gap_pending": "{plant} moved {when}, not yet recorded",
     "completion_gap_unrecorded": "{plant} is here but not recorded",

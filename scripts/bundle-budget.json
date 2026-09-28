@@ -49,7 +49,7 @@
     {
       "date": "2026-09-28",
       "rules": ["entry"],
-      "change": "GSM#671 raises the entry from 205,000 to 206,000 bytes gzip for completing a Grow Run: the Complete run action and Live metrics line in the run chip's details, the lazy-chunk wiring that fetches the Run Completion Preview, the new refusal codes and the localized labels. Measured at dev 1220d029: entry 204,503 bytes gzip; with completion 205,433, 930 bytes over dev and 433 over the old limit. The dialog itself, its schemas and its two WebSocket calls are a lazy chunk of their own (runCompletionDialog, 3,570 bytes gzip), so what stays in the entry is the button, the chunk registration and the strings, which the card keeps in one eagerly bundled locale file. #668's reserved headroom was spent by #669."
+      "change": "GSM#671 raises the entry from 205,000 to 206,000 bytes gzip for completing a Grow Run: the Complete run action and Live metrics line in the run chip's details, the lazy-chunk wiring that fetches the Run Completion Preview, the new refusal codes and the localized labels. Measured at dev 10cbfb92, after #672's card half left 9 bytes of headroom: entry 204,991 bytes gzip; with completion 205,918, 927 bytes over dev and 918 over the old limit. The dialog itself, its schemas and its two WebSocket calls are a lazy chunk of their own (runCompletionDialog, 3,570 bytes gzip), so what stays in the entry is the button, the chunk registration and the strings, which the card keeps in one eagerly bundled locale file. #668's reserved headroom was spent by #669."
     }
   ]
 }

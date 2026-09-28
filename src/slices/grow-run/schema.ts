@@ -101,6 +101,24 @@ const MovementFactSchema = z.object({
   projected: z.boolean(),
 });
 
+const HarvestOutcomeSchema = z.object({
+  plant_id: z.string(),
+  strain: z.string(),
+  phenotype: z.string(),
+  source_growspace_id: z.string(),
+  state: z.enum(['pending', 'recorded', 'no_usable_yield', 'incomplete']),
+  reason: z.string().nullable(),
+  metrics: z.object({
+    wet_weight: z.number().nullable().optional(),
+    dry_weight: z.number().nullable().optional(),
+    trim_weight: z.number().nullable().optional(),
+    thc_percentage: z.number().nullable().optional(),
+    cbd_percentage: z.number().nullable().optional(),
+    terpene_profile: z.string().nullable().optional(),
+  }),
+  quality_score: z.number().nullable(),
+});
+
 export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
   z.object({ outcome: z.literal('not_found') }),
   z.object({
@@ -109,6 +127,7 @@ export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
       notes: z.string().nullable().optional(),
       participations: z.array(ParticipationSchema),
       movement_history: z.array(MovementFactSchema),
+      harvest_outcomes: z.array(HarvestOutcomeSchema).optional().default([]),
     }),
   }),
 ]);

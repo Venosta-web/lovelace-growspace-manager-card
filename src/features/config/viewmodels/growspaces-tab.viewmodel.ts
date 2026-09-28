@@ -192,7 +192,7 @@ export function createGrowspacesTabViewModel(
       removing: sub.kind === 'removing-environment',
     };
   } else if (sub.kind === 'editing') {
-    const d = sm.environmentDraft;
+    const d = sm.environment.values;
     state = {
       mode: 'editing',
       id: sub.growspaceId,

@@ -44,8 +44,8 @@ function preview(extra: Partial<CompletionPreview> = {}): CompletionPreview {
       { plant_id: 'p3', strain_name: 'OG Kush', phenotype_name: 'Pheno #1', stage: 'flower' },
     ],
     missing_outcomes: [
-      { plant_id: 'p2', harvested_at: '2026-09-25T20:30:00+00:00', reason: 'no_dry_weight' },
-      { plant_id: 'p5', harvested_at: '2026-09-25T20:30:00+00:00', reason: 'plant_removed' },
+      { plant_id: 'p2', strain: 'Amnesia', phenotype: '', state: 'pending' },
+      { plant_id: 'p5', strain: '', phenotype: '', state: 'incomplete' },
     ],
     coverage: [],
     attribution_gaps: [
@@ -136,8 +136,8 @@ describe('growspace-run-completion-dialog', () => {
       'OG Kush Pheno #1'
     );
     const outcomes = $(dialog, '[data-testid="completion-outcomes"]')!.textContent!;
-    expect(outcomes).toContain('no dry weight');
-    expect(outcomes).toContain('plant removed');
+    expect(outcomes).toMatch(/Amnesia\s*·\s*no dry weight/);
+    expect(outcomes).toMatch(/p5\s*·\s*recorded as incomplete/);
     const gaps = $(dialog, '[data-testid="completion-gaps"]')!.textContent!;
     expect(gaps).toContain('p6 moved');
     expect(gaps).toContain('p4 is here but not recorded');

@@ -32,11 +32,14 @@ const CompletionPreviewSchema = z.object({
       stage: z.string(),
     })
   ),
+  // The Run's Harvest Outcomes still `pending` a dry weight or recorded
+  // `incomplete` (GSM#672). `state` stays a string so a new one still renders.
   missing_outcomes: z.array(
     z.object({
       plant_id: z.string(),
-      harvested_at: z.string(),
-      reason: z.string(),
+      strain: z.string(),
+      phenotype: z.string(),
+      state: z.string(),
     })
   ),
   coverage: z.array(

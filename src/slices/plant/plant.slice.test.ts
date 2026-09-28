@@ -27,6 +27,7 @@ import {
   takeClone,
   printLabel,
   saveHarvestMetrics,
+  setHarvestOutcome,
   scorePlant,
   logDryingWeight,
   logMoistureReading,
@@ -241,6 +242,19 @@ describe('deletePlant', () => {
     );
   });
 
+  it('sends the required outcome choice when deleting a harvest source', async () => {
+    await deletePlant('abc', { choice: 'no_usable_yield', reason: 'mold' });
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/remove_plant',
+      expect.objectContaining({
+        plant_id: 'abc',
+        harvest_outcome_choice: 'no_usable_yield',
+        harvest_outcome_reason: 'mold',
+      }),
+      expect.anything()
+    );
+  });
+
   it('optimistically removes the plant from plants$ before the WS command', async () => {
     setPlants([makePlant({ plant_id: 'abc' }), makePlant({ plant_id: 'xyz' })]);
 
@@ -295,6 +309,18 @@ describe('deletePlant', () => {
         expect.objectContaining({ growspace_id: 'gs1', strain: 'AK47', row: 1, col: 2 }),
         expect.anything()
       )
+    );
+  });
+});
+
+describe('setHarvestOutcome', () => {
+  it('requires a reason for zero yield and sends the reason', async () => {
+    await expect(setHarvestOutcome('abc', 'no_usable_yield')).rejects.toThrow(/reason/);
+    await setHarvestOutcome('abc', 'no_usable_yield', '  mold  ');
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/set_harvest_outcome',
+      { plant_id: 'abc', state: 'no_usable_yield', reason: 'mold' },
+      expect.anything()
     );
   });
 });

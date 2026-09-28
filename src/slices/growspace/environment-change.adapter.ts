@@ -7,9 +7,7 @@ import type {
   EnvironmentChangeAdapter,
 } from '../../features/config/environment-change';
 
-export function createEnvironmentChangeAdapter(
-  refresh: () => Promise<void>
-): EnvironmentChangeAdapter {
+export function createEnvironmentChangeAdapter(): EnvironmentChangeAdapter {
   return {
     async configureEnvironment(payload: ConfigureEnvironmentActionData): Promise<void> {
       await callService('growspace_manager', 'configure_environment', payload);
@@ -17,6 +15,5 @@ export function createEnvironmentChangeAdapter(
     async configureExhaustFan(payload: ConfigureExhaustFanActionData): Promise<void> {
       await callService('growspace_manager', 'configure_exhaust_fan', payload);
     },
-    refresh,
   };
 }

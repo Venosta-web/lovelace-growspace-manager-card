@@ -333,9 +333,9 @@ export class GrowspaceRunCompletionDialog extends LitElement {
                 ${preview.missing_outcomes.map(
                   (row) =>
                     html`<li>
-                      ${row.plant_id} · ${this._when(row.harvested_at)} ·
-                      ${row.reason === 'plant_removed'
-                        ? this._t('completion_outcome_removed')
+                      ${[row.strain, row.phenotype].filter(Boolean).join(' ') || row.plant_id} ·
+                      ${row.state === 'incomplete'
+                        ? this._t('completion_outcome_incomplete')
                         : this._t('completion_outcome_no_dry_weight')}
                     </li>`
                 )}

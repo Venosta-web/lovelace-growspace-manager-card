@@ -34,7 +34,6 @@ import {
   type VpdOptimalOverrides,
 } from '../features/environment/constants';
 import { GrowspaceDevice } from '../types';
-import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
 import { randomId } from '../utils/random-id';
 import { triggerRawValue } from '../slices/notification/triggers';
@@ -114,10 +113,11 @@ import { createHeatmapTabViewModel } from '../features/config/viewmodels/heatmap
 import '../features/config/components/config-subareas-tab';
 import { createSubareasTabViewModel } from '../features/config/viewmodels/subareas-tab.viewmodel';
 import {
-  VISION_GROUP,
-  isEnvironmentGroupDirty,
-  type EnvironmentChangeRequest,
-} from '../features/config/environment-change';
+  planEnvironmentWrite,
+  planVisionWrite,
+  transitionEnvironmentDraft,
+  type EnvironmentWritePlan,
+} from '../features/config/environment-draft';
 import {
   deriveConfigDialogCapabilities,
   type ConfigDialogCapabilities,
@@ -208,7 +208,7 @@ export class ConfigDialog extends LitElement {
   }
 
   private get _caps(): ConfigDialogCapabilities {
-    return deriveConfigDialogCapabilities(this._sm.environmentDraft, this._sm.environmentDirty);
+    return deriveConfigDialogCapabilities(this._sm.environment.values, this._sm.environment.dirty);
   }
 
   private _localize(key: string): string {
@@ -229,10 +229,17 @@ export class ConfigDialog extends LitElement {
   // through familiar names. The SM is the authoritative source of truth.
 
   private get _d() {
-    return this._sm.environmentDraft;
+    return this._sm.environment.values;
   }
-  private _setEnv(partial: Partial<typeof this._sm.environmentDraft>) {
+  private _setEnv(partial: Partial<typeof this._sm.environment.values>) {
+    const { immediate } = transitionEnvironmentDraft(this._sm.environment, partial);
     this._sm = transition(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+    for (const command of immediate) {
+      const run = command.kind === 'humidifier' ? setHumidifierControl : setDehumidifierControl;
+      run(command.growspaceId, command.enabled).catch((err: unknown) =>
+        console.error(`[set ${command.kind} control failed]`, err)
+      );
+    }
     // A manual write to an AC Infinity bundle invalidates that field's Port
     // Pre-fill warnings (the pick path re-sets its own key afterwards).
     for (const field of AC_INFINITY_BUNDLE_FIELDS) {
@@ -1239,7 +1246,7 @@ export class ConfigDialog extends LitElement {
       const growspaceId = editingId || this.growspaceId;
       return this.devices.find((device) => device.deviceId === growspaceId) ?? this.devices[0];
     }
-    const id = editingId || this._sm.environmentDraft.selectedGrowspaceId || this.growspaceId;
+    const id = editingId || this._sm.environment.values.selectedGrowspaceId || this.growspaceId;
     return this.devices.find((device) => device.deviceId === id);
   }
 
@@ -1318,12 +1325,8 @@ export class ConfigDialog extends LitElement {
 
   private _submitEnvironment() {
     this.dispatchEvent(
-      new CustomEvent<EnvironmentChangeRequest>('environment-change-requested', {
-        detail: {
-          kind: 'shared-environment-draft',
-          draft: this._sm.environmentDraft,
-          dirty: this._sm.environmentDirty,
-        },
+      new CustomEvent<EnvironmentWritePlan>('environment-write-plan-requested', {
+        detail: planEnvironmentWrite(this._sm.environment),
         bubbles: true,
         composed: true,
       })
@@ -1393,22 +1396,11 @@ export class ConfigDialog extends LitElement {
   }
 
   private _submitVisionCheckupConfig() {
-    const d = this._sm.environmentDraft;
-    if (!d.selectedGrowspaceId) return;
-    // Dedicated service, gated on its own dirty group (ADR-0032): nothing was
-    // edited, so there is nothing to write.
-    if (!isEnvironmentGroupDirty(this._sm.environmentDirty, VISION_GROUP)) return;
+    const command = planVisionWrite(this._sm.environment);
+    if (!command) return;
     this.dispatchEvent(
       new CustomEvent('vision-checkup-config-submit', {
-        detail: {
-          growspaceId: d.selectedGrowspaceId,
-          visionCheckupConfig: {
-            enabled: d.visionEnabled,
-            early_check_offset_minutes: d.visionEarlyOffset,
-            mid_check_hours: d.visionMidHours,
-            late_check_offset_minutes: d.visionLateOffset,
-          },
-        } as VisionCheckupConfigEventDetail,
+        detail: command,
         bubbles: true,
         composed: true,
       })
@@ -1661,7 +1653,7 @@ export class ConfigDialog extends LitElement {
     // The picker's blank "Select…" option is not a device — never let a stray
     // click through it wipe a configured bundle.
     if (!deviceId) return;
-    const current = (this._sm.environmentDraft as unknown as Record<string, unknown[]>)[field];
+    const current = (this._sm.environment.values as unknown as Record<string, unknown[]>)[field];
     if (!current?.[index]) return;
     const roles = resolveAcInfinityPort(this._entityRegistry, deviceId);
     // The grow-light bundle fills all six roles; the actuator bundles fill two.
@@ -1690,7 +1682,7 @@ export class ConfigDialog extends LitElement {
 
   private _updateThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
     if (isNaN(value)) return;
-    const t = JSON.parse(JSON.stringify(this._sm.environmentDraft.dehumidifierThresholds || {}));
+    const t = JSON.parse(JSON.stringify(this._sm.environment.values.dehumidifierThresholds || {}));
     if (!t[stage]) t[stage] = {};
     if (!t[stage][cycle]) t[stage][cycle] = { on: 0, off: 0 };
     t[stage][cycle][point] = value;
@@ -1704,7 +1696,7 @@ export class ConfigDialog extends LitElement {
     value: number
   ) {
     if (isNaN(value)) return;
-    const t = JSON.parse(JSON.stringify(this._sm.environmentDraft.humidifierThresholds || {}));
+    const t = JSON.parse(JSON.stringify(this._sm.environment.values.humidifierThresholds || {}));
     if (!t[stage]) t[stage] = {};
     if (!t[stage][cycle]) t[stage][cycle] = { on: 0, off: 0 };
     t[stage][cycle][point] = value;
@@ -1718,7 +1710,7 @@ export class ConfigDialog extends LitElement {
   }
 
   private _editTank(index: number) {
-    const tank = this._sm.environmentDraft.irrigationTanks[index];
+    const tank = this._sm.environment.values.irrigationTanks[index];
     this._t({
       type: 'BEGIN_EDIT_TANK',
       index,
@@ -1731,7 +1723,7 @@ export class ConfigDialog extends LitElement {
   }
 
   private _deleteTank(index: number) {
-    const updated = this._sm.environmentDraft.irrigationTanks.filter((_, i) => i !== index);
+    const updated = this._sm.environment.values.irrigationTanks.filter((_, i) => i !== index);
     this._t({ type: 'UPDATE_ENV_DRAFT', partial: { irrigationTanks: updated } });
   }
 
@@ -1757,13 +1749,13 @@ export class ConfigDialog extends LitElement {
   }
 
   private _deleteGroup(id: string) {
-    const updated = this._sm.environmentDraft.sensorGroups.filter((g) => g.id !== id);
+    const updated = this._sm.environment.values.sensorGroups.filter((g) => g.id !== id);
     this._t({ type: 'UPDATE_ENV_DRAFT', partial: { sensorGroups: updated } });
   }
 
   private _handleSaveGroup(e: CustomEvent) {
     const group = e.detail.group as import('../types').SensorGroup;
-    const groups = this._sm.environmentDraft.sensorGroups;
+    const groups = this._sm.environment.values.sensorGroups;
     const index = groups.findIndex((g) => g.id === group.id);
     const updated =
       index >= 0 ? groups.map((g, i) => (i === index ? group : g)) : [...groups, group];
@@ -1774,7 +1766,7 @@ export class ConfigDialog extends LitElement {
   // ── Subarea methods ──────────────────────────────────────────────────────
 
   private async _loadSubareas() {
-    const envId = this._sm.environmentDraft.selectedGrowspaceId;
+    const envId = this._sm.environment.values.selectedGrowspaceId;
     const gsSub = this._sm.tabs.growspaces.sub;
     const editId = gsSub.kind === 'editing' ? gsSub.growspaceId : '';
     const growspaceId = envId || editId;
@@ -1924,7 +1916,7 @@ export class ConfigDialog extends LitElement {
    */
   private _dirtyGrowspaceId(): string | undefined {
     if (this._sm.activeTab !== ConfigTab.GROWSPACES) {
-      return this._sm.environmentDraft.selectedGrowspaceId;
+      return this._sm.environment.values.selectedGrowspaceId;
     }
     const sub = this._sm.tabs.growspaces.sub;
     return sub.kind === 'editing' ? sub.growspaceId : undefined;
@@ -2095,7 +2087,7 @@ export class ConfigDialog extends LitElement {
     this._t({
       type: 'UPDATE_ENV_DRAFT',
       partial: {
-        circulationFanConfig: { ...this._sm.environmentDraft.circulationFanConfig, ...partial },
+        circulationFanConfig: { ...this._sm.environment.values.circulationFanConfig, ...partial },
       },
     });
   }
@@ -2106,7 +2098,7 @@ export class ConfigDialog extends LitElement {
     this._t({
       type: 'UPDATE_ENV_DRAFT',
       partial: {
-        exhaustFanConfig: { ...this._sm.environmentDraft.exhaustFanConfig, ...partial },
+        exhaustFanConfig: { ...this._sm.environment.values.exhaustFanConfig, ...partial },
       },
     });
   }
@@ -2123,7 +2115,7 @@ export class ConfigDialog extends LitElement {
       currentStage: this._deviceForDirtyCheck()?.biologicalMetrics?.granularStage,
       unitSystem: this.hass?.config?.unit_system,
       currentTemperature: this._averageTemperatureReading(
-        this._sm.environmentDraft.temperatureSensors
+        this._sm.environment.values.temperatureSensors
       ),
       language: this.hass?.language,
     };
@@ -2147,7 +2139,7 @@ export class ConfigDialog extends LitElement {
   }
 
   private _renderGrowlightTab() {
-    const growspaceId = this._sm.environmentDraft.selectedGrowspaceId;
+    const growspaceId = this._sm.environment.values.selectedGrowspaceId;
     const deps = {
       entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
@@ -2177,7 +2169,7 @@ export class ConfigDialog extends LitElement {
    * `lights_on_time` is sent.
    */
   private _onLightsOnChanged(lightsOnTime: string) {
-    const growspaceId = this._sm.environmentDraft.selectedGrowspaceId;
+    const growspaceId = this._sm.environment.values.selectedGrowspaceId;
     if (!growspaceId) return;
     void updateIrrigationStrategy(growspaceId, { lightsOnTime });
   }
@@ -2200,9 +2192,10 @@ export class ConfigDialog extends LitElement {
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
         @pick-ac-infinity-device=${(e: CustomEvent) =>
           this._pickAcInfinityPort(e.detail.field, e.detail.index, e.detail.deviceId)}
-        @set-humidifier-control=${(e: CustomEvent) => this._setHumidifierControl(e.detail.enabled)}
+        @set-humidifier-control=${(e: CustomEvent) =>
+          this._setEnv({ humidifierControlEnabled: e.detail.enabled })}
         @set-dehumidifier-control=${(e: CustomEvent) =>
-          this._setDehumidifierControl(e.detail.enabled)}
+          this._setEnv({ dehumidifierControlEnabled: e.detail.enabled })}
         @toggle-stage=${(e: CustomEvent) => {
           this._openHumidityStageId =
             this._openHumidityStageId === e.detail.stageId ? '' : e.detail.stageId;
@@ -2218,20 +2211,6 @@ export class ConfigDialog extends LitElement {
           )}
       ></config-humidity-tab>
     `;
-  }
-
-  private _setHumidifierControl(enabled: boolean) {
-    this._setEnv({ humidifierControlEnabled: enabled });
-    setHumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch(
-      (err: unknown) => console.error('[setHumidifierControl failed]', err)
-    );
-  }
-
-  private _setDehumidifierControl(enabled: boolean) {
-    this._setEnv({ dehumidifierControlEnabled: enabled });
-    setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled).catch(
-      (err: unknown) => console.error('[setDehumidifierControl failed]', err)
-    );
   }
 
   private _renderIrrigationTab() {
@@ -2386,7 +2365,7 @@ export class ConfigDialog extends LitElement {
     slot: 'low' | 'high',
     raw: string
   ) {
-    const overrides = this._sm.environmentDraft.vpdOptimalOverrides as VpdOptimalOverrides;
+    const overrides = this._sm.environment.values.vpdOptimalOverrides as VpdOptimalOverrides;
     const parsed = parseFloat(raw);
     const value = isNaN(parsed) ? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot] : parsed;
     const existingStage = overrides[key] ?? { ...VPD_OPTIMAL_STAGE_DEFAULTS[key] };
@@ -2565,7 +2544,7 @@ export class ConfigDialog extends LitElement {
                       -->
                       <select
                         class="cfg-context-select"
-                        .value=${live(this._sm.environmentDraft.selectedGrowspaceId)}
+                        .value=${live(this._sm.environment.values.selectedGrowspaceId)}
                         @change=${this._handleEnvGrowspaceChange}
                       >
                         <option value="">Select...</option>
@@ -2573,7 +2552,7 @@ export class ConfigDialog extends LitElement {
                           ([id, name]) => html`
                             <option
                               value="${id}"
-                              ?selected=${id === this._sm.environmentDraft.selectedGrowspaceId}
+                              ?selected=${id === this._sm.environment.values.selectedGrowspaceId}
                             >
                               ${name}
                             </option>

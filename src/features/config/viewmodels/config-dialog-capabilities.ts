@@ -7,12 +7,12 @@
 
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import {
-  environmentChangeVerdict,
-  type EnvironmentChangeBlockReason,
+  environmentSaveVerdict,
+  type EnvironmentSaveBlockReason,
   type EnvironmentDraftKey,
-} from '../environment-change';
+} from '../environment-draft';
 
-export type EnvironmentSaveBlockReason = EnvironmentChangeBlockReason;
+export type { EnvironmentSaveBlockReason } from '../environment-draft';
 
 export interface ConfigDialogCapabilities {
   canSaveEnvironment: boolean;
@@ -30,11 +30,7 @@ export function deriveConfigDialogCapabilities(
   draft: EnvironmentSaveInputs,
   dirty: ReadonlySet<EnvironmentDraftKey> = new Set()
 ): ConfigDialogCapabilities {
-  const verdict = environmentChangeVerdict({
-    kind: 'shared-environment-draft',
-    draft,
-    dirty,
-  });
+  const verdict = environmentSaveVerdict(draft, dirty);
   return verdict.ok
     ? { canSaveEnvironment: true, environmentSaveBlockReason: null }
     : { canSaveEnvironment: false, environmentSaveBlockReason: verdict.reason };

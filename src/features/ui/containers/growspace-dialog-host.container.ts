@@ -25,13 +25,10 @@ import {
   harvestSeeds,
   fetchGeneticsData,
 } from '../../../slices/genetics';
-import { updateVisionCheckupConfig } from '../../../slices/camera';
 import { getStrainRecommendation } from '../../../slices/ai-insight';
 import { PlantUtils } from '../../../utils/plant-utils';
-import {
-  applyEnvironmentChange,
-  type EnvironmentChangeRequest,
-} from '../../config/environment-change';
+import { executeEnvironmentWritePlan } from '../../config/environment-change';
+import type { EnvironmentWritePlan } from '../../config/environment-draft';
 import { createEnvironmentChangeAdapter } from '../../../slices/growspace/environment-change.adapter';
 import {
   updateBreeder,
@@ -77,10 +74,9 @@ import {
   AddPlantDialogState,
   PlantOverviewDialogState,
 } from '../../../types';
-import type {
-  VisionCheckupConfigEventDetail,
-  StrainLibraryDialogState,
-} from '../../../lib/types/dialog';
+import type { StrainLibraryDialogState } from '../../../lib/types/dialog';
+import type { VisionWriteCommand } from '../../config/environment-draft';
+import { executeVisionWrite } from '../../../slices/camera/vision-write.adapter';
 import type { NutrientPresetsResponse } from '../../../slices/nutrient';
 import {
   applyIPM,
@@ -1191,8 +1187,8 @@ export class GrowspaceDialogHost extends LitElement {
         @remove-environment-submit=${(e: CustomEvent<RemoveEnvironmentEventDetail>) => {
           e.detail.completion = this._handleRemoveEnvironment(e.detail);
         }}
-        @environment-change-requested=${(e: CustomEvent<EnvironmentChangeRequest>) =>
-          this._handleEnvironmentChange(e.detail)}
+        @environment-write-plan-requested=${(e: CustomEvent<EnvironmentWritePlan>) =>
+          this._handleEnvironmentWritePlan(e.detail)}
         @save-notification-settings-submit=${(e: CustomEvent) =>
           this._handleSaveNotificationSettings(e.detail)}
         @vision-checkup-config-submit=${(e: CustomEvent) =>
@@ -1228,15 +1224,11 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
-  private async _handleEnvironmentChange(request: EnvironmentChangeRequest) {
+  private async _handleEnvironmentWritePlan(plan: EnvironmentWritePlan) {
     try {
-      await applyEnvironmentChange(
-        request,
-        createEnvironmentChangeAdapter(async () => {
-          if (!this.store) throw new Error('Growspace store is unavailable');
-          await this.store.refreshData();
-        })
-      );
+      await executeEnvironmentWritePlan(plan, createEnvironmentChangeAdapter());
+      if (!this.store) throw new Error('Growspace store is unavailable');
+      await this.store.refreshData();
       showToast('Environment configured successfully!', 'success');
       uiSlice.closeDialog();
     } catch (e: unknown) {
@@ -1273,11 +1265,11 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
-  private async _handleVisionCheckupConfig(detail: VisionCheckupConfigEventDetail) {
+  private async _handleVisionCheckupConfig(detail: VisionWriteCommand) {
     try {
       await withToast(
         async () => {
-          await updateVisionCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
+          await executeVisionWrite(detail);
           await this.store?.refreshData();
         },
         {

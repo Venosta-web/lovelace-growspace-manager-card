@@ -54,7 +54,7 @@ export interface TanksTabDeps {
  * ViewModel. Testable with no DOM and no host.
  */
 export function createTanksTabViewModel(sm: ConfigDialogSM, deps: TanksTabDeps): TanksTabViewModel {
-  const tanks = sm.environmentDraft.irrigationTanks;
+  const tanks = sm.environment.values.irrigationTanks;
   const sub = sm.tabs.tanks.sub;
   const editing =
     sub.kind === 'adding' || sub.kind === 'editing'

@@ -69,7 +69,7 @@ export function createVpdTargetsTabViewModel(
   sm: ConfigDialogSM,
   expand: VpdTargetsExpandState
 ): VpdTargetsTabViewModel {
-  const overrides = sm.environmentDraft.vpdOptimalOverrides as VpdOptimalOverrides;
+  const overrides = sm.environment.values.vpdOptimalOverrides as VpdOptimalOverrides;
   return {
     stages: FAN_VPD_STAGE_KEYS.map((key) => ({
       key,
