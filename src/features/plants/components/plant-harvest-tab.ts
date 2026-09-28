@@ -1,11 +1,11 @@
-import { LitElement, html, type TemplateResult } from 'lit';
+import { LitElement, html, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import { saveHarvestMetrics, scorePlant } from '../../../slices/plant';
+import { saveHarvestMetrics, scorePlant, setHarvestOutcome } from '../../../slices/plant';
 import { showToast, showError } from '../../../slices/ui';
 
 @customElement('plant-harvest-tab')
@@ -18,6 +18,7 @@ export class PlantHarvestTab extends LitElement {
   @state() private _scoresEdit: Record<string, number | null> = {};
   @state() private _starPreview: Record<string, number | null> = {};
   @state() private _savingHarvest = false;
+  @state() private _noYieldReason = '';
 
   static styles = [dialogStyles];
 
@@ -75,6 +76,22 @@ export class PlantHarvestTab extends LitElement {
 
     return html`
       <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+        ${this.plant.attributes?.harvest_source_growspace_id
+          ? html`<p data-testid="harvest-attribution">
+              Harvest source:
+              ${this.plant.attributes.harvest_source_run_id
+                ? `Run ${this.plant.attributes.harvest_source_run_id}`
+                : 'unattributed (no active source run)'}
+              ·
+              ${this.plant.attributes.harvest_outcome_state === 'no_usable_yield'
+                ? `No Usable Yield: ${this.plant.attributes.harvest_outcome_reason ?? ''}`
+                : this.plant.attributes.harvest_outcome_state === 'incomplete'
+                  ? 'Incomplete outcome'
+                  : hm.dry_weight == null
+                    ? 'Dry weight unknown'
+                    : 'Outcome recorded'}
+            </p>`
+          : nothing}
         <!-- Score Grid -->
         <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
           ${PlantHarvestTab.SCORE_DIMENSIONS.map((dim) => this._renderScoreRow(dim))}
@@ -157,6 +174,26 @@ export class PlantHarvestTab extends LitElement {
               />
             </div>
           </div>
+          ${this.plant.attributes?.harvest_source_growspace_id
+            ? html`<div
+                style="display:flex; gap:8px; align-items:center; margin-top:16px; flex-wrap:wrap;"
+              >
+                <input
+                  aria-label="No Usable Yield reason"
+                  placeholder="Reason for no usable yield"
+                  .value=${this._noYieldReason}
+                  @input=${(event: InputEvent) =>
+                    (this._noYieldReason = (event.target as HTMLInputElement).value)}
+                />
+                <button
+                  class="md3-button outlined"
+                  ?disabled=${isSaving || !this._noYieldReason.trim()}
+                  @click=${() => this._recordNoYield()}
+                >
+                  No Usable Yield
+                </button>
+              </div>`
+            : nothing}
         </div>
 
         <hr
@@ -261,6 +298,21 @@ export class PlantHarvestTab extends LitElement {
   private _setScore(key: string, value: number): void {
     const current = this._scoresEdit[key];
     this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
+  }
+
+  private async _recordNoYield(): Promise<void> {
+    const plantId = this.plant.attributes?.plant_id;
+    if (!plantId || !this._noYieldReason.trim()) return;
+    this._savingHarvest = true;
+    try {
+      await setHarvestOutcome(plantId, 'no_usable_yield', this._noYieldReason);
+      await this.store.refreshData();
+      showToast('No Usable Yield recorded', 'success');
+    } catch (error) {
+      showError(error, 'Failed to record harvest outcome');
+    } finally {
+      this._savingHarvest = false;
+    }
   }
 
   private _renderScoreRow(dim: {

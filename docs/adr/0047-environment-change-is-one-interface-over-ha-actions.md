@@ -1,6 +1,6 @@
 # Environment Change is one interface over Home Assistant actions
 
-**Status:** Accepted
+**Status:** Superseded by ADR-0061
 
 Environment Change is one deep card module at the existing Home Assistant seam. Its interface accepts either the Config Dialog's Shared Environment Draft plus Dirty Write Set or a narrow Tank Config Change; its implementation owns Environment Field Ownership, Atomic Dirty Group validation, sparse Environment Patch composition, canonical snake-case mapping, `configure_environment` then optional `configure_exhaust_fan` ordering, and refresh. The Growspace Dialog Host and Irrigation Dialog are adapters to this interface rather than independent environment writers.
 

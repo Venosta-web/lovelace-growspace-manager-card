@@ -119,7 +119,10 @@ export const UpdatePlantRequestContractSchema = z
 // Remove plant
 // ---------------------------------------------------------------------------
 
-export const RemovePlantPayloadSchema = plantIdPayload;
+export const RemovePlantPayloadSchema = plantIdPayload.extend({
+  harvest_outcome_choice: z.enum(['no_usable_yield', 'incomplete']).optional(),
+  harvest_outcome_reason: z.string().optional(),
+});
 
 // ---------------------------------------------------------------------------
 // Harvest plant

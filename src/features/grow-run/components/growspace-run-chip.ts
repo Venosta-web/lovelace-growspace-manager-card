@@ -202,6 +202,25 @@ export class GrowspaceRunChip extends LitElement {
                         )}
                       </ul>`
                     : html`<p>${this._t('none_yet')}</p>`}
+                  <h3>Harvest outcomes</h3>
+                  ${(run.harvest_outcomes ?? []).length
+                    ? html`<ul data-testid="run-harvest-outcomes">
+                        ${(run.harvest_outcomes ?? []).map(
+                          (outcome) =>
+                            html`<li>
+                              ${outcome.strain || outcome.plant_id}
+                              ${outcome.phenotype ? `· ${outcome.phenotype}` : ''} ·
+                              ${outcome.state === 'no_usable_yield'
+                                ? `No Usable Yield (0 g): ${outcome.reason}`
+                                : outcome.state === 'incomplete'
+                                  ? 'Incomplete outcome'
+                                  : outcome.metrics.dry_weight == null
+                                    ? 'Dry weight unknown'
+                                    : `${outcome.metrics.dry_weight} g dry`}
+                            </li>`
+                        )}
+                      </ul>`
+                    : html`<p>${this._t('none_yet')}</p>`}
                 `}
         <div class="row">
           <button type="button" @click=${() => (this._detailsOpen = false)}>

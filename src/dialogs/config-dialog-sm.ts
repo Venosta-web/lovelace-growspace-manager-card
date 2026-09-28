@@ -9,25 +9,23 @@
  *     .activeTab          — which tab is visible
  *     .status             — root-level tab-switch confirm overlay
  *     .toast              — transient message
- *     .environmentDraft   — shared draft for sensors/climate/humidity/irrigation/vision tabs
+ *     .environment        — shared draft state for environment tabs
  *     .tabs               — per-tab sub-state
  */
 
 import type { DialogStateMachine } from './dialog-sm';
 import type { GrowspaceDevice, SensorGroup } from '../types';
-import type { LightLeakConfig, Subarea } from '../slices/subarea/schema';
+import type { Subarea } from '../slices/subarea/schema';
 import type { TimedNotificationTriggerValue } from '../slices/notification/triggers';
-import type {
-  AcInfinityDevice,
-  AcInfinityGrowLight,
-  CirculationFanConfig,
-  ExhaustFanConfig,
-  GrowLightConfig,
-} from '../slices/growspace/schema';
 import {
-  expandAtomicGroups,
-  type EnvironmentDraftKey,
-} from '../features/config/environment-change';
+  createEnvironmentDraftState,
+  editEnvironmentDraft,
+  hasEnvironmentDraftDiverged,
+  reseedEnvironmentDraftState,
+  type EnvironmentDraft,
+  type EnvironmentDraftState,
+} from '../features/config/environment-draft';
+export type { EnvironmentDraft } from '../features/config/environment-draft';
 import { DEFAULT_TANK_STALE_AFTER_MINUTES } from '../slices/irrigation/tank-staleness';
 
 // ─── Tab ID ───────────────────────────────────────────────────────────────────
@@ -45,104 +43,6 @@ export type ConfigTabId =
   | 'heatmap'
   | 'subareas'
   | 'vpd_targets';
-
-// ─── Environment Draft ────────────────────────────────────────────────────────
-
-export interface EnvironmentDraft {
-  selectedGrowspaceId: string;
-
-  // Air sensors
-  temperatureSensors: string[];
-  humiditySensors: string[];
-  vpdSensors: string[];
-  co2Sensor: string;
-  lightSensors: string[];
-
-  // Climate devices
-  exhaustFanEntities: string[];
-  circulationFanEntities: string[];
-  exhaustFanAcInfinityDevices: AcInfinityDevice[];
-  circulationFanAcInfinityDevices: AcInfinityDevice[];
-  stressThreshold: number | null;
-  moldThreshold: number | null;
-
-  // Humidity devices
-  humidifierEntities: string[];
-  dehumidifierEntities: string[];
-  humidifierAcInfinityDevices: AcInfinityDevice[];
-  dehumidifierAcInfinityDevices: AcInfinityDevice[];
-  humidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
-  dehumidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
-  humidifierControlEnabled: boolean;
-  dehumidifierControlEnabled: boolean;
-
-  // Substrate / irrigation monitoring sensors
-  soilMoistureSensor: string;
-  /**
-   * Acceptable Moisture Band override. Both null means the growspace inherits
-   * the default band — the form still *displays* 20–60%, but nothing is
-   * stored, which is how "reset to defaults" survives until Save. Required
-   * (not optional) so every draft seeder must fill them or fail to compile.
-   */
-  soilMoistureMin: number | null;
-  soilMoistureMax: number | null;
-  substrateTemperatureSensors: string[];
-  phSensors: string[];
-  feedEcSensors: string[];
-  bulkEcSensors: string[];
-  poreEcSensors: string[];
-  runoffEcSensors: string[];
-  drainVolumeSensors: string[];
-  irrigationFlowSensors: string[];
-  powerSensors: string[];
-  energySensors: string[];
-
-  // Heatmap / spatial
-  sensorGroups: SensorGroup[];
-  sensorCoordinates: Record<string, { x: number; y: number; z: number; rotation?: number }>;
-
-  // Tanks
-  irrigationTanks: Array<{
-    sensorEntity: string;
-    name: string;
-    volumeLiters: number | null;
-    warningLevel: number;
-    /**
-     * Every tank save restates the whole item, so a window this draft dropped
-     * would reset to the backend default (GSM#790). `null` when not reported.
-     */
-    staleAfterMinutes?: number | null;
-  }>;
-
-  // Camera / lungroom
-  cameraEntities: string[];
-  lungroomTempSensors: string[];
-
-  // Vision checkup
-  visionEnabled: boolean;
-  visionEarlyOffset: number;
-  visionMidHours: number;
-  visionLateOffset: number;
-
-  // Fan controller
-  circulationFanConfig: CirculationFanConfig;
-  exhaustFanConfig: ExhaustFanConfig;
-
-  // Grow light controller
-  growlightEntities: string[];
-  growlightAcInfinityDevices: AcInfinityGrowLight[];
-  growlightConfig: GrowLightConfig;
-  lightLeakConfig: LightLeakConfig;
-
-  // VPD optimal overrides
-  vpdOptimalOverrides: Record<
-    string,
-    { day: { low: number; high: number }; night: { low: number; high: number } }
-  >;
-
-  // LST offset for VPD calculation
-  lstOffset: number;
-}
 
 // ─── Growspaces tab ───────────────────────────────────────────────────────────
 
@@ -230,7 +130,7 @@ interface NotificationsTabState {
 }
 
 // ─── Env-group tabs (sensors / climate / humidity / irrigation / vision) ──────
-// These tabs share environmentDraft at the SM root — their per-tab state is minimal.
+// These tabs project the shared Environment Draft state at the SM root.
 
 interface EnvTabState {
   sub: { kind: 'idle' };
@@ -309,22 +209,7 @@ export interface ConfigDialogSM extends Omit<
   'status'
 > {
   status: ConfigDialogStatus;
-  environmentDraft: EnvironmentDraft;
-  /**
-   * Dirty write set (ADR-0032): the top-level draft keys the user has edited
-   * since the draft was last seeded from the device.
-   *
-   * The draft itself stays *complete* — it is the read model for tab
-   * ViewModels, validation, and discard comparison. This set is what makes the
-   * save **sparse**: under patch semantics an omitted key keeps its stored
-   * value, so sending only what was touched makes "a default overwrites stored
-   * config" unrepresentable rather than merely tested-against.
-   *
-   * Membership is user intent, not difference from the seeded value: a key
-   * holding `null`, `''`, `[]`, or `{}` is a deliberate clear and stays in the
-   * patch.
-   */
-  environmentDirty: ReadonlySet<EnvironmentDraftKey>;
+  environment: EnvironmentDraftState;
 }
 
 // ─── Events ───────────────────────────────────────────────────────────────────
@@ -441,107 +326,6 @@ function defaultNotificationsTabState(): NotificationsTabState {
   return { draft: defaultNotificationsDraft(), timedNotifications: [], sub: { kind: 'idle' } };
 }
 
-function defaultEnvironmentDraft(): EnvironmentDraft {
-  return {
-    selectedGrowspaceId: '',
-    temperatureSensors: [],
-    humiditySensors: [],
-    vpdSensors: [],
-    co2Sensor: '',
-    lightSensors: [],
-    exhaustFanEntities: [],
-    circulationFanEntities: [],
-    exhaustFanAcInfinityDevices: [],
-    circulationFanAcInfinityDevices: [],
-    stressThreshold: null,
-    moldThreshold: null,
-    humidifierEntities: [],
-    dehumidifierEntities: [],
-    humidifierAcInfinityDevices: [],
-    dehumidifierAcInfinityDevices: [],
-    humidifierThresholds: {},
-    dehumidifierThresholds: {},
-    humidifierControlEnabled: false,
-    dehumidifierControlEnabled: false,
-    soilMoistureSensor: '',
-    soilMoistureMin: null,
-    soilMoistureMax: null,
-    substrateTemperatureSensors: [],
-    phSensors: [],
-    feedEcSensors: [],
-    bulkEcSensors: [],
-    poreEcSensors: [],
-    runoffEcSensors: [],
-    drainVolumeSensors: [],
-    irrigationFlowSensors: [],
-    powerSensors: [],
-    energySensors: [],
-    sensorGroups: [],
-    sensorCoordinates: {},
-    irrigationTanks: [],
-    cameraEntities: [],
-    lungroomTempSensors: [],
-    visionEnabled: false,
-    visionEarlyOffset: 60,
-    visionMidHours: 6,
-    visionLateOffset: 60,
-    circulationFanConfig: {
-      enabled: false,
-      regulation_mode: 'vpd',
-      min_speed: 0,
-      max_speed: 100,
-      vpd_target: 1.0,
-      vpd_tolerance: 0.2,
-      humidity_target: 60.0,
-      humidity_tolerance: 5.0,
-      temperature_target: 25.0,
-      temperature_tolerance: 2.0,
-      critical_temp_low: null,
-      critical_temp_high: null,
-      critical_temp_hysteresis: 1.0,
-      wind_enabled: false,
-      wind_period_seconds: 60,
-      wind_amplitude_pct: 10,
-      stage_vpd_enabled: false,
-      stage_vpd_overrides: {},
-    },
-    exhaustFanConfig: {
-      enabled: false,
-      min_speed: 0,
-      max_speed: 100,
-      vpd_target: 1.0,
-      vpd_tolerance: 0.2,
-      humidity_target: 60.0,
-      humidity_tolerance: 5.0,
-      temperature_target: 25.0,
-      temperature_tolerance: 2.0,
-      critical_temp_low: null,
-      critical_temp_high: null,
-      critical_temp_hysteresis: 1.0,
-      stage_vpd_enabled: false,
-      stage_vpd_overrides: {},
-    },
-    growlightEntities: [],
-    growlightAcInfinityDevices: [],
-    growlightConfig: {
-      enabled: false,
-      power: 100,
-      sunrise_enabled: false,
-      sunrise_minutes: 0,
-    },
-    lightLeakConfig: {
-      enabled: true,
-      illuminance_sensor: null,
-      threshold_lux: 1,
-      debounce_seconds: 120,
-      switch_off_lights: false,
-      all_stages: false,
-    },
-    vpdOptimalOverrides: {},
-    lstOffset: -2.0,
-  };
-}
-
 function defaultTabs(): ConfigTabStates {
   return {
     growspaces: { sub: { kind: 'idle' } },
@@ -586,103 +370,6 @@ function notificationsTabFromDevice(device: GrowspaceDevice): NotificationsTabSt
   };
 }
 
-/** Seed EnvironmentDraft from a GrowspaceDevice. */
-function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
-  const attrs = device.environmentAttributes ?? {};
-  const vc = attrs.visionCheckupConfig;
-  return {
-    selectedGrowspaceId: device.deviceId,
-    temperatureSensors: attrs.temperatureSensors?.length
-      ? attrs.temperatureSensors
-      : attrs.temperatureSensor
-        ? [attrs.temperatureSensor]
-        : [],
-    humiditySensors: attrs.humiditySensors?.length
-      ? attrs.humiditySensors
-      : attrs.humiditySensor
-        ? [attrs.humiditySensor]
-        : [],
-    vpdSensors: attrs.vpdSensors?.length
-      ? attrs.vpdSensors
-      : attrs.vpdSensor
-        ? [attrs.vpdSensor]
-        : [],
-    co2Sensor: attrs.co2Sensor ?? '',
-    lightSensors: attrs.lightSensors?.length
-      ? attrs.lightSensors
-      : attrs.lightSensor
-        ? [attrs.lightSensor]
-        : [],
-    exhaustFanEntities: attrs.exhaustFanEntities?.length
-      ? attrs.exhaustFanEntities
-      : attrs.exhaustEntity
-        ? [attrs.exhaustEntity]
-        : [],
-    circulationFanEntities: attrs.circulationFanEntities?.length
-      ? attrs.circulationFanEntities
-      : attrs.circulationFanEntity
-        ? [attrs.circulationFanEntity]
-        : [],
-    stressThreshold: attrs.stressThreshold ?? null,
-    moldThreshold: attrs.moldThreshold ?? null,
-    humidifierEntities: attrs.humidifierEntities?.length
-      ? attrs.humidifierEntities
-      : attrs.humidifierEntity
-        ? [attrs.humidifierEntity]
-        : [],
-    dehumidifierEntities: attrs.dehumidifierEntities?.length
-      ? attrs.dehumidifierEntities
-      : attrs.dehumidifierEntity
-        ? [attrs.dehumidifierEntity]
-        : [],
-    humidifierThresholds: attrs.humidifierThresholds ?? {},
-    dehumidifierThresholds: attrs.dehumidifierThresholds ?? {},
-    humidifierControlEnabled: attrs.humidifierControlEnabled ?? false,
-    dehumidifierControlEnabled: attrs.dehumidifierControlEnabled ?? false,
-    exhaustFanAcInfinityDevices: attrs.exhaustFanAcInfinityDevices ?? [],
-    circulationFanAcInfinityDevices: attrs.circulationFanAcInfinityDevices ?? [],
-    humidifierAcInfinityDevices: attrs.humidifierAcInfinityDevices ?? [],
-    dehumidifierAcInfinityDevices: attrs.dehumidifierAcInfinityDevices ?? [],
-    soilMoistureSensor: attrs.soilMoistureSensor ?? '',
-    soilMoistureMin: attrs.soilMoistureMin ?? null,
-    soilMoistureMax: attrs.soilMoistureMax ?? null,
-    substrateTemperatureSensors: attrs.substrateTemperatureSensors ?? [],
-    phSensors: attrs.phSensors ?? [],
-    feedEcSensors: attrs.feedEcSensors ?? [],
-    bulkEcSensors: attrs.bulkEcSensors ?? [],
-    poreEcSensors: attrs.poreEcSensors ?? [],
-    runoffEcSensors: attrs.runoffEcSensors ?? [],
-    drainVolumeSensors: attrs.drainVolumeSensors ?? [],
-    irrigationFlowSensors: attrs.irrigationFlowSensors ?? [],
-    powerSensors: attrs.powerSensors ?? [],
-    energySensors: attrs.energySensors ?? [],
-    sensorGroups: attrs.sensorGroups ?? [],
-    sensorCoordinates: attrs.sensorCoordinates ?? {},
-    irrigationTanks: (attrs.irrigationTanks ?? []).map((t) => ({
-      sensorEntity: t.sensorEntity ?? '',
-      name: t.name ?? 'Tank',
-      volumeLiters: t.volumeLiters ?? null,
-      warningLevel: t.warningLevel ?? 30,
-      staleAfterMinutes: t.staleAfterMinutes ?? null,
-    })),
-    cameraEntities: attrs.cameraEntities ?? [],
-    lungroomTempSensors: attrs.lungroomTempSensors ?? [],
-    visionEnabled: vc?.enabled ?? false,
-    visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
-    visionMidHours: vc?.mid_check_hours ?? 6,
-    visionLateOffset: vc?.late_check_offset_minutes ?? 60,
-    circulationFanConfig:
-      attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
-    exhaustFanConfig: attrs.exhaustFanConfig ?? defaultEnvironmentDraft().exhaustFanConfig,
-    growlightEntities: attrs.growlightEntities ?? [],
-    growlightAcInfinityDevices: attrs.growlightAcInfinityDevices ?? [],
-    growlightConfig: attrs.growlightConfig ?? defaultEnvironmentDraft().growlightConfig,
-    lightLeakConfig: attrs.lightLeakConfig ?? defaultEnvironmentDraft().lightLeakConfig,
-    vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
-    lstOffset: attrs.lstOffset ?? -2.0,
-  };
-}
-
 /** Create the initial SM state, optionally seeded from a device. */
 export function createInitialSM(device?: GrowspaceDevice): ConfigDialogSM {
   const sm: ConfigDialogSM = {
@@ -690,8 +377,7 @@ export function createInitialSM(device?: GrowspaceDevice): ConfigDialogSM {
     tabs: defaultTabs(),
     status: { kind: 'idle' },
     toast: undefined,
-    environmentDraft: defaultEnvironmentDraft(),
-    environmentDirty: new Set(),
+    environment: createEnvironmentDraftState(),
   };
   if (device) {
     return applyDeviceToSM(sm, device);
@@ -699,15 +385,11 @@ export function createInitialSM(device?: GrowspaceDevice): ConfigDialogSM {
   return sm;
 }
 
-/** Rebuild environmentDraft and notifications tab from device data (used on open and after RESET_FROM_DEVICE). */
+/** Rebuild draft state and notifications from device data. */
 function applyDeviceToSM(sm: ConfigDialogSM, device: GrowspaceDevice): ConfigDialogSM {
   return {
     ...sm,
-    environmentDraft: envDraftFromDevice(device),
-    // Re-seeding is the only thing that clears the write set (ADR-0032). It
-    // runs after a successful save + refresh; a failed save leaves the set
-    // intact so Retry sends the same patch.
-    environmentDirty: new Set(),
+    environment: reseedEnvironmentDraftState(device),
     tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(device) },
   };
 }
@@ -775,7 +457,7 @@ export function isActiveTabDirty(sm: ConfigDialogSM, device: GrowspaceDevice): b
   if (sm.activeTab === 'notifications') {
     return isNotificationsDirty(sm, device);
   }
-  return JSON.stringify(sm.environmentDraft) !== JSON.stringify(envDraftFromDevice(device));
+  return hasEnvironmentDraftDiverged(sm.environment);
 }
 
 // ─── Transition helpers ───────────────────────────────────────────────────────
@@ -1107,16 +789,7 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
     // ── Environment ───────────────────────────────────────────────────────────
 
     case 'UPDATE_ENV_DRAFT':
-      return {
-        ...sm,
-        environmentDraft: { ...sm.environmentDraft, ...event.partial },
-        // The keys the edit carried become dirty, closed under the atomic
-        // groups so a lone moisture bound can never reach the wire.
-        environmentDirty: expandAtomicGroups([
-          ...sm.environmentDirty,
-          ...(Object.keys(event.partial) as EnvironmentDraftKey[]),
-        ]),
-      };
+      return { ...sm, environment: editEnvironmentDraft(sm.environment, event.partial) };
 
     // ── Tanks ─────────────────────────────────────────────────────────────────
 
@@ -1134,7 +807,7 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
               warningLevel: 30,
               // A backend that reports a window for any tank takes one for a
               // new tank too; with no tank to ask, the field stays hidden.
-              staleAfterMinutes: sm.environmentDraft.irrigationTanks.some(
+              staleAfterMinutes: sm.environment.values.irrigationTanks.some(
                 (t) => t.staleAfterMinutes != null
               )
                 ? DEFAULT_TANK_STALE_AFTER_MINUTES
@@ -1185,15 +858,14 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
         warningLevel: sub.warningLevel,
         staleAfterMinutes: sub.staleAfterMinutes,
       };
-      const existing = sm.environmentDraft.irrigationTanks;
+      const existing = sm.environment.values.irrigationTanks;
       const updatedTanks =
         sub.kind === 'editing'
           ? existing.map((t, i) => (i === sub.index ? { ...t, ...tank } : t))
           : [...existing, tank];
       return {
         ...sm,
-        environmentDraft: { ...sm.environmentDraft, irrigationTanks: updatedTanks },
-        environmentDirty: new Set([...sm.environmentDirty, 'irrigationTanks' as const]),
+        environment: editEnvironmentDraft(sm.environment, { irrigationTanks: updatedTanks }),
         tabs: { ...sm.tabs, tanks: { sub: { kind: 'idle' } } },
       };
     }

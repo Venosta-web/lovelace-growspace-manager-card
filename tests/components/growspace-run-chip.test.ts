@@ -126,6 +126,18 @@ describe('growspace-run-chip', () => {
             target_growspace_id: 'flower',
           },
         ],
+        harvest_outcomes: [
+          {
+            plant_id: 'plant-1',
+            strain: 'OG Kush',
+            phenotype: 'A',
+            source_growspace_id: 'flower',
+            state: 'pending',
+            reason: null,
+            metrics: { dry_weight: null },
+            quality_score: null,
+          },
+        ],
       },
     });
     const chip = await renderChip(ACTIVE);
@@ -146,6 +158,9 @@ describe('growspace-run-chip', () => {
     );
     expect($(chip, '[data-testid="run-participations"]')?.textContent).toContain('plant-1');
     expect($(chip, '[data-testid="run-movements"]')?.textContent).toContain('entered');
+    expect($(chip, '[data-testid="run-harvest-outcomes"]')?.textContent).toContain(
+      'Dry weight unknown'
+    );
   });
 
   it('says an unreadable history is unavailable, never that there is no run', async () => {

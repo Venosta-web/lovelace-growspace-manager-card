@@ -93,11 +93,6 @@ export interface StrainLibraryDialogState {
   prefilledReceiverId?: string;
 }
 
-export interface VisionCheckupConfigEventDetail {
-  growspaceId: string;
-  visionCheckupConfig: VisionCheckupConfig;
-}
-
 export interface ConfigDialogState {
   currentTab:
     | 'growspaces'

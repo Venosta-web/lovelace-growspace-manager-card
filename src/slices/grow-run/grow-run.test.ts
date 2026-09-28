@@ -412,6 +412,18 @@ describe('getGrowRun', () => {
             projected: true,
           },
         ],
+        harvest_outcomes: [
+          {
+            plant_id: 'p1',
+            strain: 'OG Kush',
+            phenotype: 'A',
+            source_growspace_id: 'flower',
+            state: 'pending',
+            reason: null,
+            metrics: { dry_weight: null },
+            quality_score: null,
+          },
+        ],
       },
     };
     expect(GetGrowRunResultSchema.parse(response)).toEqual(response);

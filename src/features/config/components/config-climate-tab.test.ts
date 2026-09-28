@@ -24,7 +24,7 @@ const HASS = hassWithEntities({
   'number.port1_speed': 'Grow Tent Port 1 Speed',
 });
 
-const defaults = createInitialSM().environmentDraft;
+const defaults = createInitialSM().environment.values;
 
 function makeVm(over: Partial<ClimateTabViewModel> = {}): ClimateTabViewModel {
   return {

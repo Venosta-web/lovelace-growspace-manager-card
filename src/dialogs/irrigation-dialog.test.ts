@@ -17,9 +17,9 @@ import { hassWithEntities, mountWithHass } from '../../tests/harness/entity-pick
 // Tank edits enter the Environment Change module as a narrow request variant.
 vi.mock('../features/config/environment-change', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../features/config/environment-change')>();
-  return { ...actual, applyEnvironmentChange: vi.fn().mockResolvedValue(undefined) };
+  return { ...actual, applyTankConfigChange: vi.fn().mockResolvedValue(undefined) };
 });
-import { applyEnvironmentChange } from '../features/config/environment-change';
+import { applyTankConfigChange } from '../features/config/environment-change';
 
 // EC ramp fetch/save/remove now go through the Nutrient slice mutators directly.
 vi.mock('../slices/nutrient', async (importOriginal) => ({
@@ -1892,7 +1892,7 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
   });
 
   it('clicking Save requests a Tank Config Change and closes the form', async () => {
-    vi.mocked(applyEnvironmentChange).mockClear();
+    vi.mocked(applyTankConfigChange).mockClear();
     const { el, tab } = await mountTanks();
     await openEditor(tab, el);
 
@@ -1912,10 +1912,8 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
     await el.updateComplete;
     await tab.updateComplete;
 
-    expect(applyEnvironmentChange).toHaveBeenCalledOnce();
-    const [call] = vi.mocked(applyEnvironmentChange).mock.calls;
-    expect(call[0].kind).toBe('tank-config-change');
-    if (call[0].kind !== 'tank-config-change') throw new Error('Expected Tank Config Change');
+    expect(applyTankConfigChange).toHaveBeenCalledOnce();
+    const [call] = vi.mocked(applyTankConfigChange).mock.calls;
     expect(call[0].growspaceId).toBe('gs1');
     const tanks = call[0].irrigationTanks;
     expect(tanks[0].warningLevel).toBe(25);
@@ -1959,7 +1957,7 @@ describe('IrrigationDialog – unknown tank levels', () => {
   }
 
   it("saves an edited staleness window, and restates the other tank's", async () => {
-    vi.mocked(applyEnvironmentChange).mockClear();
+    vi.mocked(applyTankConfigChange).mockClear();
     const { el, tab } = await mount(staleTankDevice(), 'tanks');
     (tab.shadowRoot.querySelector('button.tank-edit-btn') as HTMLButtonElement).click();
     await el.updateComplete;
@@ -1979,8 +1977,7 @@ describe('IrrigationDialog – unknown tank levels', () => {
     save.click();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    const [call] = vi.mocked(applyEnvironmentChange).mock.calls;
-    if (call[0].kind !== 'tank-config-change') throw new Error('Expected Tank Config Change');
+    const [call] = vi.mocked(applyTankConfigChange).mock.calls;
     expect(call[0].irrigationTanks.map((t) => t.staleAfterMinutes)).toEqual([0, 0]);
   });
 
