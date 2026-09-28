@@ -23,7 +23,7 @@ export const ActiveRunSensorSchema = z.object({
 });
 
 /** One Run's compact summary at one Run Revision, as the WS commands return it. */
-const RunSummarySchema = z.object({
+export const RunSummarySchema = z.object({
   run_id: z.string(),
   sequence_number: z.number().int().min(1),
   label: z.string().nullable(),
@@ -33,47 +33,13 @@ const RunSummarySchema = z.object({
   run_revision: z.number().int().min(0),
 });
 
-/**
- * Every refusal is a result, carrying where the ledger really is. `code`
- * stays a string so a refusal a newer backend adds still renders in the
- * backend's own words.
- */
-const RunRefusalSchema = z.object({
-  code: z.string().min(1),
-  message: z.string(),
-  current_revision: z.number().int().min(0).nullable(),
-  active_run: RunSummarySchema.nullable(),
-});
-export type RunRefusal = z.infer<typeof RunRefusalSchema>;
-
-export const StartGrowRunResultSchema = z.discriminatedUnion('outcome', [
-  z.object({
-    outcome: z.literal('started'),
-    run_revision: z.number().int().min(0),
-    active_run: RunSummarySchema,
-  }),
-  z.object({
-    outcome: z.literal('refused'),
-    refusal: RunRefusalSchema,
-  }),
-]);
-export type StartGrowRunResult = z.infer<typeof StartGrowRunResultSchema>;
-
-/** The bounds are the backend's; the card refuses first rather than send them. */
-export const StartGrowRunPayloadSchema = z.strictObject({
-  growspace_id: z.string().min(1),
-  expected_run_revision: z.number().int().min(0),
-  label: z.string().max(80).optional(),
-  goals: z.string().max(2000).optional(),
-});
-
-const ParticipationSchema = z.object({
+export const ParticipationSchema = z.object({
   plant_id: z.string(),
   opened_at: z.string(),
   closed_at: z.string().nullable(),
 });
 
-const MovementFactSchema = z.object({
+export const MovementFactSchema = z.object({
   fact_id: z.string(),
   plant_id: z.string(),
   at: z.string(),

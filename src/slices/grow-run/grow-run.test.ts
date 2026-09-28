@@ -2,14 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HomeAssistant } from 'custom-card-helpers';
 
 import { hassCall } from '../../services/hass-call';
-import {
-  deriveRunView,
-  getGrowRun,
-  refusalText,
-  resolveActiveRunSensor,
-  startGrowRun,
-} from './index';
-import { ActiveRunSensorSchema, GetGrowRunResultSchema, StartGrowRunResultSchema } from './schema';
+import { deriveRunView, getGrowRun, resolveActiveRunSensor } from './index';
+import { ActiveRunSensorSchema, GetGrowRunResultSchema } from './schema';
+import { conflictText, localToday, previewGrowRunStart, refusalText, startGrowRun } from './start';
+import { PreviewGrowRunStartResultSchema, StartGrowRunResultSchema } from './start-schema';
 
 vi.mock('../../services/hass-call', () => ({
   hassCall: vi.fn(),
@@ -71,6 +67,185 @@ const REFUSED_FIXTURE = {
   },
 };
 
+/**
+ * `grow_run_start_preview_v1` and `grow_run_beyond_retention_v1` (GSM#670),
+ * with the day lists shortened: a start that may claim, and one in conflict.
+ */
+const PREVIEW_FIXTURE = {
+  outcome: 'preview',
+  preview: {
+    claimed_days: [
+      {
+        date: '2026-08-01',
+        entries: 0,
+        exits: 0,
+        plant_ids: ['p1'],
+      },
+      {
+        date: '2026-08-02',
+        entries: 0,
+        exits: 0,
+        plant_ids: ['p1'],
+      },
+    ],
+    claimed_facts: [
+      {
+        at: '2026-08-03T06:00:00+00:00',
+        fact_id: 'f-entry',
+        kind: 'entry',
+        plant_id: 'p2',
+        projected: true,
+        source_growspace_id: null,
+        source_run_id: null,
+        target_growspace_id: 'tent',
+        target_run_id: null,
+      },
+      {
+        at: '2026-08-04T06:00:00+00:00',
+        fact_id: 'f-out',
+        kind: 'transplant',
+        plant_id: 'p1',
+        projected: true,
+        source_growspace_id: 'tent',
+        source_run_id: null,
+        target_growspace_id: 'veg',
+        target_run_id: null,
+      },
+      {
+        at: '2026-08-06T06:00:00+00:00',
+        fact_id: 'f-back',
+        kind: 'transplant',
+        plant_id: 'p1',
+        projected: true,
+        source_growspace_id: 'veg',
+        source_run_id: null,
+        target_growspace_id: 'tent',
+        target_run_id: null,
+      },
+      {
+        at: '2026-08-07T06:00:00+00:00',
+        fact_id: 'f-move',
+        kind: 'move',
+        plant_id: 'p2',
+        projected: true,
+        source_growspace_id: 'tent',
+        source_run_id: null,
+        target_growspace_id: 'tent',
+        target_run_id: null,
+      },
+    ],
+    conflict: null,
+    covered_from: '2026-08-01T07:00:00+00:00',
+    covered_since: '2026-08-01T07:00:00+00:00',
+    gaps: [
+      {
+        end: '2026-08-01T07:00:00+00:00',
+        reason: 'before_recording',
+        start: '2026-07-30T22:00:00+00:00',
+      },
+    ],
+    participant_count: 2,
+    participations: [
+      {
+        closed_at: '2026-08-04T06:00:00+00:00',
+        name: 'OG Kush',
+        opened_at: '2026-08-01T07:00:00+00:00',
+        plant_id: 'p1',
+      },
+      {
+        closed_at: null,
+        name: 'Gelato',
+        opened_at: '2026-08-03T06:00:00+00:00',
+        plant_id: 'p2',
+      },
+      {
+        closed_at: null,
+        name: 'OG Kush',
+        opened_at: '2026-08-06T06:00:00+00:00',
+        plant_id: 'p1',
+      },
+    ],
+    retention_days: 365,
+    retention_horizon: '2025-08-10T10:00:00+00:00',
+    run_revision: 2,
+    started_at: '2026-07-30T22:00:00+00:00',
+    started_on: '2026-07-31',
+    timezone: 'Europe/Berlin',
+  },
+};
+const PREVIEW_CONFLICT_FIXTURE = {
+  outcome: 'preview',
+  preview: {
+    claimed_days: [
+      {
+        date: '2026-08-03',
+        entries: 1,
+        exits: 0,
+        plant_ids: ['p1', 'p2'],
+      },
+    ],
+    claimed_facts: [
+      {
+        at: '2026-08-03T06:00:00+00:00',
+        fact_id: 'f-entry',
+        kind: 'entry',
+        plant_id: 'p2',
+        projected: true,
+        source_growspace_id: null,
+        source_run_id: null,
+        target_growspace_id: 'tent',
+        target_run_id: null,
+      },
+    ],
+    conflict: {
+      boundary: '2026-08-03T10:00:00+00:00',
+      code: 'grow_run.beyond_retention',
+      message:
+        'Activity that old is no longer kept, so nothing can be claimed for it; record that history as an Imported Run instead',
+    },
+    covered_from: '2026-08-02T22:00:00+00:00',
+    covered_since: '2026-08-01T07:00:00+00:00',
+    gaps: [],
+    participant_count: 2,
+    participations: [
+      {
+        closed_at: '2026-08-04T06:00:00+00:00',
+        name: 'OG Kush',
+        opened_at: '2026-08-02T22:00:00+00:00',
+        plant_id: 'p1',
+      },
+      {
+        closed_at: null,
+        name: 'Gelato',
+        opened_at: '2026-08-03T06:00:00+00:00',
+        plant_id: 'p2',
+      },
+      {
+        closed_at: null,
+        name: 'OG Kush',
+        opened_at: '2026-08-06T06:00:00+00:00',
+        plant_id: 'p1',
+      },
+    ],
+    retention_days: 7,
+    retention_horizon: '2026-08-03T10:00:00+00:00',
+    run_revision: 2,
+    started_at: '2026-08-02T22:00:00+00:00',
+    started_on: '2026-08-03',
+    timezone: 'Europe/Berlin',
+  },
+};
+const BEYOND_RETENTION_FIXTURE = {
+  outcome: 'refused',
+  refusal: {
+    active_run: null,
+    code: 'grow_run.beyond_retention',
+    current_revision: 2,
+    message:
+      'Activity that old is no longer kept, so nothing can be claimed for it; record that history as an Imported Run instead',
+  },
+};
+
 type SensorState = { state: string; attributes: Record<string, unknown> };
 
 function hassWith(sensor: SensorState | undefined, extra: Record<string, unknown> = {}) {
@@ -107,6 +282,16 @@ describe('the contract', () => {
     expect(ActiveRunSensorSchema.safeParse(SENSOR_FIXTURE.none).success).toBe(true);
     expect(StartGrowRunResultSchema.safeParse(STARTED_FIXTURE).success).toBe(true);
     expect(StartGrowRunResultSchema.safeParse(REFUSED_FIXTURE).success).toBe(true);
+    expect(StartGrowRunResultSchema.safeParse(BEYOND_RETENTION_FIXTURE).success).toBe(true);
+    expect(PreviewGrowRunStartResultSchema.safeParse(PREVIEW_FIXTURE).success).toBe(true);
+    expect(PreviewGrowRunStartResultSchema.safeParse(PREVIEW_CONFLICT_FIXTURE).success).toBe(true);
+  });
+
+  it('refuses a preview day that is not an ISO date', () => {
+    const preview = { ...PREVIEW_FIXTURE.preview, started_on: '31/07/2026' };
+    expect(PreviewGrowRunStartResultSchema.safeParse({ outcome: 'preview', preview }).success).toBe(
+      false
+    );
   });
 
   it('refuses a state that is neither a sequence number nor none', () => {
@@ -274,5 +459,57 @@ describe('refusalText', () => {
         active_run: null,
       })
     ).toBe('Refused: Try later');
+  });
+});
+
+describe('starting on an earlier day', () => {
+  beforeEach(() => {
+    vi.mocked(hassCall).mockReset();
+  });
+
+  it('previews the day and nothing else', async () => {
+    vi.mocked(hassCall).mockResolvedValue(PREVIEW_FIXTURE);
+    await expect(previewGrowRunStart('flower', '2026-07-31')).resolves.toEqual(PREVIEW_FIXTURE);
+    expect(hassCall).toHaveBeenCalledWith(
+      'growspace_manager/preview_grow_run_start',
+      { growspace_id: 'flower', started_on: '2026-07-31' },
+      PreviewGrowRunStartResultSchema
+    );
+  });
+
+  it('refuses a malformed day before sending it', () => {
+    expect(() => previewGrowRunStart('flower', 'yesterday')).toThrow();
+    expect(() => startGrowRun('flower', 0, { startedOn: '2026-7-31' })).toThrow();
+    expect(hassCall).not.toHaveBeenCalled();
+  });
+
+  it('sends the day with the start', async () => {
+    vi.mocked(hassCall).mockResolvedValue(STARTED_FIXTURE);
+    await startGrowRun('flower', 3, { startedOn: '2026-07-31' });
+    expect(hassCall).toHaveBeenCalledWith(
+      'growspace_manager/start_grow_run',
+      { growspace_id: 'flower', expected_run_revision: 3, started_on: '2026-07-31' },
+      StartGrowRunResultSchema
+    );
+  });
+
+  it("reads today where the Run Timezone is, and falls back to the browser's", () => {
+    const moment = new Date('2026-08-01T02:30:00Z');
+    expect(localToday('Europe/Berlin', moment)).toBe('2026-08-01');
+    expect(localToday('America/Los_Angeles', moment)).toBe('2026-07-31');
+    expect(localToday('Mars/Olympus', moment)).toBe(localToday(undefined, moment));
+  });
+
+  it('says a conflicting boundary the way the confirmation would be refused', () => {
+    const conflict = PREVIEW_CONFLICT_FIXTURE.preview.conflict!;
+    expect(conflictText(conflict)).toMatch(/imported run/);
+    expect(refusalText(BEYOND_RETENTION_FIXTURE.refusal)).toBe(conflictText(conflict));
+    expect(conflictText({ ...conflict, code: 'grow_run.boundary_conflict' })).toMatch(
+      /in the future, or before another run/
+    );
+    // Without the Run's number, an active run is described in the backend's words.
+    expect(
+      conflictText({ code: 'grow_run.already_active', message: 'Run #2 is active', boundary: null })
+    ).toBe('Refused: Run #2 is active');
   });
 });

@@ -162,6 +162,13 @@ export const LAZY_CHUNKS = {
     feature: 'The setup checklist',
     onDemandOnly: true,
   },
+  // Starting a Grow Run, now or on an earlier day with its preview (GSM#670).
+  // The header carries only the run chip; the form is opened rarely.
+  runStartDialog: {
+    name: 'growspace-run-start-dialog',
+    feature: 'The start grow run dialog',
+    onDemandOnly: true,
+  },
   heatmap3d: {
     name: 'heatmap-3d',
     feature: 'The 3D heatmap',

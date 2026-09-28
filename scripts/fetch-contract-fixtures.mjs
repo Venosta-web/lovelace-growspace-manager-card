@@ -54,6 +54,10 @@ const GROW_RUN_FIXTURES = [
   'grow_run_started_v1',
   'grow_run_refused_v1',
   'grow_run_details_v1',
+  // Starting a Run on an earlier day (GSM#670): the preview, clear and in
+  // conflict, and the retention refusal a confirmation gets.
+  'grow_run_start_preview_v1',
+  'grow_run_beyond_retention_v1',
 ];
 // Every payload the card's TC chunk parses, and the local file each is written
 // to. One entry per contract, so adding a TC command is one line here rather

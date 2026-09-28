@@ -28,11 +28,11 @@ import {
   UpdatePlantRequestContractSchema,
 } from '../../src/slices/plant/schema';
 import { IrrigationControllerSchema } from '../../src/slices/safety/schema';
+import { ActiveRunSensorSchema, GetGrowRunResultSchema } from '../../src/slices/grow-run/schema';
 import {
-  ActiveRunSensorSchema,
-  GetGrowRunResultSchema,
+  PreviewGrowRunStartResultSchema,
   StartGrowRunResultSchema,
-} from '../../src/slices/grow-run/schema';
+} from '../../src/slices/grow-run/start-schema';
 
 interface FixtureContract {
   name: string;
@@ -54,6 +54,14 @@ const ActiveRunSensorFixtureSchema = z
   .object({
     active: ActiveRunSensorSchema,
     none: ActiveRunSensorSchema,
+  })
+  .strict();
+
+// A backdated start's preview both ways: one that may start, one in conflict.
+const StartPreviewFixtureSchema = z
+  .object({
+    clear: PreviewGrowRunStartResultSchema,
+    conflict: PreviewGrowRunStartResultSchema,
   })
   .strict();
 
@@ -164,6 +172,21 @@ const CONTRACTS: FixtureContract[] = [
     schema: GetGrowRunResultSchema,
     leadingVariable: 'GSM_PRERELEASE_GROW_RUN_DETAILS_FIXTURE',
     releaseVariable: 'GSM_RELEASE_GROW_RUN_DETAILS_FIXTURE',
+    releaseRequired: false,
+  },
+  // Starting a Run on an earlier day (GSM#670).
+  {
+    name: 'Grow Run start preview',
+    schema: StartPreviewFixtureSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_START_PREVIEW_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_START_PREVIEW_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run beyond retention',
+    schema: StartGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_BEYOND_RETENTION_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_BEYOND_RETENTION_FIXTURE',
     releaseRequired: false,
   },
   // Growspace Manager TC is a separate repository that owns its own WebSocket
