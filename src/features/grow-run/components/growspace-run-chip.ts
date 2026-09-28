@@ -1,15 +1,11 @@
 import { LitElement, html, css, nothing } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { mdiHelpCircleOutline, mdiPlus, mdiSprout } from '@mdi/js';
 
-import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
-import {
-  getGrowRun,
-  refusalText,
-  startGrowRun,
-  type GetGrowRunResult,
-  type RunView,
-} from '../../../slices/grow-run';
+import { LAZY_CHUNKS, loadLazyChunk } from '../../../lib/lazy-chunk';
+import { localize, localizeWithParams } from '../../../localize/localize';
+import { getGrowRun, type GetGrowRunResult, type RunView } from '../../../slices/grow-run';
+import '../../shared/ui/lazy-chunk-error';
 
 /**
  * The Active Run chip (GSM#668, GSM#797 "UI placement").
@@ -19,10 +15,10 @@ import {
  * or, without one, a `Start run` chip. Selecting an Active Run shows its
  * Participants and movement history.
  *
- * Starting is one small dialog: an optional name and goals, and the number of
- * Plants that will take part. Nothing is optimistic. The chip changes when the
- * Active Run Sensor does, and a refusal — someone else started a run, this
- * user may not — is said in words while the chip catches up.
+ * Starting is one small dialog, `growspace-run-start-dialog`, fetched as its
+ * own chunk the first time it opens (GSM#670 made it large enough to earn
+ * one: a start may name an earlier day and preview what it would claim).
+ * Nothing is optimistic. The chip changes when the Active Run Sensor does.
  */
 @customElement('growspace-run-chip')
 export class GrowspaceRunChip extends LitElement {
@@ -30,16 +26,15 @@ export class GrowspaceRunChip extends LitElement {
   /** How many Plants stand in the growspace now: the Participants a start takes. */
   @property({ type: Number }) plantCount = 0;
   @property() language = 'en';
+  /** Home Assistant's timezone, so "today" in the start dialog is the Run's. */
+  @property() timeZone?: string;
 
   @state() private _open = false;
-  @state() private _busy = false;
-  @state() private _refusal: string | null = null;
+  @state() private _startLoaded = false;
+  @state() private _startMissing = false;
   @state() private _detailsOpen = false;
   @state() private _details: GetGrowRunResult | null = null;
   @state() private _detailError: string | null = null;
-
-  @query('#run-label') private _labelInput?: HTMLInputElement;
-  @query('#run-goals') private _goalsInput?: HTMLTextAreaElement;
 
   static styles = css`
     :host {
@@ -71,9 +66,7 @@ export class GrowspaceRunChip extends LitElement {
     }
 
     .chip:focus-visible,
-    button:focus-visible,
-    input:focus-visible,
-    textarea:focus-visible {
+    button:focus-visible {
       outline: 2px solid var(--primary-color, #4caf50);
       outline-offset: 2px;
     }
@@ -95,41 +88,8 @@ export class GrowspaceRunChip extends LitElement {
       --cue: var(--primary-color, #4caf50);
     }
 
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      color: var(--primary-text-color);
-    }
-
     p {
       margin: 0;
-    }
-
-    .muted {
-      color: var(--secondary-text-color);
-    }
-
-    label {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 0.875rem;
-    }
-
-    input,
-    textarea {
-      font: inherit;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.24));
-      background: var(--card-background-color, transparent);
-      color: var(--primary-text-color);
-    }
-
-    textarea {
-      min-height: 72px;
-      resize: vertical;
     }
 
     .row {
@@ -252,73 +212,32 @@ export class GrowspaceRunChip extends LitElement {
     `;
   }
 
-  private _close(): void {
-    this._open = false;
-    this._refusal = null;
+  private _openStart(): void {
+    this._open = true;
+    if (this._startLoaded) return;
+    void loadLazyChunk(
+      LAZY_CHUNKS.runStartDialog,
+      () => import('./growspace-run-start-dialog')
+    ).then((chunk) => {
+      if (chunk) this._startLoaded = true;
+      else this._startMissing = true;
+    });
   }
 
-  private async _submit(event: Event): Promise<void> {
-    event.preventDefault();
-    const view = this.view;
-    if (!view || view.runRevision === null || this._busy) return;
-    this._busy = true;
-    this._refusal = null;
-    try {
-      const result = await startGrowRun(view.growspaceId, view.runRevision, {
-        label: this._labelInput?.value,
-        goals: this._goalsInput?.value,
-      });
-      if (result.outcome === 'started') {
-        this._close();
-      } else {
-        this._refusal = refusalText(result.refusal, this.language);
-      }
-    } catch (error) {
-      const message =
-        error && typeof error === 'object' && 'message' in error
-          ? String((error as { message: unknown }).message)
-          : String(error);
-      this._refusal = this._t('refused', { message });
-    } finally {
-      this._busy = false;
+  private _renderStart() {
+    if (this._startMissing) {
+      return html`<growspace-lazy-chunk-error
+        .chunk=${LAZY_CHUNKS.runStartDialog}
+      ></growspace-lazy-chunk-error>`;
     }
-  }
-
-  private _renderDialog() {
-    const plants =
-      this.plantCount === 0
-        ? this._t('plants_now_zero')
-        : localizePlural('grow_run.plants_now', this.plantCount, {}, this.language);
-    return html`
-      <ha-dialog open width="medium" .headerTitle=${this._t('dialog_title')} @closed=${this._close}>
-        <form @submit=${this._submit}>
-          <p>${this._t('dialog_intro')}</p>
-          <p class="muted" data-testid="participants">${plants}</p>
-          <label>
-            ${this._t('field_label')}
-            <input id="run-label" name="label" maxlength="80" autocomplete="off" />
-          </label>
-          <label>
-            ${this._t('field_goals')}
-            <textarea id="run-goals" name="goals" maxlength="2000"></textarea>
-          </label>
-          ${this._refusal ? html`<p class="refusal" role="alert">${this._refusal}</p>` : nothing}
-          <div class="row">
-            <button
-              type="button"
-              data-action="cancel"
-              ?disabled=${this._busy}
-              @click=${this._close}
-            >
-              ${this._t('cancel')}
-            </button>
-            <button type="submit" class="primary" data-action="start" ?disabled=${this._busy}>
-              ${this._busy ? this._t('starting') : this._t('confirm')}
-            </button>
-          </div>
-        </form>
-      </ha-dialog>
-    `;
+    if (!this._startLoaded) return nothing;
+    return html`<growspace-run-start-dialog
+      .view=${this.view}
+      .plantCount=${this.plantCount}
+      .language=${this.language}
+      .timeZone=${this.timeZone}
+      @closed=${() => (this._open = false)}
+    ></growspace-run-start-dialog>`;
   }
 
   render() {
@@ -332,12 +251,12 @@ export class GrowspaceRunChip extends LitElement {
           data-state="none"
           aria-haspopup="dialog"
           aria-label=${this._t('start_label')}
-          @click=${() => (this._open = true)}
+          @click=${this._openStart}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${mdiPlus}></path></svg>
           <span>${view.summary}</span>
         </button>
-        ${this._open ? this._renderDialog() : nothing}
+        ${this._open ? this._renderStart() : nothing}
       `;
     }
 

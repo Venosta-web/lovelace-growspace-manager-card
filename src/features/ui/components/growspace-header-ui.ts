@@ -251,6 +251,8 @@ export class GrowspaceHeaderUI extends LitElement {
                     .view=${this.run}
                     .plantCount=${this.device.plants?.length ?? 0}
                     .language=${this.hass?.language ?? 'en'}
+                    .timeZone=${(this.hass as { config?: { time_zone?: string } } | undefined)
+                      ?.config?.time_zone}
                   ></growspace-run-chip>`
                 : nothing}
             </div>

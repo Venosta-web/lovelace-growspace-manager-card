@@ -154,6 +154,8 @@ test('the registry declares every on-demand-only chunk it should', async () => {
     'tc-dialog',
     // Only a growspace still being set up renders it (#973).
     'growspace-setup-checklist.container',
+    // The Grow Run start dialog and its preview (GSM#670).
+    'growspace-run-start-dialog',
     'label-templates',
     'tc',
   ]);
