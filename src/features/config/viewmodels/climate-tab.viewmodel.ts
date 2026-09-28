@@ -198,7 +198,7 @@ export function createClimateTabViewModel(
   deps: ClimateTabDeps,
   expand: ClimateExpandState
 ): ClimateTabViewModel {
-  const d = sm.environmentDraft;
+  const d = sm.environment.values;
   const fan = d.circulationFanConfig;
   const exhaust = d.exhaustFanConfig;
   // `regulation_mode` predates the field on older growspaces and the backend

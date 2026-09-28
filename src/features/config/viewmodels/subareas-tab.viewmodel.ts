@@ -48,7 +48,7 @@ export function createSubareasTabViewModel(
   sm: ConfigDialogSM,
   deps: SubareasTabDeps
 ): SubareasTabViewModel {
-  const envId = sm.environmentDraft.selectedGrowspaceId;
+  const envId = sm.environment.values.selectedGrowspaceId;
   const gsSub = sm.tabs.growspaces.sub;
   const growspaceId = envId || (gsSub.kind === 'editing' ? gsSub.growspaceId : '');
 

@@ -34,7 +34,7 @@ export function createVisionTabViewModel(
   sm: ConfigDialogSM,
   deps: VisionTabDeps
 ): VisionTabViewModel {
-  const d = sm.environmentDraft;
+  const d = sm.environment.values;
   return {
     cameraEntities: d.cameraEntities,
     cameraOptions: deps.entityOptions(['camera'], null),

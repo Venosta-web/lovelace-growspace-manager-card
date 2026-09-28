@@ -76,7 +76,7 @@ export function createGrowlightTabViewModel(
   sm: ConfigDialogSM,
   deps: GrowlightTabDeps
 ): GrowlightTabViewModel {
-  const d = sm.environmentDraft;
+  const d = sm.environment.values;
   const cfg = d.growlightConfig;
   const preferredLuxSensors = deps.entityOptions(['sensor'], 'illuminance');
   return {

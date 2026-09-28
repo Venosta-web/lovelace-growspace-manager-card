@@ -24,7 +24,7 @@ function withFan(partial: Record<string, unknown>): ConfigDialogSM {
   const s = sm();
   return transition(s, {
     type: 'UPDATE_ENV_DRAFT',
-    partial: { circulationFanConfig: { ...s.environmentDraft.circulationFanConfig, ...partial } },
+    partial: { circulationFanConfig: { ...s.environment.values.circulationFanConfig, ...partial } },
   });
 }
 
@@ -134,12 +134,12 @@ describe('createClimateTabViewModel — consolidated stage VPD overrides', () =>
       type: 'UPDATE_ENV_DRAFT',
       partial: {
         circulationFanConfig: {
-          ...base.environmentDraft.circulationFanConfig,
+          ...base.environment.values.circulationFanConfig,
           stage_vpd_enabled: true,
           stage_vpd_overrides: { veg: { day: 0.91, night: 0.81 } },
         },
         exhaustFanConfig: {
-          ...base.environmentDraft.exhaustFanConfig,
+          ...base.environment.values.exhaustFanConfig,
           stage_vpd_overrides: { veg: { day: 0.88, night: 0.78 } },
         },
       },
@@ -167,7 +167,7 @@ describe('createClimateTabViewModel — consolidated stage VPD overrides', () =>
       type: 'UPDATE_ENV_DRAFT',
       partial: {
         exhaustFanConfig: {
-          ...base.environmentDraft.exhaustFanConfig,
+          ...base.environment.values.exhaustFanConfig,
           stage_vpd_enabled: true,
         },
       },

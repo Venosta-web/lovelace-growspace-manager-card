@@ -162,7 +162,7 @@ describe('_seedFromDevice irrigation tanks mapping', () => {
         ],
       },
     } as any);
-    const tanks = (el as any)._sm.environmentDraft.irrigationTanks;
+    const tanks = (el as any)._sm.environment.values.irrigationTanks;
     expect(tanks).toHaveLength(2);
     expect(tanks[0]).toEqual({
       sensorEntity: 'sensor.tank1',
@@ -195,7 +195,7 @@ describe('_seedFromDevice AC Infinity devices', () => {
       deviceId: 'gs1',
       environmentAttributes: { exhaustFanAcInfinityDevices: [device] },
     } as any);
-    const draft = (el as any)._sm.environmentDraft;
+    const draft = (el as any)._sm.environment.values;
     expect(draft.exhaustFanAcInfinityDevices).toEqual([device]);
   });
 });
@@ -399,7 +399,7 @@ describe('_updateFanConfig', () => {
   it('merges partial into circulationFanConfig in the environment draft', () => {
     const el = makeEl();
     (el as any)._updateFanConfig({ enabled: true, min_speed: 20 });
-    const fan = (el as any)._sm.environmentDraft.circulationFanConfig;
+    const fan = (el as any)._sm.environment.values.circulationFanConfig;
     expect(fan.enabled).toBe(true);
     expect(fan.min_speed).toBe(20);
     // unrelated fields are preserved
@@ -421,7 +421,7 @@ describe('_getVpdOptimalValue', () => {
   // home (getVpdOptimal) against the dialog's live draft.
   it('returns the built-in default when the stage has no override', () => {
     const el = makeEl();
-    const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
+    const overrides = (el as any)._sm.environment.values.vpdOptimalOverrides;
     expect(getVpdOptimal(overrides, 'seedling', 'day', 'low')).toBe(
       VPD_OPTIMAL_STAGE_DEFAULTS.seedling.day.low
     );
@@ -437,7 +437,7 @@ describe('_getVpdOptimalValue', () => {
         },
       },
     });
-    const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
+    const overrides = (el as any)._sm.environment.values.vpdOptimalOverrides;
     expect(getVpdOptimal(overrides, 'veg', 'day', 'low')).toBe(0.6);
     expect(getVpdOptimal(overrides, 'veg', 'night', 'high')).toBe(0.9);
   });
@@ -447,7 +447,7 @@ describe('_updateVpdOptimal', () => {
   it('writes the edited slot into the draft as a full stage entry', () => {
     const el = makeEl();
     (el as any)._updateVpdOptimal('seedling', 'day', 'low', '0.5');
-    const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
+    const overrides = (el as any)._sm.environment.values.vpdOptimalOverrides;
     expect(overrides.seedling.day.low).toBe(0.5);
     // the rest of the stage is seeded from defaults
     expect(overrides.seedling.day.high).toBe(VPD_OPTIMAL_STAGE_DEFAULTS.seedling.day.high);
@@ -465,7 +465,7 @@ describe('_updateVpdOptimal', () => {
       },
     });
     (el as any)._updateVpdOptimal('seedling', 'day', 'low', '0.5');
-    const overrides = (el as any)._sm.environmentDraft.vpdOptimalOverrides;
+    const overrides = (el as any)._sm.environment.values.vpdOptimalOverrides;
     expect(overrides.veg).toEqual({ day: { low: 0.6, high: 1.0 }, night: { low: 0.5, high: 0.9 } });
     expect(overrides.seedling.day.low).toBe(0.5);
   });
@@ -481,7 +481,7 @@ describe('_updateVpdOptimal', () => {
       },
     });
     (el as any)._updateVpdOptimal('veg', 'day', 'low', '');
-    const veg = (el as any)._sm.environmentDraft.vpdOptimalOverrides.veg;
+    const veg = (el as any)._sm.environment.values.vpdOptimalOverrides.veg;
     expect(veg.day.low).toBe(VPD_OPTIMAL_STAGE_DEFAULTS.veg.day.low);
     expect(veg.day.high).toBe(1.0);
     expect(veg.night).toEqual({ low: 0.5, high: 0.9 });
@@ -501,7 +501,7 @@ describe('_resetVpdOptimal', () => {
       },
     });
     (el as any)._resetVpdOptimal();
-    expect((el as any)._sm.environmentDraft.vpdOptimalOverrides).toEqual({});
+    expect((el as any)._sm.environment.values.vpdOptimalOverrides).toEqual({});
   });
 });
 
@@ -616,7 +616,7 @@ describe('Port Pre-fill — pick handler', () => {
     el.hass = hassWithPorts();
     withPort(el);
     (el as any)._pickAcInfinityPort('exhaustFanAcInfinityDevices', 0, 'dev1');
-    const draft = (el as any)._sm.environmentDraft;
+    const draft = (el as any)._sm.environment.values;
     expect(draft.exhaustFanAcInfinityDevices[0]).toEqual({
       mode_entity: 'select.p1_mode',
       speed_entity: 'number.p1_power',
@@ -630,7 +630,7 @@ describe('Port Pre-fill — pick handler', () => {
     el.hass = hassWithPorts();
     withPort(el);
     (el as any)._pickAcInfinityPort('exhaustFanAcInfinityDevices', 0, 'dev2');
-    const draft = (el as any)._sm.environmentDraft;
+    const draft = (el as any)._sm.environment.values;
     expect(draft.exhaustFanAcInfinityDevices[0]).toEqual({
       mode_entity: 'select.p2_mode',
       speed_entity: '',
@@ -653,7 +653,7 @@ describe('Port Pre-fill — pick handler', () => {
       },
     } as any);
     (el as any)._pickAcInfinityPort('exhaustFanAcInfinityDevices', 0, '');
-    const draft = (el as any)._sm.environmentDraft;
+    const draft = (el as any)._sm.environment.values;
     expect(draft.exhaustFanAcInfinityDevices[0]).toEqual({
       mode_entity: 'select.p1_mode',
       speed_entity: 'number.p1_power',
@@ -761,7 +761,7 @@ describe('Port Pre-fill — grow light six-role fill', () => {
     el.hass = hassWithGrowLightPorts();
     withGrowLightPort(el);
     (el as any)._pickAcInfinityPort('growlightAcInfinityDevices', 0, 'dev1');
-    const draft = (el as any)._sm.environmentDraft;
+    const draft = (el as any)._sm.environment.values;
     expect(draft.growlightAcInfinityDevices[0]).toEqual({
       mode_entity: 'select.g1_mode',
       on_time_entity: 'time.g1_on',
@@ -778,7 +778,7 @@ describe('Port Pre-fill — grow light six-role fill', () => {
     el.hass = hassWithGrowLightPorts();
     withGrowLightPort(el);
     (el as any)._pickAcInfinityPort('growlightAcInfinityDevices', 0, 'dev2');
-    const draft = (el as any)._sm.environmentDraft;
+    const draft = (el as any)._sm.environment.values;
     expect(draft.growlightAcInfinityDevices[0]).toEqual({
       mode_entity: 'select.g2_mode',
       on_time_entity: 'time.g2_on',

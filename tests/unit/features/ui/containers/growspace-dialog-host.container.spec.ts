@@ -14,7 +14,7 @@ import {
   waterGrowspace as sliceWaterGrowspace,
 } from '../../../../../src/slices/plant';
 import { removeEnvironment as sliceRemoveEnvironment } from '../../../../../src/slices/growspace';
-import { applyEnvironmentChange as mockApplyEnvironmentChange } from '../../../../../src/features/config/environment-change';
+import { executeEnvironmentWritePlan as mockExecuteEnvironmentWritePlan } from '../../../../../src/features/config/environment-change';
 import { fetchStrainLibrary as sliceFetchStrainLibrary } from '../../../../../src/slices/strain';
 import { hassCall, callService, callServiceReturning } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
@@ -67,7 +67,7 @@ vi.mock('../../../../../src/features/config/environment-change', async (importOr
   ...(await importOriginal<
     typeof import('../../../../../src/features/config/environment-change')
   >()),
-  applyEnvironmentChange: vi.fn().mockResolvedValue(undefined),
+  executeEnvironmentWritePlan: vi.fn().mockResolvedValue(undefined),
 }));
 
 // The host's _exportStrainLibrary now reads the library via the strain slice
@@ -1042,7 +1042,15 @@ describe('GrowspaceDialogHostContainer', () => {
     const dialog = element.shadowRoot?.querySelector('config-dialog');
     dialog?.dispatchEvent(
       new CustomEvent('vision-checkup-config-submit', {
-        detail: { growspaceId: 'g1', visionCheckupConfig: { enabled: true } },
+        detail: {
+          growspaceId: 'g1',
+          config: {
+            visionEnabled: true,
+            visionEarlyOffset: 60,
+            visionMidHours: 6,
+            visionLateOffset: 60,
+          },
+        },
       })
     );
 
@@ -1129,11 +1137,11 @@ describe('GrowspaceDialogHostContainer', () => {
 
     await (element as any)._handleVisionCheckupConfig({
       growspaceId: 'g1',
-      visionCheckupConfig: {
-        enabled: true,
-        early_check_offset_minutes: 0,
-        mid_check_hours: 0,
-        late_check_offset_minutes: 0,
+      config: {
+        visionEnabled: true,
+        visionEarlyOffset: 0,
+        visionMidHours: 0,
+        visionLateOffset: 0,
       },
     } as any);
 
@@ -2240,21 +2248,21 @@ describe('GrowspaceDialogHostContainer', () => {
       });
     });
 
-    it('should forward @environment-change-requested on CONFIG dialog', async () => {
+    it('should forward @environment-write-plan-requested on CONFIG dialog', async () => {
       await openDialog('CONFIG', {});
       const dialog = element.shadowRoot?.querySelector('config-dialog');
-      const request = {
-        kind: 'shared-environment-draft' as const,
-        draft: {
-          selectedGrowspaceId: 'g1',
-          temperatureSensors: ['sensor.temp'],
-          humiditySensors: ['sensor.humidity'],
+      const request = [
+        {
+          kind: 'configure-environment',
+          growspaceId: 'g1',
+          fields: { temperatureSensors: ['sensor.temp'] },
         },
-        dirty: new Set(['temperatureSensors']),
-      };
-      dialog?.dispatchEvent(new CustomEvent('environment-change-requested', { detail: request }));
+      ];
+      dialog?.dispatchEvent(
+        new CustomEvent('environment-write-plan-requested', { detail: request })
+      );
       await vi.waitFor(() => {
-        expect(mockApplyEnvironmentChange).toHaveBeenCalledWith(request, expect.any(Object));
+        expect(mockExecuteEnvironmentWritePlan).toHaveBeenCalledWith(request, expect.any(Object));
       });
     });
 

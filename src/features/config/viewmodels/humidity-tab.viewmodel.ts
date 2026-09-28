@@ -221,7 +221,7 @@ export function createHumidityTabViewModel(
   deps: HumidityTabDeps,
   expand: HumidityExpandState
 ): HumidityTabViewModel {
-  const d = sm.environmentDraft;
+  const d = sm.environment.values;
   const duplicates = buildDuplicatePortWarnings(acInfinityRoleLists(d));
   return {
     humidifierEntities: d.humidifierEntities,

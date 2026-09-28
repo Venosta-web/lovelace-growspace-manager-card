@@ -1,0 +1,11 @@
+# Environment Draft owns write intent
+
+**Status:** Accepted
+
+The Config Dialog keeps one `EnvironmentDraftState` at its state-machine root. `features/config/environment-draft.ts` owns complete defaults and device seeding, edits, atomic moisture-band closure, reseeding, divergence for discard, total field ownership, buffered Environment Write Plans, dedicated Vision plans, and immediate humidity command intent. The per-tab ViewModels remain independent projections of the complete values (ADR-0019). The Dirty Write Set records edits even when a value is restored to its seeded value; divergence answers the separate discard question (ADR-0032).
+
+A buffered plan carries target identity and only dirty buffered values. A dirty moisture band is a complete valid pair or a two-null clear. A dirty Exhaust Fan configuration adds one command after the buffered command. A Vision edit plans all four Vision values through its separate Save gesture. Humidity toggles return immediate intent when edited and never enter the buffered plan.
+
+`features/config/environment-change.ts` translates plans to Home Assistant's wire keys and compatibility forms, and executes commands in plan order. The Growspace command adapter calls the two existing Home Assistant actions; the Camera adapter handles Vision. The Irrigation Dialog retains its narrow Tank Config Change and does not create a Shared Environment Draft. Dialog hosts own refresh, toast, close, and errors. A failed buffered command stops before exhaust; a failed exhaust command leaves the caller's draft and write intent intact. Retry repeats the idempotent buffered patch before exhaust, with no rollback or success UI until all calls and refresh succeed.
+
+This supersedes ADR-0047's end-to-end Environment Change ownership. That design placed draft policy, wire mapping, ordering, and refresh behind one action-shaped facade. It made the Config Dialog's complete draft plus Dirty Write Set a request shape and kept field policy beside transport. The chosen boundary puts the grower's draft lifecycle and transport-neutral plan in one deep module while keeping released-backend wire details and UI lifecycle at their existing adapters. ADR-0032's sparse write semantics and ADR-0019's per-tab ViewModels remain in force.

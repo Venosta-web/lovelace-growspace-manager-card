@@ -42,7 +42,7 @@ const LONG_ENTITY = 'sensor.north_flowering_room_substrate_temperature_probe_cha
 
 /* ── view models (mirrors of the per-tab unit-test builders) ───────────── */
 
-const envDefaults = createInitialSM().environmentDraft;
+const envDefaults = createInitialSM().environment.values;
 
 const sensorsVm = () => ({
   moistureBand: null,
