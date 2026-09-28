@@ -28,10 +28,11 @@ import {
   UpdatePlantRequestContractSchema,
 } from '../../src/slices/plant/schema';
 import { IrrigationControllerSchema } from '../../src/slices/safety/schema';
+import { ActiveRunSensorSchema, GetGrowRunResultSchema } from '../../src/slices/grow-run/schema';
 import {
-  ActiveRunSensorSchema,
-  GetGrowRunResultSchema,
+  PreviewGrowRunStartResultSchema,
   StartGrowRunResultSchema,
+} from '../../src/slices/grow-run/start-schema';
 } from '../../src/slices/grow-run/schema';
 import {
   CompleteGrowRunResultSchema,
@@ -58,6 +59,14 @@ const ActiveRunSensorFixtureSchema = z
   .object({
     active: ActiveRunSensorSchema,
     none: ActiveRunSensorSchema,
+  })
+  .strict();
+
+// A backdated start's preview both ways: one that may start, one in conflict.
+const StartPreviewFixtureSchema = z
+  .object({
+    clear: PreviewGrowRunStartResultSchema,
+    conflict: PreviewGrowRunStartResultSchema,
   })
   .strict();
 
@@ -170,6 +179,19 @@ const CONTRACTS: FixtureContract[] = [
     releaseVariable: 'GSM_RELEASE_GROW_RUN_DETAILS_FIXTURE',
     releaseRequired: false,
   },
+  // Starting a Run on an earlier day (GSM#670).
+  {
+    name: 'Grow Run start preview',
+    schema: StartPreviewFixtureSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_START_PREVIEW_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_START_PREVIEW_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run beyond retention',
+    schema: StartGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_BEYOND_RETENTION_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_BEYOND_RETENTION_FIXTURE',
   // Completing a Run (GSM#671): the preview, both outcomes of the command, and
   // a Completed Run's details with its Pending metrics.
   {

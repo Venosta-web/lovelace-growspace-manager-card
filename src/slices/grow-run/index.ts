@@ -6,26 +6,14 @@
  * and device registries by its language-independent `translation_key` and the
  * growspace device identifier, never by guessing an entity ID from a name.
  *
- * The write side is one WebSocket command. It names the Run Revision the card
- * decided on, and every refusal comes back as a result carrying the current
- * revision and Active Run, so a stale Start is answered with what is really
- * there rather than an error.
+ * The write side lives in `./start`, which only the lazy start dialog loads.
  */
 
 import type { HomeAssistant } from 'custom-card-helpers';
 import { hassCall } from '../../services/hass-call';
 import { localize, localizePlural, localizeWithParams } from '../../localize/localize';
-import {
-  ActiveRunSensorSchema,
-  GetGrowRunResultSchema,
-  StartGrowRunPayloadSchema,
-  StartGrowRunResultSchema,
-  type RunRefusal,
-  type GetGrowRunResult,
-  type StartGrowRunResult,
-} from './schema';
+import { ActiveRunSensorSchema, GetGrowRunResultSchema, type GetGrowRunResult } from './schema';
 
-export type { RunRefusal, StartGrowRunResult } from './schema';
 export type { GetGrowRunResult } from './schema';
 
 const DOMAIN = 'growspace_manager';
@@ -181,53 +169,11 @@ function runSummaryText(view: RunView, language: string): string {
   return parts.join(' · ');
 }
 
-/** Start the growspace's Active Run on the revision the card decided on. */
-export function startGrowRun(
-  growspaceId: string,
-  expectedRevision: number,
-  metadata: { label?: string; goals?: string } = {}
-): Promise<StartGrowRunResult> {
-  const label = metadata.label?.trim();
-  const goals = metadata.goals?.trim();
-  const payload = StartGrowRunPayloadSchema.parse({
-    growspace_id: growspaceId,
-    expected_run_revision: expectedRevision,
-    ...(label ? { label } : {}),
-    ...(goals ? { goals } : {}),
-  });
-  return hassCall('growspace_manager/start_grow_run', payload, StartGrowRunResultSchema);
-}
-
 /** Read the selected Run's durable movement and participation projection. */
 export function getGrowRun(growspaceId: string, runId: string): Promise<GetGrowRunResult> {
   return hassCall(
     'growspace_manager/get_grow_run',
     { growspace_id: growspaceId, run_id: runId },
     GetGrowRunResultSchema
-  );
-}
-
-const KNOWN_REFUSALS = new Set([
-  'grow_run.revision_conflict',
-  'grow_run.already_active',
-  'grow_run.not_authorized',
-  'grow_run.store_unreadable',
-  'grow_run.not_active',
-  'grow_run.irrigation_delivering',
-  'grow_run.acknowledgement_required',
-]);
-
-/**
- * A refusal in the viewer's words. A code this card does not know yet is
- * shown in the backend's own words, which are written for the grower.
- */
-export function refusalText(refusal: RunRefusal, language = 'en'): string {
-  if (!KNOWN_REFUSALS.has(refusal.code)) {
-    return localizeWithParams('grow_run.refused', { message: refusal.message }, language);
-  }
-  return localizeWithParams(
-    `grow_run.refusal_${refusal.code.slice('grow_run.'.length)}`,
-    { number: refusal.active_run?.sequence_number ?? '' },
-    language
   );
 }

@@ -5,6 +5,7 @@ import { hassCall } from '../../src/services/hass-call';
 import { WSError } from '../../src/services/errors';
 import type { RunView } from '../../src/slices/grow-run';
 import type { GrowspaceRunChip } from '../../src/features/grow-run/components/growspace-run-chip';
+import type { GrowspaceRunStartDialog } from '../../src/features/grow-run/components/growspace-run-start-dialog';
 import type { GrowspaceHeaderUI } from '../../src/features/ui/components/growspace-header-ui';
 import type { GrowspaceDevice } from '../../src/types';
 import '../../src/features/grow-run/components/growspace-run-chip';
@@ -69,16 +70,32 @@ function $<T extends HTMLElement = HTMLElement>(
   return chip.shadowRoot!.querySelector<T>(selector);
 }
 
-async function openStart(chip: GrowspaceRunChip): Promise<void> {
+/**
+ * Open Start and wait for its lazy chunk. Returns the dialog element, whose
+ * shadow root is where the form lives now.
+ */
+async function openStart(chip: GrowspaceRunChip): Promise<GrowspaceRunStartDialog> {
   $(chip, '.chip')!.click();
-  await chip.updateComplete;
+  await vi.waitFor(() => {
+    if (!$(chip, 'growspace-run-start-dialog')) throw new Error('start dialog not loaded');
+  });
+  const dialog = $<GrowspaceRunStartDialog>(chip, 'growspace-run-start-dialog')!;
+  await dialog.updateComplete;
+  return dialog;
 }
 
-async function submit(chip: GrowspaceRunChip): Promise<void> {
-  $(chip, '[data-action="start"]')!.click();
-  await chip.updateComplete;
+function $$<T extends HTMLElement = HTMLElement>(
+  dialog: GrowspaceRunStartDialog,
+  selector: string
+): T | null {
+  return dialog.shadowRoot!.querySelector<T>(selector);
+}
+
+async function submit(dialog: GrowspaceRunStartDialog): Promise<void> {
+  $$(dialog, '[data-action="start"]')!.click();
+  await dialog.updateComplete;
   await new Promise((resolve) => setTimeout(resolve, 0));
-  await chip.updateComplete;
+  await dialog.updateComplete;
 }
 
 beforeEach(() => {
@@ -159,8 +176,8 @@ describe('growspace-run-chip', () => {
     expect(button.getAttribute('aria-label')).toBe('Start a grow run in this growspace');
     expect(button.getAttribute('aria-haspopup')).toBe('dialog');
 
-    await openStart(chip);
-    expect($(chip, '[data-testid="participants"]')!.textContent).toBe(
+    const dialog = await openStart(chip);
+    expect($$(dialog, '[data-testid="participants"]')!.textContent).toBe(
       '2 plants are in this growspace now.'
     );
   });
@@ -170,18 +187,19 @@ describe('growspace-run-chip', () => {
     [1, '1 plant is in this growspace now.'],
   ])('describes %i plants honestly', async (count, text) => {
     const chip = await renderChip(view('none'), count);
-    await openStart(chip);
-    expect($(chip, '[data-testid="participants"]')!.textContent).toBe(text);
+    const dialog = await openStart(chip);
+    expect($$(dialog, '[data-testid="participants"]')!.textContent).toBe(text);
   });
 
   it('starts on the revision it shows and closes when the backend agrees', async () => {
     hassCallMock.mockResolvedValue({ outcome: 'started', run_revision: 1, active_run: SUMMARY });
     const chip = await renderChip(view('none'));
-    await openStart(chip);
-    $<HTMLInputElement>(chip, '#run-label')!.value = 'Autumn';
-    $<HTMLTextAreaElement>(chip, '#run-goals')!.value = 'Beat run #3';
+    const dialog = await openStart(chip);
+    $$<HTMLInputElement>(dialog, '#run-label')!.value = 'Autumn';
+    $$<HTMLTextAreaElement>(dialog, '#run-goals')!.value = 'Beat run #3';
 
-    await submit(chip);
+    await submit(dialog);
+    await chip.updateComplete;
 
     expect(hassCallMock).toHaveBeenCalledWith(
       'growspace_manager/start_grow_run',
@@ -193,7 +211,7 @@ describe('growspace-run-chip', () => {
       },
       expect.anything()
     );
-    expect($(chip, 'ha-dialog')).toBeNull();
+    expect($(chip, 'growspace-run-start-dialog')).toBeNull();
   });
 
   it('keeps the dialog open and says why when the backend refuses', async () => {
@@ -207,31 +225,35 @@ describe('growspace-run-chip', () => {
       },
     });
     const chip = await renderChip(view('none'));
-    await openStart(chip);
-    await submit(chip);
+    const dialog = await openStart(chip);
+    await submit(dialog);
 
-    expect($(chip, '[role="alert"]')!.textContent).toBe(
+    expect($$(dialog, '[role="alert"]')!.textContent).toBe(
       'Run #1 is already active in this growspace.'
     );
-    expect($(chip, 'ha-dialog')).not.toBeNull();
+    expect($$(dialog, 'ha-dialog')).not.toBeNull();
   });
 
   it('shows a transport failure in its own words', async () => {
     hassCallMock.mockRejectedValue(new WSError('validation_failed', 'Growspace gone'));
     const chip = await renderChip(view('none'));
-    await openStart(chip);
-    await submit(chip);
-    expect($(chip, '[role="alert"]')!.textContent).toBe('Refused: Growspace gone');
-    expect($<HTMLButtonElement>(chip, '[data-action="start"]')!.disabled).toBe(false);
+    const dialog = await openStart(chip);
+    await submit(dialog);
+    expect($$(dialog, '[role="alert"]')!.textContent).toBe('Refused: Growspace gone');
+    expect($$<HTMLButtonElement>(dialog, '[data-action="start"]')!.disabled).toBe(false);
   });
 
   it('cancels without sending anything', async () => {
     const chip = await renderChip(view('none'));
-    await openStart(chip);
-    $(chip, '[data-action="cancel"]')!.click();
+    const dialog = await openStart(chip);
+    $$(dialog, '[data-action="cancel"]')!.click();
     await chip.updateComplete;
-    expect($(chip, 'ha-dialog')).toBeNull();
+    expect($(chip, 'growspace-run-start-dialog')).toBeNull();
     expect(hassCallMock).not.toHaveBeenCalled();
+
+    // Reopening does not fetch the chunk again.
+    await openStart(chip);
+    expect($(chip, 'growspace-lazy-chunk-error')).toBeNull();
   });
 });
 

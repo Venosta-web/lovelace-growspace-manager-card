@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
-import { refusalText } from '../../../slices/grow-run';
+import { refusalText } from '../../../slices/grow-run/start';
 import type { RunSummary } from '../../../slices/grow-run/schema';
 import {
   completeGrowRun,

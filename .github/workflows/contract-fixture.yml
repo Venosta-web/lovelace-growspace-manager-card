@@ -71,6 +71,10 @@ jobs:
           GSM_RELEASE_GROW_RUN_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_refused_v1.json
           GSM_PRERELEASE_GROW_RUN_DETAILS_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_details_v1.json
           GSM_RELEASE_GROW_RUN_DETAILS_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_details_v1.json
+          GSM_PRERELEASE_GROW_RUN_START_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_start_preview_v1.json
+          GSM_RELEASE_GROW_RUN_START_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_start_preview_v1.json
+          GSM_PRERELEASE_GROW_RUN_BEYOND_RETENTION_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_beyond_retention_v1.json
+          GSM_RELEASE_GROW_RUN_BEYOND_RETENTION_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_beyond_retention_v1.json
           GSM_PRERELEASE_GROW_RUN_COMPLETION_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_completion_preview_v1.json
           GSM_RELEASE_GROW_RUN_COMPLETION_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_completion_preview_v1.json
           GSM_PRERELEASE_GROW_RUN_COMPLETED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_completed_v1.json

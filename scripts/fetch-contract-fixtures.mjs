@@ -55,6 +55,10 @@ const GROW_RUN_FIXTURES = [
   'grow_run_started_v1',
   'grow_run_refused_v1',
   'grow_run_details_v1',
+  // Starting a Run on an earlier day (GSM#670): the preview, clear and in
+  // conflict, and the retention refusal a confirmation gets.
+  'grow_run_start_preview_v1',
+  'grow_run_beyond_retention_v1',
   'grow_run_completion_preview_v1',
   'grow_run_completed_v1',
   'grow_run_completion_refused_v1',
