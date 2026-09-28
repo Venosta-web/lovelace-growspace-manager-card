@@ -1,10 +1,17 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiHelpCircleOutline, mdiPlus, mdiSprout } from '@mdi/js';
+import type { PropertyValues } from 'lit';
+import { mdiFlagCheckered, mdiHelpCircleOutline, mdiPlus, mdiSprout } from '@mdi/js';
 
 import { LAZY_CHUNKS, loadLazyChunk } from '../../../lib/lazy-chunk';
 import { localize, localizeWithParams } from '../../../localize/localize';
-import { getGrowRun, type GetGrowRunResult, type RunView } from '../../../slices/grow-run';
+import {
+  getGrowRun,
+  listGrowRuns,
+  type GetGrowRunResult,
+  type RunView,
+} from '../../../slices/grow-run';
+import type { RunSummary } from '../../../slices/grow-run/schema';
 import '../../shared/ui/lazy-chunk-error';
 
 /**
@@ -23,6 +30,11 @@ import '../../shared/ui/lazy-chunk-error';
  * Completing starts from the Active Run's details (GSM#671), and opens the Run
  * Completion Preview in its own lazy chunk. It stays open after the sensor
  * reads `none`, so the grower sees the completed Run and its Pending metrics.
+ *
+ * A Completed Run waits to be finalized (GSM#673), often for weeks while its
+ * harvest dries, and by then another Run may be Active. The chip asks for the
+ * growspace's Runs whenever the Run Revision moves and, while one is still
+ * Completed, offers `Finalize Run #3` beside itself; the dialog is a lazy chunk.
  */
 @customElement('growspace-run-chip')
 export class GrowspaceRunChip extends LitElement {
@@ -41,6 +53,17 @@ export class GrowspaceRunChip extends LitElement {
   @state() private _detailError: string | null = null;
   /** The completion dialog's chunk: not asked for, arriving, here, or missing. */
   @state() private _completion: 'closed' | 'loading' | 'ready' | 'missing' = 'closed';
+  /** The oldest Completed Run, which the finalize chip offers. */
+  @state() private _awaiting: RunSummary | null = null;
+  @state() private _finalization: 'closed' | 'loading' | 'ready' | 'missing' = 'closed';
+  /**
+   * The Run the open finalization dialog is about. Kept apart from
+   * `_awaiting`, which empties the moment the Run is finalized and the list
+   * is read again: the dialog stays to show the frozen snapshot.
+   */
+  @state() private _finalizing: string | null = null;
+  /** The growspace and Run Revision the Run list was last asked for. */
+  private _listed = '';
 
   static styles = css`
     .muted {
@@ -49,6 +72,8 @@ export class GrowspaceRunChip extends LitElement {
 
     :host {
       display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
       min-width: 0;
     }
 
@@ -280,6 +305,78 @@ export class GrowspaceRunChip extends LitElement {
     return nothing;
   }
 
+  protected updated(changed: PropertyValues<this>): void {
+    if (!changed.has('view')) return;
+    const view = this.view;
+    const key = view && view.runRevision !== null ? `${view.growspaceId}:${view.runRevision}` : '';
+    if (key === this._listed) return;
+    this._listed = key;
+    if (!key || !view) {
+      this._awaiting = null;
+      return;
+    }
+    void this._list(view.growspaceId, key);
+  }
+
+  /** Find the Completed Run waiting longest; a failed read offers none. */
+  private async _list(growspaceId: string, key: string): Promise<void> {
+    let awaiting: RunSummary | null = null;
+    try {
+      const result = await listGrowRuns(growspaceId);
+      // Newest first, so the last Completed one has waited longest.
+      const runs = result.outcome === 'listed' ? result.runs : [];
+      awaiting = runs.filter((run) => run.status === 'completed').pop() ?? null;
+    } catch {
+      // A backend before GSM#673 has no Run list, and nothing to finalize.
+    }
+    if (this._listed === key) this._awaiting = awaiting;
+  }
+
+  private async _openFinalization(): Promise<void> {
+    this._finalizing = this._awaiting?.run_id ?? null;
+    this._finalization = 'loading';
+    const loaded = await loadLazyChunk(
+      LAZY_CHUNKS.runFinalizationDialog,
+      () => import('./growspace-run-finalization-dialog')
+    );
+    if (this._finalization === 'loading') this._finalization = loaded ? 'ready' : 'missing';
+  }
+
+  private _renderFinalization(growspaceId: string) {
+    const close = () => (this._finalization = 'closed');
+    if (this._finalization === 'ready' && this._finalizing) {
+      return html`<growspace-run-finalization-dialog
+        .growspaceId=${growspaceId}
+        .runId=${this._finalizing}
+        .language=${this.language}
+        @closed=${close}
+      ></growspace-run-finalization-dialog>`;
+    }
+    if (this._finalization === 'missing') {
+      return html`<ha-dialog open .headerTitle=${this._t('finalize')} @closed=${close}>
+        <growspace-lazy-chunk-error
+          .chunk=${LAZY_CHUNKS.runFinalizationDialog}
+        ></growspace-lazy-chunk-error>
+      </ha-dialog>`;
+    }
+    return nothing;
+  }
+
+  private _renderAwaiting() {
+    const run = this._awaiting;
+    if (!run) return nothing;
+    return html`<button
+      class="chip"
+      data-action="finalize-run"
+      aria-haspopup="dialog"
+      aria-label=${this._t('finalize_chip_label', { number: run.sequence_number })}
+      @click=${this._openFinalization}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${mdiFlagCheckered}></path></svg>
+      <span>${this._t('finalize_chip', { number: run.sequence_number })}</span>
+    </button>`;
+  }
+
   private _openStart(): void {
     this._open = true;
     if (this._startLoaded) return;
@@ -313,7 +410,9 @@ export class GrowspaceRunChip extends LitElement {
     if (!view) return nothing;
     // One stable slot, so the completion dialog outlives the chip's own switch
     // from the Active Run to `Start run` when the sensor catches up.
-    return html`${this._renderChip(view)}${this._renderCompletion(view.growspaceId)}`;
+    return html`${this._renderChip(view)}${this._renderAwaiting()}${this._renderCompletion(
+      view.growspaceId
+    )}${this._renderFinalization(view.growspaceId)}`;
   }
 
   private _renderChip(view: RunView) {

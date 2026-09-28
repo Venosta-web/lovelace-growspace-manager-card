@@ -35,6 +35,8 @@ const ACTIVE: RunView = {
 
 describe('growspace-run-chip with a missing completion chunk', () => {
   it('names the missing file instead of doing nothing', async () => {
+    // The chip reads the Run list as it renders (GSM#673), then the details.
+    vi.mocked(hassCall).mockResolvedValueOnce({ outcome: 'listed', run_revision: 4, runs: [] });
     vi.mocked(hassCall).mockResolvedValueOnce({
       outcome: 'found',
       run: {
@@ -65,6 +67,44 @@ describe('growspace-run-chip with a missing completion chunk', () => {
       expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).not.toBeNull()
     );
     expect(chip.shadowRoot!.querySelector('growspace-run-completion-dialog')).toBeNull();
+
+    chip.shadowRoot!.querySelector('ha-dialog')!.dispatchEvent(new CustomEvent('closed'));
+    await chip.updateComplete;
+    expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).toBeNull();
+  });
+});
+
+describe('growspace-run-chip with a missing finalization chunk', () => {
+  it('names the missing file instead of doing nothing', async () => {
+    vi.mocked(hassCall).mockResolvedValueOnce({
+      outcome: 'listed',
+      run_revision: 4,
+      runs: [
+        {
+          run_id: 'run-3',
+          sequence_number: 3,
+          label: null,
+          status: 'completed',
+          started_at: '2026-04-01T08:00:00+00:00',
+          completed_at: '2026-07-01T08:00:00+00:00',
+          timezone: 'Europe/Berlin',
+          participant_count: 3,
+          metrics_state: 'pending',
+          run_revision: 4,
+        },
+      ],
+    });
+    const chip = await fixture<GrowspaceRunChip>(html`
+      <growspace-run-chip .view=${ACTIVE}></growspace-run-chip>
+    `);
+    await vi.waitFor(() =>
+      expect(chip.shadowRoot!.querySelector('[data-action="finalize-run"]')).not.toBeNull()
+    );
+    chip.shadowRoot!.querySelector<HTMLButtonElement>('[data-action="finalize-run"]')!.click();
+    await vi.waitFor(() =>
+      expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).not.toBeNull()
+    );
+    expect(chip.shadowRoot!.querySelector('growspace-run-finalization-dialog')).toBeNull();
 
     chip.shadowRoot!.querySelector('ha-dialog')!.dispatchEvent(new CustomEvent('closed'));
     await chip.updateComplete;

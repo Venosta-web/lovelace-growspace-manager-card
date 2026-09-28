@@ -162,6 +162,13 @@ export const LAZY_CHUNKS = {
     feature: 'The run completion dialog',
     onDemandOnly: true,
   },
+  // Finalizing a Grow Run (GSM#673): its snapshot, its warning and the
+  // command. The header carries only the chip offering it.
+  runFinalizationDialog: {
+    name: 'growspace-run-finalization-dialog',
+    feature: 'The run finalization dialog',
+    onDemandOnly: true,
+  },
   // The Setup Checklist only ever renders for a growspace still being set up,
   // so every established dashboard would otherwise carry it in the entry.
   setupChecklist: {

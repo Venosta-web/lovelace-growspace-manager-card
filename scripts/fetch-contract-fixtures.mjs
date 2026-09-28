@@ -63,6 +63,13 @@ const GROW_RUN_FIXTURES = [
   'grow_run_completed_v1',
   'grow_run_completion_refused_v1',
   'grow_run_completed_details_v1',
+  // Finalizing a Run (GSM#673): the snapshot preview, both outcomes of the
+  // command, a Finalized Run's details, and the Run list the chip reads.
+  'grow_run_finalization_preview_v1',
+  'grow_run_finalized_v1',
+  'grow_run_finalization_refused_v1',
+  'grow_run_finalized_details_v1',
+  'grow_run_list_v1',
 ];
 // Every payload the card's TC chunk parses, and the local file each is written
 // to. One entry per contract, so adding a TC command is one line here rather

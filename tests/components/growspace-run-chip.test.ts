@@ -249,7 +249,10 @@ describe('growspace-run-chip', () => {
     $$(dialog, '[data-action="cancel"]')!.click();
     await chip.updateComplete;
     expect($(chip, 'growspace-run-start-dialog')).toBeNull();
-    expect(hassCallMock).not.toHaveBeenCalled();
+    // Only the Run list the chip reads for finalizing (GSM#673); no start.
+    expect(hassCallMock.mock.calls.map(([type]) => type)).toEqual([
+      'growspace_manager/list_grow_runs',
+    ]);
 
     // Reopening does not fetch the chunk again.
     await openStart(chip);

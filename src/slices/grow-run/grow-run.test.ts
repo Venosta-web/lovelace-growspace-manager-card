@@ -2,8 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HomeAssistant } from 'custom-card-helpers';
 
 import { hassCall } from '../../services/hass-call';
-import { deriveRunView, getGrowRun, resolveActiveRunSensor } from './index';
-import { ActiveRunSensorSchema, GetGrowRunResultSchema } from './schema';
+import { deriveRunView, getGrowRun, listGrowRuns, resolveActiveRunSensor } from './index';
+import { finalizeGrowRun, previewGrowRunFinalization } from './finalization';
+import {
+  FinalizeGrowRunResultSchema,
+  PreviewFinalizationResultSchema,
+} from './finalization-schema';
+import { ActiveRunSensorSchema, GetGrowRunResultSchema, ListGrowRunsResultSchema } from './schema';
 import { conflictText, localToday, previewGrowRunStart, refusalText, startGrowRun } from './start';
 import { PreviewGrowRunStartResultSchema, StartGrowRunResultSchema } from './start-schema';
 
@@ -422,8 +427,23 @@ describe('getGrowRun', () => {
             reason: null,
             metrics: { dry_weight: null },
             quality_score: null,
+            entered_dry_at: '2026-09-25T20:30:00+00:00',
           },
         ],
+        tags: ['organic'],
+        goals: null,
+        audit: [
+          {
+            at: '2026-07-24T20:30:00+00:00',
+            command: 'start',
+            command_id: 'cmd-1',
+            actor_user_id: 'user-1',
+            prior_revision: 0,
+            resulting_revision: 1,
+            changed_fields: [],
+          },
+        ],
+        snapshot: null,
       },
     };
     expect(GetGrowRunResultSchema.parse(response)).toEqual(response);
@@ -433,6 +453,39 @@ describe('getGrowRun', () => {
       'growspace_manager/get_grow_run',
       { growspace_id: 'flower', run_id: 'run-1' },
       GetGrowRunResultSchema
+    );
+  });
+});
+
+describe('finalizing (GSM#673)', () => {
+  it("lists a growspace's Runs", async () => {
+    vi.mocked(hassCall).mockResolvedValue({ outcome: 'listed', run_revision: 0, runs: [] });
+    await listGrowRuns('flower');
+    expect(hassCall).toHaveBeenCalledWith(
+      'growspace_manager/list_grow_runs',
+      { growspace_id: 'flower' },
+      ListGrowRunsResultSchema
+    );
+  });
+
+  it('previews, then sends only the warnings the backend knows', async () => {
+    vi.mocked(hassCall).mockResolvedValue({ outcome: 'refused' });
+    await previewGrowRunFinalization('flower', 'run-3');
+    expect(hassCall).toHaveBeenLastCalledWith(
+      'growspace_manager/preview_grow_run_finalization',
+      { growspace_id: 'flower', run_id: 'run-3' },
+      PreviewFinalizationResultSchema
+    );
+    await finalizeGrowRun('flower', 'run-3', 7, ['incomplete_snapshot', 'energy_gap']);
+    expect(hassCall).toHaveBeenLastCalledWith(
+      'growspace_manager/finalize_grow_run',
+      {
+        growspace_id: 'flower',
+        run_id: 'run-3',
+        expected_run_revision: 7,
+        acknowledged_warnings: ['incomplete_snapshot'],
+      },
+      FinalizeGrowRunResultSchema
     );
   });
 });
