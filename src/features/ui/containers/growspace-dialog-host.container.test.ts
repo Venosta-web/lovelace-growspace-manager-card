@@ -42,6 +42,7 @@ vi.mock('../../../slices/plant', () => ({
   printLabel: vi.fn(),
   scorePlant: vi.fn(),
   saveHarvestMetrics: vi.fn(),
+  setHarvestOutcome: vi.fn(),
   logDryingWeight: vi.fn(),
   logMoistureReading: vi.fn(),
   setVisualTag: vi.fn(),

@@ -99,6 +99,12 @@ export const PlantSlotSchema = z
     drying_ready_for_cure: z.boolean().optional(),
 
     harvest_metrics: HarvestMetricsSchema.optional(),
+    harvest_source_growspace_id: z.string().nullable().optional(),
+    harvest_source_run_id: z.string().nullable().optional(),
+    harvest_outcome_state: z
+      .enum(['pending', 'recorded', 'no_usable_yield', 'incomplete'])
+      .optional(),
+    harvest_outcome_reason: z.string().nullable().optional(),
     phenotype_score: PhenotypeScoreSchema.optional(),
   })
   .nullable();
