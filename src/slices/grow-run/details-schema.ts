@@ -70,6 +70,13 @@ export const RunMetricSchema = z.object({
 });
 export type RunMetric = z.infer<typeof RunMetricSchema>;
 
+const WaterApplicationSchema = z.object({
+  application_id: z.string(),
+  at: z.string(),
+  source: z.enum(['manual', 'pump_estimate', 'metered', 'unknown']),
+  liters: z.number().nullable(),
+});
+
 /** Who a Run Participant was: a Participant Identity Snapshot (GSM#673). */
 const ParticipantIdentitySchema = z.object({
   plant_id: z.string(),
@@ -115,6 +122,7 @@ export const RunSnapshotSchema = z.object({
     })
   ),
   metrics: z.array(RunMetricSchema),
+  water_applications: z.array(WaterApplicationSchema).optional().default([]),
   coverage: z.array(z.object({ metric: z.string(), coverage_percent: z.number() })),
   uncovered_gaps: z.array(z.object({ start: z.string(), end: z.string(), reason: z.string() })),
   missing: z.array(MissingFactSchema),
@@ -155,6 +163,8 @@ export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
       notes: z.string().nullable().optional(),
       participations: z.array(ParticipationSchema),
       movement_history: z.array(MovementFactSchema),
+      water_applications: z.array(WaterApplicationSchema).optional().default([]),
+      water_coverage_started_at: z.string().nullable().optional(),
       harvest_outcomes: z.array(HarvestOutcomeSchema).optional().default([]),
       // GSM#673: the Run's description, its audit, and a Finalized Run's
       // frozen snapshot (null until then). An older backend sends none.
@@ -166,6 +176,10 @@ export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
       // marks Live, Pending or frozen. An older backend sends neither.
       participant_identities: z.array(ParticipantIdentitySchema).optional().default([]),
       metrics: z.array(RunMetricSchema).optional().default([]),
+      coverage: z
+        .array(z.object({ metric: z.string(), coverage_percent: z.number() }))
+        .optional()
+        .default([]),
       // GSM#917: every snapshot a reopening superseded, oldest first.
       superseded_snapshots: z.array(SupersededSnapshotSchema).optional().default([]),
     }),
