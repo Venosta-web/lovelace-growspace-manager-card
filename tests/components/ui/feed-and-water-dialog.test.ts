@@ -14,7 +14,8 @@ import type {
   NutrientInventoryResponse,
   NutrientPresetsResponse,
 } from '../../../src/slices/nutrient';
-import type { SMEvent } from '../../../src/dialogs/feed-and-water-dialog-sm';
+
+afterEach(() => vi.restoreAllMocks());
 
 vi.mock('../../../src/slices/nutrient', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/slices/nutrient')>();
@@ -83,6 +84,7 @@ async function mountOpen(
     inventory: NutrientInventoryResponse;
     presets: NutrientPresetsResponse;
     presetOptions: { label: string; value: string }[];
+    tankMode: boolean;
   }> = {}
 ): Promise<FeedAndWaterDialog> {
   return fixture<FeedAndWaterDialog>(html`
@@ -91,6 +93,7 @@ async function mountOpen(
       .inventory=${overrides.inventory ?? null}
       .presets=${overrides.presets ?? null}
       .presetOptions=${overrides.presetOptions ?? []}
+      .tankMode=${overrides.tankMode ?? false}
     ></feed-and-water-dialog>
   `);
 }
@@ -253,13 +256,11 @@ describe('presets tab — event translation', () => {
 describe('service calls — inventory', () => {
   let updateNutrientStock: ReturnType<typeof vi.fn>;
   let removeNutrientStock: ReturnType<typeof vi.fn>;
-  let fetchNutrientInventory: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     const mod = await import('../../../src/slices/nutrient');
     updateNutrientStock = mod.updateNutrientStock as ReturnType<typeof vi.fn>;
     removeNutrientStock = mod.removeNutrientStock as ReturnType<typeof vi.fn>;
-    fetchNutrientInventory = mod.fetchNutrientInventory as ReturnType<typeof vi.fn>;
     vi.clearAllMocks();
   });
 
@@ -354,13 +355,11 @@ describe('service calls — inventory', () => {
 describe('service calls — presets', () => {
   let saveNutrientPreset: ReturnType<typeof vi.fn>;
   let removeNutrientPreset: ReturnType<typeof vi.fn>;
-  let fetchNutrientPresets: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     const mod = await import('../../../src/slices/nutrient');
     saveNutrientPreset = mod.saveNutrientPreset as ReturnType<typeof vi.fn>;
     removeNutrientPreset = mod.removeNutrientPreset as ReturnType<typeof vi.fn>;
-    fetchNutrientPresets = mod.fetchNutrientPresets as ReturnType<typeof vi.fn>;
     vi.clearAllMocks();
   });
 
@@ -479,6 +478,49 @@ describe('watering tab — record watering button', () => {
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
 
     expect(detail).toMatchObject({ volume: 1.0, presetId: '' });
+  });
+
+  it('shows the tank source only in tank mode and sends it when selected', async () => {
+    const ordinary = await mountOpen();
+    expect(ordinary.shadowRoot!.querySelector('[data-testid="from-monitored-tank"]')).toBeNull();
+
+    const tank = await mountOpen({ tankMode: true });
+    const checkbox = tank.shadowRoot!.querySelector<HTMLInputElement>(
+      '[data-testid="from-monitored-tank"]'
+    )!;
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event('change'));
+    await tank.updateComplete;
+    let detail: any;
+    tank.addEventListener('submit-watering', (e: Event) => (detail = (e as CustomEvent).detail));
+    tank.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
+    expect(detail.fromMonitoredTank).toBe(true);
+  });
+
+  it('sends an explicit local watering time as an ISO timestamp', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-09-29T12:00:00Z').getTime());
+    const el = await mountOpen();
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('#watered-at')!;
+    input.value = '2026-09-28T12:00';
+    input.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+    let detail: any;
+    el.addEventListener('submit-watering', (e: Event) => (detail = (e as CustomEvent).detail));
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
+    expect(detail.wateredAt).toBe(new Date('2026-09-28T12:00').toISOString());
+  });
+
+  it('blocks a time outside the seven-day window', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-09-29T12:00:00Z').getTime());
+    const el = await mountOpen();
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('#watered-at')!;
+    input.value = '2026-09-21T12:00';
+    input.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('[role="alert"]')!.textContent).toContain('7 days');
+    expect(
+      el.shadowRoot!.querySelector<HTMLButtonElement>('[data-action="record-watering"]')!.disabled
+    ).toBe(true);
   });
 });
 

@@ -758,6 +758,21 @@ describe('waterPlant (pilot regression)', () => {
       expect.anything()
     );
   });
+
+  it('passes the reported time and tank source to water_plant', async () => {
+    await waterPlant('abc', 300, undefined, undefined, {
+      watered_at: '2026-09-28T12:00:00.000Z',
+      from_monitored_tank: true,
+    });
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/water_plant',
+      expect.objectContaining({
+        watered_at: '2026-09-28T12:00:00.000Z',
+        from_monitored_tank: true,
+      }),
+      expect.anything()
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -765,6 +780,20 @@ describe('waterPlant (pilot regression)', () => {
 // ---------------------------------------------------------------------------
 
 describe('waterGrowspace', () => {
+  it('passes the reported time and tank source to water_growspace', async () => {
+    await waterGrowspace('gs1', 500, undefined, undefined, {
+      watered_at: '2026-09-28T12:00:00.000Z',
+      from_monitored_tank: true,
+    });
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/water_growspace',
+      expect.objectContaining({
+        watered_at: '2026-09-28T12:00:00.000Z',
+        from_monitored_tank: true,
+      }),
+      expect.anything()
+    );
+  });
   it('calls water_growspace WS command with growspace_id and amount', async () => {
     await waterGrowspace('gs1', 500);
 
