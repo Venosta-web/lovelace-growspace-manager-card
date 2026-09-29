@@ -283,7 +283,7 @@ describe('growspace-run-finalization-dialog', () => {
     expect(text(dialog, '[data-testid="snapshot-gaps"]')).toBe(
       '1 stretch of this run was not recorded.'
     );
-    expect(dialog.shadowRoot!.textContent).toContain('water applied · 87%');
+    expect(dialog.shadowRoot!.textContent).toContain('Water applied · 87%');
     expect($(dialog, '[data-testid="snapshot-missing"]')).toBeNull();
 
     hassCallMock.mockResolvedValueOnce(finalized(complete()));
@@ -326,7 +326,7 @@ describe('growspace-run-finalization-dialog', () => {
         snapshot({
           metrics: [
             {
-              metric: 'water_productivity',
+              metric: 'energy_efficiency',
               unit: 'g/L',
               definition_version: 2,
               value: 1.25,
@@ -339,8 +339,8 @@ describe('growspace-run-finalization-dialog', () => {
         ['incomplete_snapshot', 'energy_gap']
       )
     );
-    expect(text(dialog, '[data-metric="water_productivity"]')).toBe('1.25 g/L (v2)');
-    expect(dialog.shadowRoot!.textContent).toContain('water productivity');
+    expect(text(dialog, '[data-metric="energy_efficiency"]')).toBe('1.25 g/L (v2)');
+    expect(dialog.shadowRoot!.textContent).toContain('energy efficiency');
     expect(text(dialog, '[data-testid="snapshot-missing"]')).toBe('Missing facts : meter reset');
     expect(text(dialog, '[data-warning="energy_gap"]')).toBe('Complete despite: energy_gap');
     await tick(dialog, 'incomplete_snapshot');
