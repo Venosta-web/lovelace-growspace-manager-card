@@ -103,6 +103,9 @@ const KNOWN_REFUSALS = new Set([
   'grow_run.acknowledgement_required',
   'grow_run.not_found',
   'grow_run.not_completed',
+  'grow_run.not_finalized',
+  'grow_run.reason_required',
+  'grow_run.has_activity',
 ]);
 
 /**

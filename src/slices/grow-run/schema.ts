@@ -52,13 +52,16 @@ export type RunSummary = z.infer<typeof RunSummarySchema>;
 /**
  * Every refusal is a result, carrying where the ledger really is. `code`
  * stays a string so a refusal a newer backend adds still renders in the
- * backend's own words.
+ * backend's own words. `reasons` (GSM#917) names each cause of a refusal that
+ * has several, such as the activity that keeps a Run from being discarded; a
+ * backend before it omits the key, and it is empty for every other refusal.
  */
 export const RunRefusalSchema = z.object({
   code: z.string().min(1),
   message: z.string(),
   current_revision: z.number().int().min(0).nullable(),
   active_run: RunSummarySchema.nullable(),
+  reasons: z.array(z.string()).optional(),
 });
 export type RunRefusal = z.infer<typeof RunRefusalSchema>;
 
@@ -176,7 +179,10 @@ export const RunSnapshotSchema = z.object({
 });
 export type RunSnapshot = z.infer<typeof RunSnapshotSchema>;
 
-/** One Run Audit Entry: a lifecycle or metadata command, who, and when. */
+/**
+ * One Run Audit Entry: a lifecycle or metadata command, who, and when. `reason`
+ * (GSM#917) is why, for a command given one — every reopening is.
+ */
 const RunAuditEntrySchema = z.object({
   at: z.string(),
   command: z.string(),
@@ -185,6 +191,17 @@ const RunAuditEntrySchema = z.object({
   prior_revision: z.number().int().min(0),
   resulting_revision: z.number().int().min(1),
   changed_fields: z.array(z.string()),
+  reason: z.string().nullable().optional(),
+});
+
+/**
+ * A snapshot Run Reopening set aside (GSM#917), kept whole beside the Run
+ * Revision that froze it and the one that reopened it.
+ */
+const SupersededSnapshotSchema = z.object({
+  finalized_revision: z.number().int().min(1),
+  superseded_revision: z.number().int().min(1),
+  snapshot: RunSnapshotSchema,
 });
 
 export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
@@ -202,6 +219,8 @@ export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
       goals: z.string().nullable().optional(),
       audit: z.array(RunAuditEntrySchema).optional().default([]),
       snapshot: RunSnapshotSchema.nullable().optional(),
+      // GSM#917: every snapshot a reopening superseded, oldest first.
+      superseded_snapshots: z.array(SupersededSnapshotSchema).optional().default([]),
     }),
   }),
 ]);

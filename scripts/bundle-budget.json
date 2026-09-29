@@ -5,7 +5,7 @@
       "id": "entry",
       "label": "Entry",
       "match": "growspace-manager-card.js",
-      "maxGzipBytes": 207000
+      "maxGzipBytes": 208000
     },
     {
       "id": "three",
@@ -55,6 +55,11 @@
       "date": "2026-09-28",
       "rules": ["entry"],
       "change": "GSM#673 raises the entry from 206,000 to 207,000 bytes gzip for finalizing a Grow Run. Measured at dev f758d2c2: entry 205,672 bytes gzip; with finalization 206,943, 1,271 bytes over dev and 943 over the old limit. About 480 bytes are the finalization dialog's localized labels, which live in the one eagerly bundled locale file; the rest is the Run Finalization Snapshot and Run Audit Entry schemas that get_grow_run's details now parse, the list_grow_runs read and its schema, and the header chip that offers finalizing a Completed Run, which has to be in the header because a Completed Run is otherwise unreachable once the Active Run Sensor reads none or names the next Run. The dialog, its preview and its command are a lazy chunk of their own (runFinalizationDialog, 3,500 bytes gzip)."
+    },
+    {
+      "date": "2026-09-29",
+      "rules": ["entry"],
+      "change": "GSM#917 raises the entry from 207,000 to 208,000 bytes gzip for correcting a Grow Run. Measured at dev 6278a09e: entry 206,947 bytes gzip; with reopening and discarding 207,652, 705 bytes over dev and 652 over the old limit. About 410 bytes are the localized labels of both dialogs, which live in the one eagerly bundled locale file; the rest is the Discard run action in the Active Run's details, its lazy-chunk wiring, and the refusal reasons, audit reason and superseded snapshots that the shared Run schemas now parse. The discard dialog and the two commands are lazy chunks of their own (runDiscardDialog 1,772 bytes gzip, the correction slice 567), and reopening lives in the already-lazy finalization dialog."
     }
   ]
 }

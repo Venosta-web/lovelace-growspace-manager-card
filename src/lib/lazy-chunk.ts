@@ -169,6 +169,13 @@ export const LAZY_CHUNKS = {
     feature: 'The run finalization dialog',
     onDemandOnly: true,
   },
+  // Discarding an Active Run that recorded nothing (GSM#917): the undo of a
+  // start, opened rarely from the Active Run's details.
+  runDiscardDialog: {
+    name: 'growspace-run-discard-dialog',
+    feature: 'The discard run dialog',
+    onDemandOnly: true,
+  },
   // The Setup Checklist only ever renders for a growspace still being set up,
   // so every established dashboard would otherwise carry it in the entry.
   setupChecklist: {

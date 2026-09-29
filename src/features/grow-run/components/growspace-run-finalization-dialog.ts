@@ -2,6 +2,8 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
+import { getHass } from '../../../services/hass-call';
+import { getGrowRun } from '../../../slices/grow-run';
 import { refusalText } from '../../../slices/grow-run/start';
 import type { RunSnapshot, RunSummary } from '../../../slices/grow-run/schema';
 import {
@@ -9,6 +11,8 @@ import {
   previewGrowRunFinalization,
   type FinalizationPreview,
 } from '../../../slices/grow-run/finalization';
+import { reopenGrowRun } from '../../../slices/grow-run/correction';
+import { MAX_REASON_LENGTH } from '../../../slices/grow-run/correction-schema';
 
 /** Refusals after which the snapshot has moved and must be read again. */
 const RELOAD_ON = new Set(['grow_run.acknowledgement_required', 'grow_run.revision_conflict']);
@@ -34,6 +38,12 @@ type Metric = RunSnapshot['metrics'][number];
  * counted as zero. After finalizing, the dialog shows the frozen snapshot the
  * backend returned, which no later change to a Plant or the growspace moves.
  *
+ * Opened on a Run that is already Finalized, it shows that Run's frozen
+ * snapshot instead. There a Home Assistant administrator may reopen it
+ * (GSM#917), saying why: the Run goes back to Completed with its dates
+ * unchanged, the dialog returns to the preview so the grower can correct and
+ * finalize it again, and the old snapshot is kept as superseded.
+ *
  * It is a lazy chunk: the run chip imports it when the grower asks to finalize.
  */
 @customElement('growspace-run-finalization-dialog')
@@ -48,6 +58,14 @@ export class GrowspaceRunFinalizationDialog extends LitElement {
   @state() private _busy = false;
   @state() private _refusal: string | null = null;
   @state() private _finalized: { run: RunSummary; snapshot: RunSnapshot } | null = null;
+  /** How many snapshots earlier reopenings set aside, when the Run says. */
+  @state() private _superseded = 0;
+  /** Whether the reopen form is showing, and what it holds. */
+  @state() private _reopenOpen = false;
+  @state() private _reason = '';
+  @state() private _reopenRefusal: string | null = null;
+  /** Said once the Run is reopened, above the preview it returns to. */
+  @state() private _notice: string | null = null;
 
   static styles = css`
     .body {
@@ -167,6 +185,29 @@ export class GrowspaceRunFinalizationDialog extends LitElement {
     .refusal {
       color: var(--error-color, #f44336);
     }
+
+    label.reason {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.875rem;
+    }
+
+    textarea {
+      min-height: 64px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.24));
+      background: transparent;
+      color: var(--primary-text-color);
+      font: inherit;
+      resize: vertical;
+    }
+
+    textarea:focus-visible {
+      outline: 2px solid var(--primary-color, #4caf50);
+      outline-offset: 2px;
+    }
   `;
 
   connectedCallback(): void {
@@ -207,6 +248,9 @@ export class GrowspaceRunFinalizationDialog extends LitElement {
       const result = await previewGrowRunFinalization(this.growspaceId, this.runId);
       if (result.outcome === 'refused') {
         this._preview = null;
+        if (result.refusal.code === 'grow_run.not_completed' && (await this._showFinalized())) {
+          return;
+        }
         this._loadError = refusalText(result.refusal, this.language);
         return;
       }
@@ -216,6 +260,62 @@ export class GrowspaceRunFinalizationDialog extends LitElement {
       this._acknowledged = new Set([...this._acknowledged].filter((code) => live.has(code)));
     } catch (error) {
       this._loadError = this._t('refused', { message: messageOf(error) });
+    }
+  }
+
+  /**
+   * A Run that is already Finalized is shown frozen, as the backend holds it.
+   * Anything else, a failed read included, leaves the refusal to say why.
+   */
+  private async _showFinalized(): Promise<boolean> {
+    let details;
+    try {
+      details = await getGrowRun(this.growspaceId, this.runId);
+    } catch {
+      return false;
+    }
+    if (details?.outcome !== 'found' || details.run.status !== 'finalized') return false;
+    const { snapshot, superseded_snapshots: superseded, ...run } = details.run;
+    if (!snapshot) return false;
+    this._finalized = { run, snapshot };
+    this._superseded = superseded.length;
+    return true;
+  }
+
+  private get _isAdmin(): boolean {
+    return getHass()?.user?.is_admin === true;
+  }
+
+  private async _reopen(event: Event): Promise<void> {
+    event.preventDefault();
+    const done = this._finalized;
+    if (!done || this._busy || !this._reason.trim()) return;
+    this._busy = true;
+    this._reopenRefusal = null;
+    try {
+      const result = await reopenGrowRun(
+        this.growspaceId,
+        done.run.run_id,
+        done.run.run_revision,
+        this._reason.trim()
+      );
+      if (result.outcome === 'reopened') {
+        this._notice = this._t('reopen_done', { number: result.run.sequence_number });
+        this._finalized = null;
+        this._reopenOpen = false;
+        this._reason = '';
+        this._acknowledged = new Set();
+        await this._load();
+        return;
+      }
+      this._reopenRefusal =
+        result.refusal.code === 'grow_run.not_authorized'
+          ? this._t('reopen_not_authorized')
+          : refusalText(result.refusal, this.language);
+    } catch (error) {
+      this._reopenRefusal = this._t('refused', { message: messageOf(error) });
+    } finally {
+      this._busy = false;
     }
   }
 
@@ -407,6 +507,9 @@ export class GrowspaceRunFinalizationDialog extends LitElement {
   private _renderForm(preview: FinalizationPreview | null): TemplateResult {
     return html`
       <form class="body" @submit=${this._submit}>
+        ${this._notice
+          ? html`<p role="status" data-testid="reopen-notice">${this._notice}</p>`
+          : nothing}
         ${this._loadError
           ? html`<p class="refusal" role="alert">${this._loadError}</p>`
           : preview
@@ -438,18 +541,81 @@ export class GrowspaceRunFinalizationDialog extends LitElement {
   }
 
   private _renderFinalized(run: RunSummary, snapshot: RunSnapshot): TemplateResult {
+    const admin = this._isAdmin;
     return html`
       <div class="body" data-testid="finalization-done">
         <p role="status">${this._t('finalization_done', { number: run.sequence_number })}</p>
         <span class="badge" data-testid="metrics-state">${this._t('metrics_frozen')}</span>
         <p class="muted">${this._t('metrics_frozen_detail')}</p>
+        ${this._superseded
+          ? html`<p class="muted" data-testid="superseded">
+              ${this._plural('superseded', this._superseded)}
+            </p>`
+          : nothing}
         ${this._renderSnapshot(snapshot)}
+        ${admin && this._reopenOpen ? this._renderReopen(run) : nothing}
         <div class="row">
+          ${admin && !this._reopenOpen
+            ? html`<button
+                type="button"
+                data-action="reopen-offer"
+                @click=${() => (this._reopenOpen = true)}
+              >
+                ${this._t('reopen_offer')}
+              </button>`
+            : nothing}
           <button type="button" class="primary" data-action="close" @click=${this._close}>
             ${this._t('close')}
           </button>
         </div>
       </div>
+    `;
+  }
+
+  private _renderReopen(run: RunSummary): TemplateResult {
+    return html`
+      <form class="warning" data-testid="reopen-form" @submit=${this._reopen}>
+        <section>
+          <p>${this._t('reopen_intro', { number: run.sequence_number })}</p>
+          <label class="reason">
+            ${this._t('reopen_reason')}
+            <textarea
+              data-field="reason"
+              required
+              maxlength=${MAX_REASON_LENGTH}
+              .value=${this._reason}
+              @input=${(event: Event) =>
+                (this._reason = (event.target as HTMLTextAreaElement).value)}
+            ></textarea>
+          </label>
+          ${this._reopenRefusal
+            ? html`<p class="refusal" role="alert" data-testid="reopen-refusal">
+                ${this._reopenRefusal}
+              </p>`
+            : nothing}
+          <div class="row">
+            <button
+              type="button"
+              data-action="reopen-cancel"
+              ?disabled=${this._busy}
+              @click=${() => {
+                this._reopenOpen = false;
+                this._reopenRefusal = null;
+              }}
+            >
+              ${this._t('cancel')}
+            </button>
+            <button
+              type="submit"
+              class="primary"
+              data-action="reopen"
+              ?disabled=${this._busy || !this._reason.trim()}
+            >
+              ${this._busy ? this._t('reopening') : this._t('reopen')}
+            </button>
+          </div>
+        </section>
+      </form>
     `;
   }
 

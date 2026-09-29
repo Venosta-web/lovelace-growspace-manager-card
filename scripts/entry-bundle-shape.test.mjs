@@ -156,6 +156,8 @@ test('the registry declares every on-demand-only chunk it should', async () => {
     'growspace-run-completion-dialog',
     // Only a grower finalizing a Completed Run opens it (GSM#673).
     'growspace-run-finalization-dialog',
+    // Only a grower backing out of an empty Run opens it (GSM#917).
+    'growspace-run-discard-dialog',
     // Only a growspace still being set up renders it (#973).
     'growspace-setup-checklist.container',
     // The Grow Run start dialog and its preview (GSM#670).

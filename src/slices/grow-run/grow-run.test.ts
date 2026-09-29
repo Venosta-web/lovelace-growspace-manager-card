@@ -441,9 +441,11 @@ describe('getGrowRun', () => {
             prior_revision: 0,
             resulting_revision: 1,
             changed_fields: [],
+            reason: null,
           },
         ],
         snapshot: null,
+        superseded_snapshots: [],
       },
     };
     expect(GetGrowRunResultSchema.parse(response)).toEqual(response);

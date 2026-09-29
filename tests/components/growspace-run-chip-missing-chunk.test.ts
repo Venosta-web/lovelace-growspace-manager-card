@@ -111,3 +111,42 @@ describe('growspace-run-chip with a missing finalization chunk', () => {
     expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).toBeNull();
   });
 });
+
+describe('growspace-run-chip with a missing discard chunk', () => {
+  it('names the missing file instead of doing nothing', async () => {
+    vi.mocked(hassCall).mockResolvedValueOnce({ outcome: 'listed', run_revision: 4, runs: [] });
+    vi.mocked(hassCall).mockResolvedValueOnce({
+      outcome: 'found',
+      run: {
+        run_id: 'run-4',
+        sequence_number: 4,
+        label: null,
+        status: 'active',
+        started_at: ACTIVE.startedAt,
+        completed_at: null,
+        timezone: 'Europe/Berlin',
+        participant_count: 3,
+        metrics_state: 'live',
+        run_revision: 4,
+        participations: [],
+        movement_history: [],
+      },
+    });
+    const chip = await fixture<GrowspaceRunChip>(html`
+      <growspace-run-chip .view=${ACTIVE}></growspace-run-chip>
+    `);
+    chip.shadowRoot!.querySelector<HTMLButtonElement>('.chip')!.click();
+    await vi.waitFor(() =>
+      expect(chip.shadowRoot!.querySelector('[data-action="discard-run"]')).not.toBeNull()
+    );
+    chip.shadowRoot!.querySelector<HTMLButtonElement>('[data-action="discard-run"]')!.click();
+    await vi.waitFor(() =>
+      expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).not.toBeNull()
+    );
+    expect(chip.shadowRoot!.querySelector('growspace-run-discard-dialog')).toBeNull();
+
+    chip.shadowRoot!.querySelector('ha-dialog')!.dispatchEvent(new CustomEvent('closed'));
+    await chip.updateComplete;
+    expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).toBeNull();
+  });
+});

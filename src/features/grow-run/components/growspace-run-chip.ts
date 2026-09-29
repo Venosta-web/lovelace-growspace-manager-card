@@ -35,6 +35,11 @@ import '../../shared/ui/lazy-chunk-error';
  * harvest dries, and by then another Run may be Active. The chip asks for the
  * growspace's Runs whenever the Run Revision moves and, while one is still
  * Completed, offers `Finalize Run #3` beside itself; the dialog is a lazy chunk.
+ *
+ * An Active Run whose details show nothing recorded can also be discarded
+ * (GSM#917), the undo of a start. The details offer it only then, and the
+ * confirmation is its own lazy chunk; the backend still judges, and a
+ * refusal lists the activity it found.
  */
 @customElement('growspace-run-chip')
 export class GrowspaceRunChip extends LitElement {
@@ -62,6 +67,9 @@ export class GrowspaceRunChip extends LitElement {
    * is read again: the dialog stays to show the frozen snapshot.
    */
   @state() private _finalizing: string | null = null;
+  @state() private _discard: 'closed' | 'loading' | 'ready' | 'missing' = 'closed';
+  /** The Active Run the open discard dialog is about, as its details read. */
+  @state() private _discarding: { runId: string; number: number; revision: number } | null = null;
   /** The growspace and Run Revision the Run list was last asked for. */
   private _listed = '';
 
@@ -263,6 +271,17 @@ export class GrowspaceRunChip extends LitElement {
                     : html`<p>${this._t('none_yet')}</p>`}
                 `}
         <div class="row">
+          ${run?.status === 'active' &&
+          !run.movement_history.length &&
+          !(run.harvest_outcomes ?? []).length
+            ? html`<button
+                type="button"
+                data-action="discard-run"
+                @click=${() => this._openDiscard(run)}
+              >
+                ${this._t('discard_offer')}
+              </button>`
+            : nothing}
           ${run?.status === 'active'
             ? html`<button type="button" data-action="complete-run" @click=${this._openCompletion}>
                 ${this._t('complete_run')}
@@ -299,6 +318,48 @@ export class GrowspaceRunChip extends LitElement {
       return html`<ha-dialog open .headerTitle=${this._t('complete')} @closed=${close}>
         <growspace-lazy-chunk-error
           .chunk=${LAZY_CHUNKS.runCompletionDialog}
+        ></growspace-lazy-chunk-error>
+      </ha-dialog>`;
+    }
+    return nothing;
+  }
+
+  private async _openDiscard(run: {
+    run_id: string;
+    sequence_number: number;
+    run_revision: number;
+  }): Promise<void> {
+    this._detailsOpen = false;
+    this._discarding = {
+      runId: run.run_id,
+      number: run.sequence_number,
+      revision: run.run_revision,
+    };
+    this._discard = 'loading';
+    const loaded = await loadLazyChunk(
+      LAZY_CHUNKS.runDiscardDialog,
+      () => import('./growspace-run-discard-dialog')
+    );
+    if (this._discard === 'loading') this._discard = loaded ? 'ready' : 'missing';
+  }
+
+  private _renderDiscard(growspaceId: string) {
+    const close = () => (this._discard = 'closed');
+    const run = this._discarding;
+    if (this._discard === 'ready' && run) {
+      return html`<growspace-run-discard-dialog
+        .growspaceId=${growspaceId}
+        .runId=${run.runId}
+        .sequenceNumber=${run.number}
+        .runRevision=${run.revision}
+        .language=${this.language}
+        @closed=${close}
+      ></growspace-run-discard-dialog>`;
+    }
+    if (this._discard === 'missing') {
+      return html`<ha-dialog open .headerTitle=${this._t('discard')} @closed=${close}>
+        <growspace-lazy-chunk-error
+          .chunk=${LAZY_CHUNKS.runDiscardDialog}
         ></growspace-lazy-chunk-error>
       </ha-dialog>`;
     }
@@ -412,7 +473,7 @@ export class GrowspaceRunChip extends LitElement {
     // from the Active Run to `Start run` when the sensor catches up.
     return html`${this._renderChip(view)}${this._renderAwaiting()}${this._renderCompletion(
       view.growspaceId
-    )}${this._renderFinalization(view.growspaceId)}`;
+    )}${this._renderFinalization(view.growspaceId)}${this._renderDiscard(view.growspaceId)}`;
   }
 
   private _renderChip(view: RunView) {
