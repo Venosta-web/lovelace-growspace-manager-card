@@ -15,7 +15,7 @@ import { DISCARD_BLOCKERS, MAX_REASON_LENGTH } from '../../../slices/grow-run/co
  * Participant joining or leaving, a harvest — cannot be discarded, and the
  * refusal lists each kind so the grower knows why and completes it instead.
  *
- * It is a lazy chunk: the run chip imports it from the Active Run's details.
+ * It is a lazy chunk: the run chip imports it when the Grow Run View asks.
  */
 @customElement('growspace-run-discard-dialog')
 export class GrowspaceRunDiscardDialog extends LitElement {

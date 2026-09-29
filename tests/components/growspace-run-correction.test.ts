@@ -4,14 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getHass, hassCall } from '../../src/services/hass-call';
 import { WSError } from '../../src/services/errors';
-import type { RunSnapshot } from '../../src/slices/grow-run/schema';
+import type { RunSnapshot } from '../../src/slices/grow-run/details-schema';
 import type { RunView } from '../../src/slices/grow-run';
 import type { GrowspaceRunChip } from '../../src/features/grow-run/components/growspace-run-chip';
 import type { GrowspaceRunDiscardDialog } from '../../src/features/grow-run/components/growspace-run-discard-dialog';
 import type { GrowspaceRunFinalizationDialog } from '../../src/features/grow-run/components/growspace-run-finalization-dialog';
+import type { GrowspaceRunView } from '../../src/features/grow-run/components/growspace-run-view';
 import '../../src/features/grow-run/components/growspace-run-chip';
 import '../../src/features/grow-run/components/growspace-run-discard-dialog';
 import '../../src/features/grow-run/components/growspace-run-finalization-dialog';
+import '../../src/features/grow-run/components/growspace-run-view';
+import activeDetails from '../fixtures/contract/grow_run_details_v1.json';
 
 vi.mock('../../src/services/hass-call', () => ({
   hassCall: vi.fn(),
@@ -271,7 +274,98 @@ describe('growspace-run-discard-dialog', () => {
   });
 });
 
-describe('growspace-run-chip discard', () => {
+describe('growspace-run-view corrections', () => {
+  /** GSM's `grow_run_details_v1`, shaped for the Run's status and activity. */
+  function details(status: string, movements: number, audit: unknown[] = []) {
+    const run = activeDetails.run;
+    return {
+      ...activeDetails,
+      run: {
+        ...run,
+        run_id: 'run-4',
+        sequence_number: 4,
+        status,
+        run_revision: 7,
+        movement_history: run.movement_history.slice(0, movements),
+        harvest_outcomes: [],
+        audit: audit.length ? audit : run.audit,
+        snapshot: status === 'finalized' ? snapshot(88) : null,
+      },
+    };
+  }
+
+  async function renderView(result: unknown): Promise<GrowspaceRunView> {
+    hassCallMock.mockImplementation(async (type: string) =>
+      type === 'growspace_manager/get_grow_run'
+        ? result
+        : { outcome: 'listed', run_revision: 7, runs: [] }
+    );
+    const runView = await fixture<GrowspaceRunView>(html`
+      <growspace-run-view growspaceId="tent" runId="run-4"></growspace-run-view>
+    `);
+    await settle(runView);
+    return runView;
+  }
+
+  function asked(runView: GrowspaceRunView) {
+    const listener = vi.fn();
+    runView.addEventListener('run-view-action', (event) => listener((event as CustomEvent).detail));
+    return listener;
+  }
+
+  it('offers to discard an Active Run that recorded nothing, on the revision it read', async () => {
+    const runView = await renderView(details('active', 0));
+    const listener = asked(runView);
+    const offer = $<HTMLButtonElement>(runView, '[data-action="discard-run"]')!;
+    expect(offer.textContent!.trim()).toBe('Discard run…');
+    offer.click();
+    expect(listener).toHaveBeenCalledWith({
+      action: 'discard',
+      runId: 'run-4',
+      sequenceNumber: 4,
+      runRevision: 7,
+    });
+  });
+
+  it('does not offer it once the run has recorded a movement', async () => {
+    const runView = await renderView(details('active', 1));
+    expect($(runView, '[data-action="complete-run"]')).not.toBeNull();
+    expect($(runView, '[data-action="discard-run"]')).toBeNull();
+  });
+
+  it('offers reopening a Finalized Run to an administrator alone', async () => {
+    const plain = await renderView(details('finalized', 1));
+    expect($(plain, '[data-action="reopen-run"]')).toBeNull();
+
+    admin(true);
+    const runView = await renderView(details('finalized', 1));
+    const listener = asked(runView);
+    $<HTMLButtonElement>(runView, '[data-action="reopen-run"]')!.click();
+    expect(listener).toHaveBeenCalledWith({ action: 'reopen', runId: 'run-4' });
+  });
+
+  it('names a reopening in the lifecycle, with its reason', async () => {
+    const runView = await renderView(
+      details('completed', 1, [
+        {
+          at: '2026-10-25T20:30:00+00:00',
+          command: 'reopen',
+          command_id: 'cmd-reopen',
+          actor_user_id: 'admin-1',
+          prior_revision: 3,
+          resulting_revision: 4,
+          changed_fields: [],
+          reason: 'Dry weight came in late',
+        },
+      ])
+    );
+    expect(text(runView, '[data-testid="run-audit"]')).toContain(
+      'Reopened · Dry weight came in late'
+    );
+  });
+});
+
+describe('growspace-run-chip corrections', () => {
   const ACTIVE: RunView = {
     growspaceId: 'tent',
     entityId: 'sensor.tent_active_run',
@@ -286,50 +380,24 @@ describe('growspace-run-chip discard', () => {
     summary: 'Run #4 · 0 days · 2 plants',
   };
 
-  function details(movements: number) {
-    return {
-      outcome: 'found',
-      run: {
-        ...SUMMARY,
-        status: 'active',
-        run_revision: 7,
-        participations: [],
-        movement_history: Array.from({ length: movements }, (_, index) => ({
-          fact_id: `fact-${index}`,
-          plant_id: 'p3',
-          at: '2026-10-03T09:00:00+00:00',
-          kind: 'entry',
-          source_growspace_id: null,
-          target_growspace_id: 'tent',
-          source_run_id: null,
-          target_run_id: 'run-4',
-          projected: true,
-        })),
-      },
-    };
-  }
-
-  async function openDetails(result: unknown): Promise<GrowspaceRunChip> {
-    hassCallMock.mockImplementation(async (type: string) =>
-      type === 'growspace_manager/get_grow_run'
-        ? result
-        : { outcome: 'listed', run_revision: 7, runs: [] }
-    );
+  async function renderChip(): Promise<GrowspaceRunChip> {
+    hassCallMock.mockResolvedValue({ outcome: 'listed', run_revision: 7, runs: [] });
     const chip = await fixture<GrowspaceRunChip>(
       html`<growspace-run-chip .view=${ACTIVE}></growspace-run-chip>`
     );
     await settle(chip);
-    $<HTMLButtonElement>(chip, '.chip')!.click();
-    await settle(chip);
     return chip;
   }
 
-  it('offers to discard a run that recorded nothing, on the revision it read', async () => {
-    const chip = await openDetails(details(0));
-    const offer = $<HTMLButtonElement>(chip, '[data-action="discard-run"]')!;
-    expect(offer.textContent!.trim()).toBe('Discard run…');
+  function ask(chip: GrowspaceRunChip, detail: Record<string, unknown>): void {
+    (chip as unknown as { _onViewAction(event: CustomEvent): void })._onViewAction(
+      new CustomEvent('run-view-action', { detail })
+    );
+  }
 
-    offer.click();
+  it('opens the discard dialog on the Run and revision the View read', async () => {
+    const chip = await renderChip();
+    ask(chip, { action: 'discard', runId: 'run-4', sequenceNumber: 4, runRevision: 7 });
     await vi.waitFor(() => {
       if (!$(chip, 'growspace-run-discard-dialog')) throw new Error('not loaded');
     });
@@ -340,17 +408,23 @@ describe('growspace-run-chip discard', () => {
       4,
       7,
     ]);
-    expect($(chip, '[data-action="discard-run"]')).toBeNull();
-
     dialog.dispatchEvent(new CustomEvent('closed'));
     await chip.updateComplete;
     expect($(chip, 'growspace-run-discard-dialog')).toBeNull();
   });
 
-  it('does not offer it once the run has recorded a movement', async () => {
-    const chip = await openDetails(details(1));
-    expect($(chip, '[data-action="complete-run"]')).not.toBeNull();
-    expect($(chip, '[data-action="discard-run"]')).toBeNull();
+  it('reopens through the finalization dialog, opened on the Finalized Run', async () => {
+    const chip = await renderChip();
+    hassCallMock
+      .mockResolvedValueOnce(refused('grow_run.not_completed'))
+      .mockResolvedValueOnce(finalizedDetails(0));
+    ask(chip, { action: 'reopen', runId: 'run-3' });
+    await vi.waitFor(() => {
+      if (!$(chip, 'growspace-run-finalization-dialog')) throw new Error('not loaded');
+    });
+    expect(
+      $<GrowspaceRunFinalizationDialog>(chip, 'growspace-run-finalization-dialog')!.runId
+    ).toBe('run-3');
   });
 });
 

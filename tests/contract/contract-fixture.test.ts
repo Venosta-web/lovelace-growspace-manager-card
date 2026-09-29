@@ -28,11 +28,8 @@ import {
   UpdatePlantRequestContractSchema,
 } from '../../src/slices/plant/schema';
 import { IrrigationControllerSchema } from '../../src/slices/safety/schema';
-import {
-  ActiveRunSensorSchema,
-  GetGrowRunResultSchema,
-  ListGrowRunsResultSchema,
-} from '../../src/slices/grow-run/schema';
+import { ActiveRunSensorSchema, ListGrowRunsResultSchema } from '../../src/slices/grow-run/schema';
+import { GetGrowRunResultSchema } from '../../src/slices/grow-run/details-schema';
 import {
   FinalizeGrowRunResultSchema,
   PreviewFinalizationResultSchema,
@@ -45,6 +42,7 @@ import {
   CompleteGrowRunResultSchema,
   PreviewCompletionResultSchema,
 } from '../../src/slices/grow-run/completion-schema';
+import { CompareGrowRunsResultSchema } from '../../src/slices/grow-run/view-schema';
 import {
   DiscardGrowRunResultSchema,
   ReopenGrowRunResultSchema,
@@ -270,6 +268,21 @@ const CONTRACTS: FixtureContract[] = [
     schema: ListGrowRunsResultSchema,
     leadingVariable: 'GSM_PRERELEASE_GROW_RUN_LIST_FIXTURE',
     releaseVariable: 'GSM_RELEASE_GROW_RUN_LIST_FIXTURE',
+    releaseRequired: false,
+  },
+  // Comparing two Finalized Runs (GSM#675): the Grow Run View's Compare tab.
+  {
+    name: 'Grow Run comparison',
+    schema: CompareGrowRunsResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_COMPARISON_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_COMPARISON_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run comparison refused',
+    schema: CompareGrowRunsResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_COMPARISON_REFUSED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_COMPARISON_REFUSED_FIXTURE',
     releaseRequired: false,
   },
   // Correcting a Run (GSM#917): reopening, a superseded snapshot, discarding.

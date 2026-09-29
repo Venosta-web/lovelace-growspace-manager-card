@@ -93,6 +93,10 @@ jobs:
           GSM_RELEASE_GROW_RUN_FINALIZED_DETAILS_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_finalized_details_v1.json
           GSM_PRERELEASE_GROW_RUN_LIST_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_list_v1.json
           GSM_RELEASE_GROW_RUN_LIST_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_list_v1.json
+          GSM_PRERELEASE_GROW_RUN_COMPARISON_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_comparison_v1.json
+          GSM_RELEASE_GROW_RUN_COMPARISON_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_comparison_v1.json
+          GSM_PRERELEASE_GROW_RUN_COMPARISON_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_comparison_refused_v1.json
+          GSM_RELEASE_GROW_RUN_COMPARISON_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_comparison_refused_v1.json
           GSM_PRERELEASE_GROW_RUN_REOPENED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_reopened_v1.json
           GSM_RELEASE_GROW_RUN_REOPENED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_reopened_v1.json
           GSM_PRERELEASE_GROW_RUN_REOPEN_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_reopen_refused_v1.json

@@ -22,7 +22,6 @@ import { ZodError } from 'zod';
 import {
   GrowspaceAPIResponseSchema,
   GrowspaceAPICollectionSchema,
-  GrowReportSchema,
   CirculationFanConfigSchema,
   GrowLightConfigSchema,
   ExhaustFanConfigSchema,
@@ -1010,58 +1009,6 @@ describe('Growspace Zod Schemas', () => {
 
       expect(parsed.growspace_1.identity.name).toBe('Tent A');
       expect(parsed.growspace_2.identity.name).toBe('Tent B');
-    });
-  });
-
-  describe('GrowReportSchema', () => {
-    it('should parse a full grow report successfully', () => {
-      const report = {
-        summary: {
-          plant_count: 9,
-          strains: ['Blue Dream', 'OG Kush'],
-          stages: { flower: 9 },
-        },
-        harvest: {
-          total_wet_weight: 450.5,
-          total_dry_weight: 120.2,
-          total_trim_weight: 50.1,
-          top_thc: 24.5,
-        },
-        environment: {
-          temperature_avg: 24.2,
-          humidity_avg: 52.4,
-          vpd_avg: 1.15,
-        },
-      };
-
-      const parsed = GrowReportSchema.parse(report);
-      expect(parsed).toEqual(report);
-    });
-
-    it('should support optional/nullable values', () => {
-      const report = {
-        summary: {
-          plant_count: 0,
-          strains: [],
-          stages: {},
-        },
-        harvest: {
-          total_wet_weight: 0,
-          total_dry_weight: 0,
-          total_trim_weight: 0,
-          top_thc: null,
-        },
-        environment: {
-          temperature_avg: undefined,
-          humidity_avg: null,
-          vpd_avg: null,
-        },
-      };
-
-      const parsed = GrowReportSchema.parse(report);
-      expect(parsed.harvest.top_thc).toBeNull();
-      expect(parsed.environment.temperature_avg).toBeUndefined();
-      expect(parsed.environment.humidity_avg).toBeNull();
     });
   });
 });

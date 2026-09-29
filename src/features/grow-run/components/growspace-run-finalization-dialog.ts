@@ -3,9 +3,10 @@ import { customElement, property, state } from 'lit/decorators.js';
 
 import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
 import { getHass } from '../../../services/hass-call';
-import { getGrowRun } from '../../../slices/grow-run';
+import { getGrowRun } from '../../../slices/grow-run/view';
 import { refusalText } from '../../../slices/grow-run/start';
-import type { RunSnapshot, RunSummary } from '../../../slices/grow-run/schema';
+import type { RunSnapshot } from '../../../slices/grow-run/details-schema';
+import type { RunSummary } from '../../../slices/grow-run/schema';
 import {
   finalizeGrowRun,
   previewGrowRunFinalization,
@@ -308,10 +309,13 @@ export class GrowspaceRunFinalizationDialog extends LitElement {
         await this._load();
         return;
       }
-      this._reopenRefusal =
-        result.refusal.code === 'grow_run.not_authorized'
-          ? this._t('reopen_not_authorized')
-          : refusalText(result.refusal, this.language);
+      // Both codes are shared with other commands, whose words would not fit.
+      const own: Record<string, string> = {
+        'grow_run.not_authorized': 'reopen_not_authorized',
+        'grow_run.not_finalized': 'reopen_not_finalized',
+      };
+      const key = own[result.refusal.code];
+      this._reopenRefusal = key ? this._t(key) : refusalText(result.refusal, this.language);
     } catch (error) {
       this._reopenRefusal = this._t('refused', { message: messageOf(error) });
     } finally {

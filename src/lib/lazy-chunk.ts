@@ -169,8 +169,16 @@ export const LAZY_CHUNKS = {
     feature: 'The run finalization dialog',
     onDemandOnly: true,
   },
+  // The Grow Run View (GSM#675): a Run's overview, participants, performance,
+  // the growspace's Run history and the Run Comparison. The run chip is the
+  // only Grow Run surface in the main card; everything it opens is here.
+  runView: {
+    name: 'growspace-run-view',
+    feature: 'The grow run view',
+    onDemandOnly: true,
+  },
   // Discarding an Active Run that recorded nothing (GSM#917): the undo of a
-  // start, opened rarely from the Active Run's details.
+  // start, opened rarely from the Active Run in the Grow Run View.
   runDiscardDialog: {
     name: 'growspace-run-discard-dialog',
     feature: 'The discard run dialog',

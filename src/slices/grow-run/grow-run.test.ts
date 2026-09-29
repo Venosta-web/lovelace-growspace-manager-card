@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HomeAssistant } from 'custom-card-helpers';
 
 import { hassCall } from '../../services/hass-call';
-import { deriveRunView, getGrowRun, listGrowRuns, resolveActiveRunSensor } from './index';
+import { deriveRunView, listGrowRuns, resolveActiveRunSensor } from './index';
 import { finalizeGrowRun, previewGrowRunFinalization } from './finalization';
 import {
   FinalizeGrowRunResultSchema,
   PreviewFinalizationResultSchema,
 } from './finalization-schema';
-import { ActiveRunSensorSchema, GetGrowRunResultSchema, ListGrowRunsResultSchema } from './schema';
+import { ActiveRunSensorSchema, ListGrowRunsResultSchema } from './schema';
 import { conflictText, localToday, previewGrowRunStart, refusalText, startGrowRun } from './start';
 import { PreviewGrowRunStartResultSchema, StartGrowRunResultSchema } from './start-schema';
 
@@ -392,70 +392,6 @@ describe('startGrowRun', () => {
   it('refuses a name longer than the backend accepts before sending it', () => {
     expect(() => startGrowRun('flower', 0, { label: 'x'.repeat(81) })).toThrow();
     expect(hassCall).not.toHaveBeenCalled();
-  });
-});
-
-describe('getGrowRun', () => {
-  it('reads a selected Run and parses Participants and movements', async () => {
-    const response = {
-      outcome: 'found' as const,
-      run: {
-        ...STARTED_FIXTURE.active_run,
-        participations: [
-          { plant_id: 'p1', opened_at: '2026-07-24T20:30:00+00:00', closed_at: null },
-        ],
-        movement_history: [
-          {
-            fact_id: 'fact-1',
-            plant_id: 'p1',
-            at: '2026-07-25T20:30:00+00:00',
-            kind: 'entry',
-            source_growspace_id: null,
-            target_growspace_id: 'flower',
-            source_run_id: null,
-            target_run_id: 'run-1',
-            projected: true,
-          },
-        ],
-        harvest_outcomes: [
-          {
-            plant_id: 'p1',
-            strain: 'OG Kush',
-            phenotype: 'A',
-            source_growspace_id: 'flower',
-            state: 'pending',
-            reason: null,
-            metrics: { dry_weight: null },
-            quality_score: null,
-            entered_dry_at: '2026-09-25T20:30:00+00:00',
-          },
-        ],
-        tags: ['organic'],
-        goals: null,
-        audit: [
-          {
-            at: '2026-07-24T20:30:00+00:00',
-            command: 'start',
-            command_id: 'cmd-1',
-            actor_user_id: 'user-1',
-            prior_revision: 0,
-            resulting_revision: 1,
-            changed_fields: [],
-            reason: null,
-          },
-        ],
-        snapshot: null,
-        superseded_snapshots: [],
-      },
-    };
-    expect(GetGrowRunResultSchema.parse(response)).toEqual(response);
-    vi.mocked(hassCall).mockResolvedValue(response);
-    await expect(getGrowRun('flower', 'run-1')).resolves.toEqual(response);
-    expect(hassCall).toHaveBeenCalledWith(
-      'growspace_manager/get_grow_run',
-      { growspace_id: 'flower', run_id: 'run-1' },
-      GetGrowRunResultSchema
-    );
   });
 });
 

@@ -9,12 +9,8 @@
 
 import { z } from 'zod';
 
-import {
-  MovementFactSchema,
-  ParticipationSchema,
-  RunRefusalSchema,
-  RunSummarySchema,
-} from './schema';
+import { MovementFactSchema, ParticipationSchema } from './details-schema';
+import { RunRefusalSchema, RunSummarySchema } from './schema';
 
 export const StartGrowRunResultSchema = z.discriminatedUnion('outcome', [
   z.object({

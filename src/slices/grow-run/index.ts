@@ -8,21 +8,14 @@
  *
  * The write side lives in `./start`, `./completion` and `./finalization`,
  * which only their lazy dialogs load. The header asks for the Run list alone,
- * to offer finalizing a Completed Run (GSM#673).
+ * to offer finalizing a Completed Run (GSM#673). A Run's details and the Run
+ * Comparison are the Grow Run View's, in `./view` (GSM#675).
  */
 
 import type { HomeAssistant } from 'custom-card-helpers';
 import { hassCall } from '../../services/hass-call';
 import { localize, localizePlural, localizeWithParams } from '../../localize/localize';
-import {
-  ActiveRunSensorSchema,
-  GetGrowRunResultSchema,
-  ListGrowRunsResultSchema,
-  type GetGrowRunResult,
-  type ListGrowRunsResult,
-} from './schema';
-
-export type { GetGrowRunResult } from './schema';
+import { ActiveRunSensorSchema, ListGrowRunsResultSchema, type ListGrowRunsResult } from './schema';
 
 const DOMAIN = 'growspace_manager';
 const TRANSLATION_KEY = 'active_run';
@@ -175,15 +168,6 @@ function runSummaryText(view: RunView, language: string): string {
     parts.push(localizePlural('grow_run.plants', view.participantCount, {}, language));
   }
   return parts.join(' · ');
-}
-
-/** Read the selected Run's durable movement and participation projection. */
-export function getGrowRun(growspaceId: string, runId: string): Promise<GetGrowRunResult> {
-  return hassCall(
-    'growspace_manager/get_grow_run',
-    { growspace_id: growspaceId, run_id: runId },
-    GetGrowRunResultSchema
-  );
 }
 
 /** Every Run a growspace's ledger holds, newest first (GSM#673). */

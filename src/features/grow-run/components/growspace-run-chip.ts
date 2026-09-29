@@ -1,17 +1,13 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { PropertyValues } from 'lit';
-import { mdiFlagCheckered, mdiHelpCircleOutline, mdiPlus, mdiSprout } from '@mdi/js';
+import { mdiFlagCheckered, mdiHelpCircleOutline, mdiHistory, mdiPlus, mdiSprout } from '@mdi/js';
 
 import { LAZY_CHUNKS, loadLazyChunk } from '../../../lib/lazy-chunk';
 import { localize, localizeWithParams } from '../../../localize/localize';
-import {
-  getGrowRun,
-  listGrowRuns,
-  type GetGrowRunResult,
-  type RunView,
-} from '../../../slices/grow-run';
+import { listGrowRuns, type RunView } from '../../../slices/grow-run';
 import type { RunSummary } from '../../../slices/grow-run/schema';
+import type { RunViewAction, RunViewTab } from './growspace-run-view';
 import '../../shared/ui/lazy-chunk-error';
 
 /**
@@ -19,15 +15,18 @@ import '../../shared/ui/lazy-chunk-error';
  *
  * The main card carries no more of Grow Runs than this: the Active Run as one
  * compact chip beside the growspace name — `Run #4 · 61 days · 17 plants` —
- * or, without one, a `Start run` chip. Selecting an Active Run shows its
- * Participants and movement history.
+ * or, without one, a `Start run` chip. Selecting an Active Run opens the Grow
+ * Run View (GSM#675) on it, a lazy chunk: its overview, Participants,
+ * performance, the growspace's Run history and the Run Comparison. Without an
+ * Active Run, a `Runs` chip opens the same View on the newest Run, so history
+ * never depends on something being active.
  *
  * Starting is one small dialog, `growspace-run-start-dialog`, fetched as its
  * own chunk the first time it opens (GSM#670 made it large enough to earn
  * one: a start may name an earlier day and preview what it would claim).
  * Nothing is optimistic. The chip changes when the Active Run Sensor does.
  *
- * Completing starts from the Active Run's details (GSM#671), and opens the Run
+ * Completing starts from the Active Run's View (GSM#671), and opens the Run
  * Completion Preview in its own lazy chunk. It stays open after the sensor
  * reads `none`, so the grower sees the completed Run and its Pending metrics.
  *
@@ -36,10 +35,11 @@ import '../../shared/ui/lazy-chunk-error';
  * growspace's Runs whenever the Run Revision moves and, while one is still
  * Completed, offers `Finalize Run #3` beside itself; the dialog is a lazy chunk.
  *
- * An Active Run whose details show nothing recorded can also be discarded
- * (GSM#917), the undo of a start. The details offer it only then, and the
- * confirmation is its own lazy chunk; the backend still judges, and a
- * refusal lists the activity it found.
+ * Correcting a Run (GSM#917) starts from the View as well. An Active Run
+ * that shows nothing recorded can be discarded, the undo of a start, through
+ * its own lazy confirmation; the backend still judges, and a refusal lists the
+ * activity it found. A Finalized Run can be reopened by an administrator,
+ * which the finalization dialog does once it opens on that Run.
  */
 @customElement('growspace-run-chip')
 export class GrowspaceRunChip extends LitElement {
@@ -53,9 +53,12 @@ export class GrowspaceRunChip extends LitElement {
   @state() private _open = false;
   @state() private _startLoaded = false;
   @state() private _startMissing = false;
-  @state() private _detailsOpen = false;
-  @state() private _details: GetGrowRunResult | null = null;
-  @state() private _detailError: string | null = null;
+  /** The Grow Run View's chunk, and which Run and tab it opens on. */
+  @state() private _view: 'closed' | 'loading' | 'ready' | 'missing' = 'closed';
+  @state() private _viewRun: string | null = null;
+  @state() private _viewTab: RunViewTab = 'overview';
+  /** The newest Run of any status, which the `Runs` chip opens. */
+  @state() private _newest: RunSummary | null = null;
   /** The completion dialog's chunk: not asked for, arriving, here, or missing. */
   @state() private _completion: 'closed' | 'loading' | 'ready' | 'missing' = 'closed';
   /** The oldest Completed Run, which the finalize chip offers. */
@@ -68,16 +71,12 @@ export class GrowspaceRunChip extends LitElement {
    */
   @state() private _finalizing: string | null = null;
   @state() private _discard: 'closed' | 'loading' | 'ready' | 'missing' = 'closed';
-  /** The Active Run the open discard dialog is about, as its details read. */
+  /** The Active Run the open discard dialog is about, as the View read it. */
   @state() private _discarding: { runId: string; number: number; revision: number } | null = null;
   /** The growspace and Run Revision the Run list was last asked for. */
   private _listed = '';
 
   static styles = css`
-    .muted {
-      color: var(--secondary-text-color);
-    }
-
     :host {
       display: inline-flex;
       flex-wrap: wrap;
@@ -130,43 +129,6 @@ export class GrowspaceRunChip extends LitElement {
     .active {
       --cue: var(--primary-color, #4caf50);
     }
-
-    p {
-      margin: 0;
-    }
-
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    .row button {
-      min-height: 36px;
-      padding: 6px 16px;
-      border-radius: 18px;
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.24));
-      background: transparent;
-      color: var(--primary-text-color);
-      font: inherit;
-      cursor: pointer;
-    }
-
-    .row button.primary {
-      border-color: transparent;
-      background: var(--primary-color, #4caf50);
-      color: var(--text-primary-color, #fff);
-    }
-
-    button:disabled {
-      cursor: default;
-      opacity: 0.6;
-    }
-
-    .refusal {
-      color: var(--error-color, #f44336);
-    }
   `;
 
   private _t(key: string, params: Record<string, string | number> = {}): string {
@@ -175,22 +137,10 @@ export class GrowspaceRunChip extends LitElement {
       : localize(`grow_run.${key}`, '', '', this.language);
   }
 
-  private _movementKind(kind: string): string {
-    const known = ['entry', 'removal', 'move', 're_entry', 'harvest', 'transplant'];
-    return known.includes(kind) ? this._t(`movement_${kind}`) : kind.replaceAll('_', ' ');
-  }
-
-  private async _openDetails(): Promise<void> {
+  private _openDetails(): void {
     if (!this.view) return;
     if (this.view.state === 'active' && this.view.runId) {
-      this._detailsOpen = true;
-      this._details = null;
-      this._detailError = null;
-      try {
-        this._details = await getGrowRun(this.view.growspaceId, this.view.runId);
-      } catch (error) {
-        this._detailError = String(error);
-      }
+      void this._openView(this.view.runId);
       return;
     }
     this.dispatchEvent(
@@ -202,101 +152,63 @@ export class GrowspaceRunChip extends LitElement {
     );
   }
 
-  private _renderDetails() {
-    const run = this._details?.outcome === 'found' ? this._details.run : null;
-    return html`
-      <ha-dialog
-        open
-        width="medium"
-        .headerTitle=${this._t('details_title', { number: this.view?.sequenceNumber ?? '' })}
-        @closed=${() => (this._detailsOpen = false)}
-      >
-        ${this._detailError
-          ? html`<p class="refusal" role="alert">${this._detailError}</p>`
-          : this._details?.outcome === 'not_found'
-            ? html`<p>${this._t('details_missing')}</p>`
-            : !run
-              ? html`<p>${this._t('details_loading')}</p>`
-              : html`
-                  ${run.metrics_state === 'live'
-                    ? html`<p class="muted" data-testid="run-metrics-state">
-                        ${this._t('metrics_live')}
-                      </p>`
-                    : nothing}
-                  <h3>${this._t('participants_heading')}</h3>
-                  ${run.participations.length
-                    ? html`<ul data-testid="run-participations">
-                        ${run.participations.map(
-                          (row) =>
-                            html`<li>
-                              ${row.plant_id} · ${new Date(row.opened_at).toLocaleString()}
-                              ${row.closed_at
-                                ? html`– ${new Date(row.closed_at).toLocaleString()}`
-                                : html`– ${this._t('present')}`}
-                            </li>`
-                        )}
-                      </ul>`
-                    : html`<p>${this._t('none_yet')}</p>`}
-                  <h3>${this._t('movement_heading')}</h3>
-                  ${run.movement_history.length
-                    ? html`<ul data-testid="run-movements">
-                        ${run.movement_history.map(
-                          (row) =>
-                            html`<li>
-                              ${new Date(row.at).toLocaleString()} · ${row.plant_id} ·
-                              ${this._movementKind(row.kind)} (${row.source_growspace_id ?? '—'} →
-                              ${row.target_growspace_id ?? '—'})
-                            </li>`
-                        )}
-                      </ul>`
-                    : html`<p>${this._t('none_yet')}</p>`}
-                  <h3>Harvest outcomes</h3>
-                  ${(run.harvest_outcomes ?? []).length
-                    ? html`<ul data-testid="run-harvest-outcomes">
-                        ${(run.harvest_outcomes ?? []).map(
-                          (outcome) =>
-                            html`<li>
-                              ${outcome.strain || outcome.plant_id}
-                              ${outcome.phenotype ? `· ${outcome.phenotype}` : ''} ·
-                              ${outcome.state === 'no_usable_yield'
-                                ? `No Usable Yield (0 g): ${outcome.reason}`
-                                : outcome.state === 'incomplete'
-                                  ? 'Incomplete outcome'
-                                  : outcome.metrics.dry_weight == null
-                                    ? 'Dry weight unknown'
-                                    : `${outcome.metrics.dry_weight} g dry`}
-                            </li>`
-                        )}
-                      </ul>`
-                    : html`<p>${this._t('none_yet')}</p>`}
-                `}
-        <div class="row">
-          ${run?.status === 'active' &&
-          !run.movement_history.length &&
-          !(run.harvest_outcomes ?? []).length
-            ? html`<button
-                type="button"
-                data-action="discard-run"
-                @click=${() => this._openDiscard(run)}
-              >
-                ${this._t('discard_offer')}
-              </button>`
-            : nothing}
-          ${run?.status === 'active'
-            ? html`<button type="button" data-action="complete-run" @click=${this._openCompletion}>
-                ${this._t('complete_run')}
-              </button>`
-            : nothing}
-          <button type="button" @click=${() => (this._detailsOpen = false)}>
-            ${this._t('close')}
-          </button>
-        </div>
-      </ha-dialog>
-    `;
+  private async _openView(runId: string, tab: RunViewTab = 'overview'): Promise<void> {
+    this._viewRun = runId;
+    this._viewTab = tab;
+    this._view = 'loading';
+    const loaded = await loadLazyChunk(LAZY_CHUNKS.runView, () => import('./growspace-run-view'));
+    if (this._view === 'loading') this._view = loaded ? 'ready' : 'missing';
+  }
+
+  /**
+   * The View asks; completing, finalizing, discarding and reopening stay this
+   * chip's own dialogs. Reopening is the finalization dialog's, opened on a
+   * Finalized Run.
+   */
+  private _onViewAction(event: CustomEvent<RunViewAction>): void {
+    this._view = 'closed';
+    const { action } = event.detail;
+    if (action === 'complete') void this._openCompletion();
+    else if (action === 'discard') void this._openDiscard(event.detail);
+    else void this._openFinalization(event.detail.runId);
+  }
+
+  private _renderView(growspaceId: string) {
+    const close = () => (this._view = 'closed');
+    if (this._view === 'ready' && this._viewRun) {
+      return html`<growspace-run-view
+        .growspaceId=${growspaceId}
+        .runId=${this._viewRun}
+        .tab=${this._viewTab}
+        .language=${this.language}
+        @closed=${close}
+        @run-view-action=${this._onViewAction}
+      ></growspace-run-view>`;
+    }
+    if (this._view === 'missing') {
+      return html`<ha-dialog open .headerTitle=${this._t('history_heading')} @closed=${close}>
+        <growspace-lazy-chunk-error .chunk=${LAZY_CHUNKS.runView}></growspace-lazy-chunk-error>
+      </ha-dialog>`;
+    }
+    return nothing;
+  }
+
+  private _renderNewest(view: RunView) {
+    const run = this._newest;
+    if (view.state !== 'none' || !run) return nothing;
+    return html`<button
+      class="chip"
+      data-action="run-history"
+      aria-haspopup="dialog"
+      aria-label=${this._t('history_chip_label')}
+      @click=${() => this._openView(run.run_id)}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${mdiHistory}></path></svg>
+      <span>${this._t('history_chip')}</span>
+    </button>`;
   }
 
   private async _openCompletion(): Promise<void> {
-    this._detailsOpen = false;
     this._completion = 'loading';
     const loaded = await loadLazyChunk(
       LAZY_CHUNKS.runCompletionDialog,
@@ -324,16 +236,11 @@ export class GrowspaceRunChip extends LitElement {
     return nothing;
   }
 
-  private async _openDiscard(run: {
-    run_id: string;
-    sequence_number: number;
-    run_revision: number;
-  }): Promise<void> {
-    this._detailsOpen = false;
+  private async _openDiscard(action: RunViewAction): Promise<void> {
     this._discarding = {
-      runId: run.run_id,
-      number: run.sequence_number,
-      revision: run.run_revision,
+      runId: action.runId,
+      number: action.sequenceNumber ?? 0,
+      revision: action.runRevision ?? 0,
     };
     this._discard = 'loading';
     const loaded = await loadLazyChunk(
@@ -374,27 +281,32 @@ export class GrowspaceRunChip extends LitElement {
     this._listed = key;
     if (!key || !view) {
       this._awaiting = null;
+      this._newest = null;
       return;
     }
     void this._list(view.growspaceId, key);
   }
 
-  /** Find the Completed Run waiting longest; a failed read offers none. */
+  /**
+   * Find the Completed Run waiting longest, and the newest Run the `Runs` chip
+   * opens; a failed read offers neither.
+   */
   private async _list(growspaceId: string, key: string): Promise<void> {
-    let awaiting: RunSummary | null = null;
+    let runs: RunSummary[] = [];
     try {
       const result = await listGrowRuns(growspaceId);
-      // Newest first, so the last Completed one has waited longest.
-      const runs = result.outcome === 'listed' ? result.runs : [];
-      awaiting = runs.filter((run) => run.status === 'completed').pop() ?? null;
+      runs = result.outcome === 'listed' ? result.runs : [];
     } catch {
       // A backend before GSM#673 has no Run list, and nothing to finalize.
     }
-    if (this._listed === key) this._awaiting = awaiting;
+    if (this._listed !== key) return;
+    // Newest first, so the last Completed one has waited longest.
+    this._awaiting = runs.filter((run) => run.status === 'completed').pop() ?? null;
+    this._newest = runs[0] ?? null;
   }
 
-  private async _openFinalization(): Promise<void> {
-    this._finalizing = this._awaiting?.run_id ?? null;
+  private async _openFinalization(runId = this._awaiting?.run_id): Promise<void> {
+    this._finalizing = runId ?? null;
     this._finalization = 'loading';
     const loaded = await loadLazyChunk(
       LAZY_CHUNKS.runFinalizationDialog,
@@ -431,7 +343,7 @@ export class GrowspaceRunChip extends LitElement {
       data-action="finalize-run"
       aria-haspopup="dialog"
       aria-label=${this._t('finalize_chip_label', { number: run.sequence_number })}
-      @click=${this._openFinalization}
+      @click=${() => this._openFinalization()}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d=${mdiFlagCheckered}></path></svg>
       <span>${this._t('finalize_chip', { number: run.sequence_number })}</span>
@@ -471,7 +383,9 @@ export class GrowspaceRunChip extends LitElement {
     if (!view) return nothing;
     // One stable slot, so the completion dialog outlives the chip's own switch
     // from the Active Run to `Start run` when the sensor catches up.
-    return html`${this._renderChip(view)}${this._renderAwaiting()}${this._renderCompletion(
+    return html`${this._renderChip(view)}${this._renderNewest(
+      view
+    )}${this._renderAwaiting()}${this._renderView(view.growspaceId)}${this._renderCompletion(
       view.growspaceId
     )}${this._renderFinalization(view.growspaceId)}${this._renderDiscard(view.growspaceId)}`;
   }
@@ -511,7 +425,6 @@ export class GrowspaceRunChip extends LitElement {
         </svg>
         <span>${view.summary}</span>
       </button>
-      ${this._detailsOpen ? this._renderDetails() : nothing}
     `;
   }
 }
