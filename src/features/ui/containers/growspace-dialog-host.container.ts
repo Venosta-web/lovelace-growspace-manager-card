@@ -1502,7 +1502,7 @@ export class GrowspaceDialogHost extends LitElement {
         .open=${true}
         .presetOptions=${presetOptions}
         .targetText=${targetText}
-        .tankMode=${!!selectedDeviceData?.environmentAttributes.irrigationTanks?.some(
+        .tankMode=${!!selectedDeviceData?.environmentAttributes?.irrigationTanks?.some(
           (tank) => tank.volumeLiters != null
         )}
         .inventory=${nutrientInventory}
