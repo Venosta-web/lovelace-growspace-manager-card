@@ -24,6 +24,9 @@ const KNOWN_MISSING = new Set([
   'entered_dry_at',
   'participant_identity',
   'harvest_source_plants',
+  'water_coverage',
+  'water_volume',
+  'positive_water_applied',
 ]);
 
 type Metric = RunSnapshot['metrics'][number];
@@ -382,7 +385,12 @@ export class GrowspaceRunFinalizationDialog extends LitElement {
   }
 
   private _metricName(metric: string): string {
-    return ['yield', 'yield_per_harvest_source_plant'].includes(metric)
+    return [
+      'yield',
+      'yield_per_harvest_source_plant',
+      'water_applied',
+      'water_productivity',
+    ].includes(metric)
       ? this._t(`metric_${metric}`)
       : metric.replaceAll('_', ' ');
   }

@@ -195,6 +195,40 @@ describe('growspace-run-view', () => {
   });
 
   describe('Performance', () => {
+    it('names each water source and leaves unknown volume incomplete', async () => {
+      const details = structuredClone(finalizedDetails);
+      details.run.snapshot!.water_applications = [
+        {
+          application_id: 'hand-1',
+          at: '2026-08-01T10:00:00+00:00',
+          source: 'manual',
+          liters: 1.5,
+        },
+        {
+          application_id: 'pump-1',
+          at: '2026-08-02T10:00:00+00:00',
+          source: 'unknown',
+          liters: null,
+        },
+      ];
+      details.run.metrics = details.run.metrics.map((metric) =>
+        metric.metric === 'water_applied'
+          ? {
+              ...metric,
+              value: null,
+              complete: false,
+              missing: [{ kind: 'water_volume', plant_id: 'pump-1' }],
+            }
+          : metric
+      );
+      backend(details);
+      const runView = await renderView('performance');
+      expect(text(runView, '[data-metric="water_applied"]')).toContain('Incomplete');
+      expect(text(runView, '[data-testid="run-water-sources"]')).toContain('Recorded by grower');
+      expect(text(runView, '[data-testid="run-water-sources"]')).toContain('1.5 L');
+      expect(text(runView, '[data-testid="run-water-sources"]')).toContain('Volume unknown');
+    });
+
     it.each([
       ['Active', activeDetails, 'live', 'Live'],
       ['Completed', completedDetails, 'pending', 'Pending'],
@@ -263,6 +297,15 @@ describe('growspace-run-view', () => {
   });
 
   describe('Compare', () => {
+    it('treats water applied as neutral and water productivity as higher is better', async () => {
+      backend();
+      const runView = await renderView('compare');
+      expect(text(runView, 'tr[data-metric="water_applied"] td.change')).toBe('Lower by 1 L');
+      expect(text(runView, 'tr[data-metric="water_productivity"] td.change')).toBe(
+        'Higher by 15 g/L (better)'
+      );
+    });
+
     it('defaults to the newest Finalized Run and its predecessor', async () => {
       backend();
       const runView = await renderView('compare');

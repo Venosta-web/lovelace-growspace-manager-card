@@ -34,7 +34,12 @@ const TABS: readonly RunViewTab[] = [
   'compare',
 ];
 
-const KNOWN_METRICS = new Set(['yield', 'yield_per_harvest_source_plant']);
+const KNOWN_METRICS = new Set([
+  'yield',
+  'yield_per_harvest_source_plant',
+  'water_applied',
+  'water_productivity',
+]);
 const KNOWN_MOVEMENTS = new Set(['entry', 'removal', 'move', 're_entry', 'harvest', 'transplant']);
 const KNOWN_AUDIT = new Set(['start', 'complete', 'finalize', 'edit_metadata', 'reopen']);
 
@@ -553,7 +558,12 @@ export class GrowspaceRunView extends LitElement {
 
   private _renderActions(run: FoundRun): TemplateResult | typeof nothing {
     const actions: TemplateResult[] = [];
-    if (run.status === 'active' && !run.movement_history.length && !run.harvest_outcomes.length) {
+    if (
+      run.status === 'active' &&
+      !run.movement_history.length &&
+      !run.water_applications.length &&
+      !run.harvest_outcomes.length
+    ) {
       actions.push(
         html`<button
           type="button"
@@ -668,7 +678,8 @@ export class GrowspaceRunView extends LitElement {
           row.state === 'incomplete' || (row.state === 'pending' && row.metrics.dry_weight == null)
       ).length,
     };
-    const coverage = run.snapshot?.coverage ?? [];
+    const coverage = run.snapshot?.coverage ?? run.coverage;
+    const water = run.snapshot?.water_applications ?? run.water_applications;
     return html`
       ${this._metricsState(run)}
       ${run.metrics.length
@@ -705,6 +716,21 @@ export class GrowspaceRunView extends LitElement {
             )}
           </ul>`
         : html`<p class="muted">${this._t('completion_coverage_none')}</p>`}
+      <h3>${this._t('water_sources_heading')}</h3>
+      ${water.length
+        ? html`<ul data-testid="run-water-sources">
+            ${water.map(
+              (application) =>
+                html`<li>
+                  ${this._date(application.at, run.timezone)} ·
+                  ${this._t(`water_source_${application.source}`)} ·
+                  ${application.liters === null
+                    ? this._t('metric_incomplete')
+                    : `${this._number(application.liters)} L`}
+                </li>`
+            )}
+          </ul>`
+        : html`<p class="muted">${this._t('water_sources_none')}</p>`}
       <h3>${this._t('outcomes_heading')}</h3>
       ${outcomes.length
         ? html`<ul data-testid="run-harvest-outcomes">

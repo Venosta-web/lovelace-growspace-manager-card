@@ -9,6 +9,7 @@
         "command": "start",
         "command_id": "cmd-run-1",
         "prior_revision": 3,
+        "reason": null,
         "resulting_revision": 4
       },
       {
@@ -18,10 +19,21 @@
         "command": "complete",
         "command_id": "cmd-complete",
         "prior_revision": 4,
+        "reason": null,
         "resulting_revision": 5
       }
     ],
     "completed_at": "2026-10-02T20:30:00+00:00",
+    "coverage": [
+      {
+        "coverage_percent": 100.0,
+        "metric": "water_applied"
+      },
+      {
+        "coverage_percent": 0.0,
+        "metric": "water_productivity"
+      }
+    ],
     "goals": "Beat #3",
     "harvest_outcomes": [
       {
@@ -81,6 +93,31 @@
           }
         ],
         "unit": "g",
+        "value": null
+      },
+      {
+        "complete": true,
+        "definition_version": 1,
+        "metric": "water_applied",
+        "missing": [],
+        "unit": "L",
+        "value": 0
+      },
+      {
+        "complete": false,
+        "definition_version": 1,
+        "metric": "water_productivity",
+        "missing": [
+          {
+            "kind": "yield",
+            "plant_id": null
+          },
+          {
+            "kind": "positive_water_applied",
+            "plant_id": null
+          }
+        ],
+        "unit": "g/L",
         "value": null
       }
     ],
@@ -146,7 +183,11 @@
     "snapshot": null,
     "started_at": "2026-07-24T20:30:00+00:00",
     "status": "completed",
-    "tags": ["organic"],
-    "timezone": "Europe/Berlin"
+    "superseded_snapshots": [],
+    "tags": [
+      "organic"
+    ],
+    "timezone": "Europe/Berlin",
+    "water_applications": []
   }
 }

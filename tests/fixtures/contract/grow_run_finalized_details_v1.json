@@ -9,6 +9,7 @@
         "command": "start",
         "command_id": "cmd-run-1",
         "prior_revision": 3,
+        "reason": null,
         "resulting_revision": 4
       },
       {
@@ -18,6 +19,7 @@
         "command": "complete",
         "command_id": "cmd-complete",
         "prior_revision": 4,
+        "reason": null,
         "resulting_revision": 5
       },
       {
@@ -27,19 +29,33 @@
         "command": "finalize",
         "command_id": "cmd-finalize",
         "prior_revision": 5,
+        "reason": null,
         "resulting_revision": 6
       },
       {
         "actor_user_id": "user-1",
         "at": "2026-10-23T21:30:00+00:00",
-        "changed_fields": ["label"],
+        "changed_fields": [
+          "label"
+        ],
         "command": "edit_metadata",
         "command_id": "cmd-describe",
         "prior_revision": 6,
+        "reason": null,
         "resulting_revision": 7
       }
     ],
     "completed_at": "2026-10-02T20:30:00+00:00",
+    "coverage": [
+      {
+        "coverage_percent": 100.0,
+        "metric": "water_applied"
+      },
+      {
+        "coverage_percent": 0.0,
+        "metric": "water_productivity"
+      }
+    ],
     "goals": "Beat #3",
     "harvest_outcomes": [
       {
@@ -95,6 +111,31 @@
           }
         ],
         "unit": "g",
+        "value": null
+      },
+      {
+        "complete": true,
+        "definition_version": 1,
+        "metric": "water_applied",
+        "missing": [],
+        "unit": "L",
+        "value": 0
+      },
+      {
+        "complete": false,
+        "definition_version": 1,
+        "metric": "water_productivity",
+        "missing": [
+          {
+            "kind": "yield",
+            "plant_id": null
+          },
+          {
+            "kind": "positive_water_applied",
+            "plant_id": null
+          }
+        ],
+        "unit": "g/L",
         "value": null
       }
     ],
@@ -184,7 +225,16 @@
         "participants": 3,
         "recorded": 1
       },
-      "coverage": [],
+      "coverage": [
+        {
+          "coverage_percent": 100.0,
+          "metric": "water_applied"
+        },
+        {
+          "coverage_percent": 0.0,
+          "metric": "water_productivity"
+        }
+      ],
       "duration_days": 70,
       "finalized_at": "2026-10-23T20:30:00+00:00",
       "format": 1,
@@ -216,6 +266,31 @@
             }
           ],
           "unit": "g",
+          "value": null
+        },
+        {
+          "complete": true,
+          "definition_version": 1,
+          "metric": "water_applied",
+          "missing": [],
+          "unit": "L",
+          "value": 0
+        },
+        {
+          "complete": false,
+          "definition_version": 1,
+          "metric": "water_productivity",
+          "missing": [
+            {
+              "kind": "yield",
+              "plant_id": null
+            },
+            {
+              "kind": "positive_water_applied",
+              "plant_id": null
+            }
+          ],
+          "unit": "g/L",
           "value": null
         }
       ],
@@ -277,11 +352,16 @@
         }
       ],
       "timezone": "Europe/Berlin",
-      "uncovered_gaps": []
+      "uncovered_gaps": [],
+      "water_applications": []
     },
     "started_at": "2026-07-24T20:30:00+00:00",
     "status": "finalized",
-    "tags": ["organic"],
-    "timezone": "Europe/Berlin"
+    "superseded_snapshots": [],
+    "tags": [
+      "organic"
+    ],
+    "timezone": "Europe/Berlin",
+    "water_applications": []
   }
 }

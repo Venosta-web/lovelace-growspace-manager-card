@@ -30,6 +30,8 @@ describe('getGrowRun (GSM#675)', () => {
     expect(parsed.run.metrics.map((row) => row.metric)).toEqual([
       'yield',
       'yield_per_harvest_source_plant',
+      'water_applied',
+      'water_productivity',
     ]);
   });
 
@@ -62,6 +64,20 @@ describe('compareGrowRuns (GSM#675)', () => {
       state: 'comparable',
       direction: 'increase',
       judgment: null,
+    });
+    expect(compared.comparison.metrics.find((row) => row.metric === 'water_applied')).toMatchObject(
+      {
+        goal: 'neutral',
+        direction: 'decrease',
+        judgment: null,
+      }
+    );
+    expect(
+      compared.comparison.metrics.find((row) => row.metric === 'water_productivity')
+    ).toMatchObject({
+      goal: 'higher',
+      direction: 'increase',
+      judgment: 'better',
     });
     const refused = CompareGrowRunsResultSchema.parse(comparisonRefusedFixture);
     expect(refused.outcome === 'refused' && refused.refusal.code).toBe(
