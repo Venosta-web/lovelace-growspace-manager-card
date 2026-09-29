@@ -10,6 +10,7 @@ import {
   transition,
   isTabDirty,
   isLowStock,
+  wateringTimeError,
   type SM,
   type TabId,
   type WateringDraft,
@@ -18,6 +19,22 @@ import {
 } from './feed-and-water-dialog-sm';
 import type { NutrientStock } from '../slices/nutrient';
 import type { DialogStateMachine } from './dialog-sm';
+
+describe('watering time bound', () => {
+  const now = new Date('2026-09-29T12:00:00Z').getTime();
+
+  it('allows now and exactly seven days back', () => {
+    expect(wateringTimeError('', now)).toBeUndefined();
+    expect(wateringTimeError('2026-09-29T12:00:00Z', now)).toBeUndefined();
+    expect(wateringTimeError('2026-09-22T12:00:00Z', now)).toBeUndefined();
+  });
+
+  it('rejects older and future times', () => {
+    expect(wateringTimeError('2026-09-22T11:59:59Z', now)).toContain('7 days');
+    expect(wateringTimeError('2026-09-29T12:00:01Z', now)).toContain('future');
+    expect(wateringTimeError('bad', now)).toContain('valid');
+  });
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

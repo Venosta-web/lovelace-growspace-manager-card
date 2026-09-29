@@ -670,7 +670,7 @@ describe('GrowspaceDialogHostContainer', () => {
     );
 
     await vi.waitFor(() => {
-      expect(sliceWaterPlant).toHaveBeenCalledWith('p1', 500, {}, 'preset1');
+      expect(sliceWaterPlant).toHaveBeenCalledWith('p1', 500, {}, 'preset1', {});
     });
   });
 
@@ -689,7 +689,7 @@ describe('GrowspaceDialogHostContainer', () => {
     );
 
     await vi.waitFor(() => {
-      expect(sliceWaterGrowspace).toHaveBeenCalledWith('gs1', 500, {}, 'preset1');
+      expect(sliceWaterGrowspace).toHaveBeenCalledWith('gs1', 500, {}, 'preset1', {});
     });
   });
 
@@ -2493,7 +2493,7 @@ describe('GrowspaceDialogHostContainer', () => {
         })
       );
       await vi.waitFor(() => {
-        expect(sliceWaterPlant).toHaveBeenCalledWith('p1', 500, {}, 'preset-xyz');
+        expect(sliceWaterPlant).toHaveBeenCalledWith('p1', 500, {}, 'preset-xyz', {});
       });
     });
 
@@ -3236,7 +3236,7 @@ describe('GrowspaceDialogHostContainer', () => {
         });
         // @ts-ignore
         await element._handleWateringSubmit(event, { mode: 'growspace', growspace_id: 'g1' });
-        expect(sliceWaterGrowspace).toHaveBeenCalledWith('g1', 500, {}, 'p1');
+        expect(sliceWaterGrowspace).toHaveBeenCalledWith('g1', 500, {}, 'p1', {});
       });
 
       it('should fallback to empty plant list in _handleWateringSubmit when no plant IDs are specified', async () => {

@@ -5,7 +5,10 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
-import { waterPlant as mockWaterPlant } from '../../../slices/plant';
+import {
+  waterPlant as mockWaterPlant,
+  waterGrowspace as mockWaterGrowspace,
+} from '../../../slices/plant';
 import {
   removeEnvironment as mockRemoveEnvironment,
   updateGrowspace as mockUpdateGrowspace,
@@ -222,6 +225,22 @@ describe('GrowspaceDialogHost – _handleWateringSubmit', () => {
     await (el as any)._handleWateringSubmit(event, payload);
 
     expect(mockWaterPlant).toHaveBeenCalledTimes(2);
+  });
+
+  it('forwards the time and tank source for plant and growspace watering', async () => {
+    const event = makeSubmitEvent({
+      wateredAt: '2026-09-28T12:00:00.000Z',
+      fromMonitoredTank: true,
+    });
+    const options = {
+      watered_at: '2026-09-28T12:00:00.000Z',
+      from_monitored_tank: true,
+    };
+    await (el as any)._handleWateringSubmit(event, { mode: 'plant', plantIds: ['p1'] });
+    expect(mockWaterPlant).toHaveBeenCalledWith('p1', 2, { CalMag: 1.5 }, '', options);
+
+    await (el as any)._handleWateringSubmit(event, { mode: 'growspace', growspace_id: 'gs-1' });
+    expect(mockWaterGrowspace).toHaveBeenCalledWith('gs-1', 2, { CalMag: 1.5 }, '', options);
   });
 
   it('shows success toast after growspace-mode watering', async () => {

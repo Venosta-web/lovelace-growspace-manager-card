@@ -18,6 +18,7 @@ import {
   SwapPlantsPayloadSchema,
   TakeClonePayloadSchema,
   WaterPlantPayloadSchema,
+  WaterGrowspacePayloadSchema,
   PrintLabelPayloadSchema,
   UpdateHarvestMetricsPayloadSchema,
   ScorePlantPayloadSchema,
@@ -288,6 +289,18 @@ describe('WaterPlantPayloadSchema', () => {
       preset_id: 'feed-week-4',
     });
     expect(result.success).toBe(true);
+  });
+
+  it('declares both optional hand-watering wire fields for both targets', () => {
+    const fields = {
+      amount: 300,
+      watered_at: '2026-09-28T12:00:00.000Z',
+      from_monitored_tank: true,
+    };
+    expect(WaterPlantPayloadSchema.parse({ plant_id: 'abc', ...fields })).toMatchObject(fields);
+    expect(WaterGrowspacePayloadSchema.parse({ growspace_id: 'gs1', ...fields })).toMatchObject(
+      fields
+    );
   });
 
   it('rejects amount of zero (must be positive)', () => {

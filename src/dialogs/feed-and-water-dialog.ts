@@ -9,6 +9,7 @@ import {
 import {
   createInitialSM,
   transition,
+  wateringTimeError,
   type SM,
   type SMEvent,
   type TabId,
@@ -39,6 +40,7 @@ export class FeedAndWaterDialog extends LitElement {
   @property({ type: String }) targetText = '';
   @property({ type: Boolean }) hasPhiWarning = false;
   @property({ type: String }) phiWarningText = '';
+  @property({ type: Boolean }) tankMode = false;
   @property({ attribute: false }) inventory: NutrientInventoryResponse | null = null;
   @property({ attribute: false }) presets: NutrientPresetsResponse | null = null;
 
@@ -140,6 +142,36 @@ export class FeedAndWaterDialog extends LitElement {
       .btn-record:disabled {
         opacity: 0.4;
         cursor: not-allowed;
+      }
+
+      .watering-time {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 16px;
+      }
+
+      .watering-time input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+        border-radius: var(--border-radius-sm, 8px);
+        background: var(--card-background-color, #1c1c1c);
+        color: var(--primary-text-color, #fff);
+        font: inherit;
+      }
+
+      .watering-time [role='alert'] {
+        color: var(--error-color, #f44336);
+        font-size: 0.8rem;
+      }
+
+      .watering-tank-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
       }
 
       /* Confirm-discard overlay */
@@ -349,10 +381,16 @@ export class FeedAndWaterDialog extends LitElement {
 
   private _handleRecordWatering = () => {
     const { draft } = this._sm.tabs.watering;
+    if (wateringTimeError(draft.wateredAt)) return;
     this._applyEvent({ type: 'WateringSubmitRequested' });
     this.dispatchEvent(
       new CustomEvent('submit-watering', {
-        detail: { volume: draft.volume, presetId: draft.presetId },
+        detail: {
+          volume: draft.volume,
+          presetId: draft.presetId,
+          wateredAt: draft.wateredAt ? new Date(draft.wateredAt).toISOString() : undefined,
+          fromMonitoredTank: this.tankMode && draft.fromMonitoredTank,
+        },
         bubbles: true,
         composed: true,
       })
@@ -361,7 +399,16 @@ export class FeedAndWaterDialog extends LitElement {
 
   private _isFooterBlocked(): boolean {
     const { activeTab, tabs } = this._sm;
-    return activeTab !== 'watering' || tabs.watering.sub.kind === 'submitting';
+    return (
+      activeTab !== 'watering' ||
+      tabs.watering.sub.kind === 'submitting' ||
+      !!wateringTimeError(tabs.watering.draft.wateredAt)
+    );
+  }
+
+  private _localDateTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    return new Date(timestamp - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
   }
 
   render() {
@@ -480,6 +527,8 @@ export class FeedAndWaterDialog extends LitElement {
 
   private _renderWateringTab() {
     const { draft } = this._sm.tabs.watering;
+    const now = Date.now();
+    const timeError = wateringTimeError(draft.wateredAt, now);
     return html`
       <div data-tab="watering">
         ${this.hasPhiWarning
@@ -513,6 +562,38 @@ export class FeedAndWaterDialog extends LitElement {
             this._applyEvent({ type: 'WateringPresetChanged', presetId: e.detail })}
         ></md3-select>
 
+        <div class="watering-time">
+          <label for="watered-at">When (optional, last 7 days)</label>
+          <input
+            id="watered-at"
+            type="datetime-local"
+            .value=${draft.wateredAt}
+            min=${this._localDateTime(now - 7 * 24 * 60 * 60 * 1000)}
+            max=${this._localDateTime(now)}
+            aria-invalid=${timeError ? 'true' : 'false'}
+            @input=${(e: Event) =>
+              this._applyEvent({
+                type: 'WateringTimeChanged',
+                wateredAt: (e.target as HTMLInputElement).value,
+              })}
+          />
+          ${timeError ? html`<div role="alert">${timeError}</div>` : nothing}
+        </div>
+        ${this.tankMode
+          ? html`<label class="watering-tank-toggle">
+              <input
+                type="checkbox"
+                data-testid="from-monitored-tank"
+                .checked=${draft.fromMonitoredTank}
+                @change=${(e: Event) =>
+                  this._applyEvent({
+                    type: 'WateringTankSourceChanged',
+                    fromMonitoredTank: (e.target as HTMLInputElement).checked,
+                  })}
+              />
+              From the monitored tank
+            </label>`
+          : nothing}
         ${this.targetText
           ? html`
               <div class="targeting-summary">
