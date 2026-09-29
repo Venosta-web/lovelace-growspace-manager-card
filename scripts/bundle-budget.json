@@ -5,7 +5,7 @@
       "id": "entry",
       "label": "Entry",
       "match": "growspace-manager-card.js",
-      "maxGzipBytes": 207000
+      "maxGzipBytes": 207500
     },
     {
       "id": "three",
@@ -55,6 +55,11 @@
       "date": "2026-09-28",
       "rules": ["entry"],
       "change": "GSM#673 raises the entry from 206,000 to 207,000 bytes gzip for finalizing a Grow Run. Measured at dev f758d2c2: entry 205,672 bytes gzip; with finalization 206,943, 1,271 bytes over dev and 943 over the old limit. About 480 bytes are the finalization dialog's localized labels, which live in the one eagerly bundled locale file; the rest is the Run Finalization Snapshot and Run Audit Entry schemas that get_grow_run's details now parse, the list_grow_runs read and its schema, and the header chip that offers finalizing a Completed Run, which has to be in the header because a Completed Run is otherwise unreachable once the Active Run Sensor reads none or names the next Run. The dialog, its preview and its command are a lazy chunk of their own (runFinalizationDialog, 3,500 bytes gzip)."
+    },
+    {
+      "date": "2026-09-29",
+      "rules": ["entry"],
+      "change": "#1034 raises the entry from 207,000 to 207,500 bytes gzip for optional Hand Watering time and monitored-tank source fields in the shared plant and growspace mutators. The dialog UI and outgoing Zod request schemas stay outside the entry. Measured on this branch after splitting those schemas: 206,941 bytes gzip locally; the previous CI build exceeded the old limit by 41 bytes. The 500-byte step covers this addition and build-environment variation without changing lazy-chunk limits."
     }
   ]
 }
