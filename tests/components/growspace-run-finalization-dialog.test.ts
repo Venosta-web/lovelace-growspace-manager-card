@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { hassCall } from '../../src/services/hass-call';
 import { WSError } from '../../src/services/errors';
-import type { RunSnapshot } from '../../src/slices/grow-run/schema';
+import type { RunSnapshot } from '../../src/slices/grow-run/details-schema';
 import type { RunView } from '../../src/slices/grow-run';
 import type { GrowspaceRunChip } from '../../src/features/grow-run/components/growspace-run-chip';
 import type { GrowspaceRunFinalizationDialog } from '../../src/features/grow-run/components/growspace-run-finalization-dialog';

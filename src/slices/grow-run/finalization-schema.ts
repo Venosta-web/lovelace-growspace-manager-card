@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { RunRefusalSchema, RunSnapshotSchema, RunSummarySchema } from './schema';
+import { RunSnapshotSchema } from './details-schema';
+import { RunRefusalSchema, RunSummarySchema } from './schema';
 
 /** The one warning a finalization acknowledges: the snapshot lacks a fact. */
 export const FINALIZATION_WARNINGS = ['incomplete_snapshot'] as const;

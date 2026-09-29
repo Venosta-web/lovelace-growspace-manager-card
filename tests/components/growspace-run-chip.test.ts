@@ -6,6 +6,8 @@ import { WSError } from '../../src/services/errors';
 import type { RunView } from '../../src/slices/grow-run';
 import type { GrowspaceRunChip } from '../../src/features/grow-run/components/growspace-run-chip';
 import type { GrowspaceRunStartDialog } from '../../src/features/grow-run/components/growspace-run-start-dialog';
+import type { GrowspaceRunView } from '../../src/features/grow-run/components/growspace-run-view';
+import activeDetails from '../fixtures/contract/grow_run_details_v1.json';
 import type { GrowspaceHeaderUI } from '../../src/features/ui/components/growspace-header-ui';
 import type { GrowspaceDevice } from '../../src/types';
 import '../../src/features/grow-run/components/growspace-run-chip';
@@ -108,38 +110,12 @@ describe('growspace-run-chip', () => {
     expect(chip.shadowRoot!.children.length).toBe(0);
   });
 
-  it('shows the Active Run compactly and opens its details', async () => {
-    hassCallMock.mockResolvedValue({
-      outcome: 'found',
-      run: {
-        ...SUMMARY,
-        participations: [
-          { plant_id: 'plant-1', opened_at: '2026-09-26T08:00:00+00:00', closed_at: null },
-        ],
-        movement_history: [
-          {
-            fact_id: 'fact-1',
-            plant_id: 'plant-1',
-            at: '2026-09-27T08:00:00+00:00',
-            kind: 'entry',
-            source_growspace_id: null,
-            target_growspace_id: 'flower',
-          },
-        ],
-        harvest_outcomes: [
-          {
-            plant_id: 'plant-1',
-            strain: 'OG Kush',
-            phenotype: 'A',
-            source_growspace_id: 'flower',
-            state: 'pending',
-            reason: null,
-            metrics: { dry_weight: null },
-            quality_score: null,
-          },
-        ],
-      },
-    });
+  it('shows the Active Run compactly and opens the Grow Run View on it', async () => {
+    hassCallMock.mockImplementation(async (type: string) =>
+      type === 'growspace_manager/list_grow_runs'
+        ? { outcome: 'listed', run_revision: 4, runs: [] }
+        : activeDetails
+    );
     const chip = await renderChip(ACTIVE);
     const button = $(chip, '.chip')!;
     expect(button.dataset.state).toBe('active');
@@ -149,18 +125,76 @@ describe('growspace-run-chip', () => {
     );
 
     button.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await chip.updateComplete;
+    await vi.waitFor(() => {
+      if (!$(chip, 'growspace-run-view')) throw new Error('view not loaded');
+    });
+    const runView = $<GrowspaceRunView>(chip, 'growspace-run-view')!;
+    expect(runView.runId).toBe('run-4');
+    expect(runView.tab).toBe('overview');
     expect(hassCallMock).toHaveBeenCalledWith(
       'growspace_manager/get_grow_run',
       { growspace_id: 'flower', run_id: 'run-4' },
       expect.anything()
     );
-    expect($(chip, '[data-testid="run-participations"]')?.textContent).toContain('plant-1');
-    expect($(chip, '[data-testid="run-movements"]')?.textContent).toContain('entered');
-    expect($(chip, '[data-testid="run-harvest-outcomes"]')?.textContent).toContain(
-      'Dry weight unknown'
+
+    // Closing the View leaves the chip as it was.
+    runView.dispatchEvent(new CustomEvent('closed'));
+    await chip.updateComplete;
+    expect($(chip, 'growspace-run-view')).toBeNull();
+  });
+
+  it('offers the Run history without an Active Run, opening the newest Run', async () => {
+    hassCallMock.mockImplementation(async (type: string) =>
+      type === 'growspace_manager/list_grow_runs'
+        ? {
+            outcome: 'listed',
+            run_revision: 5,
+            runs: [
+              { ...SUMMARY, run_id: 'run-2', sequence_number: 2, status: 'finalized' },
+              { ...SUMMARY, status: 'finalized' },
+            ],
+          }
+        : activeDetails
     );
+    const chip = await renderChip(view('none', { runRevision: 5 }));
+    await vi.waitFor(() => {
+      if (!$(chip, '[data-action="run-history"]')) throw new Error('no history chip yet');
+    });
+    const history = $(chip, '[data-action="run-history"]')!;
+    expect(history.getAttribute('aria-label')).toBe("Open this growspace's grow run history");
+
+    history.click();
+    await vi.waitFor(() => {
+      if (!$(chip, 'growspace-run-view')) throw new Error('view not loaded');
+    });
+    expect($<GrowspaceRunView>(chip, 'growspace-run-view')!.runId).toBe('run-2');
+  });
+
+  it('offers no Run history while a Run is Active: its chip opens the View', async () => {
+    hassCallMock.mockResolvedValue({
+      outcome: 'listed',
+      run_revision: 4,
+      runs: [{ ...SUMMARY, run_id: 'run-4', status: 'active' }],
+    });
+    const chip = await renderChip(ACTIVE);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await chip.updateComplete;
+    expect($(chip, '[data-action="run-history"]')).toBeNull();
+  });
+
+  it('hands completing and finalizing back to its own dialogs', async () => {
+    hassCallMock.mockResolvedValue({ outcome: 'listed', run_revision: 4, runs: [] });
+    const chip = await renderChip(ACTIVE);
+    const open = vi.spyOn(chip as any, '_openFinalization');
+    (chip as any)._view = 'ready';
+    (chip as any)._viewRun = 'run-3';
+    await chip.updateComplete;
+    $(chip, 'growspace-run-view')!.dispatchEvent(
+      new CustomEvent('run-view-action', { detail: { action: 'finalize', runId: 'run-3' } })
+    );
+    await chip.updateComplete;
+    expect(open).toHaveBeenCalledWith('run-3');
+    expect($(chip, 'growspace-run-view')).toBeNull();
   });
 
   it('says an unreadable history is unavailable, never that there is no run', async () => {
