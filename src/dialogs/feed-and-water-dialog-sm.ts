@@ -65,9 +65,27 @@ export type PresetsSub =
 export interface WateringDraft {
   volume: number;
   presetId: string;
+  wateredAt: string;
+  fromMonitoredTank: boolean;
 }
 
-const DEFAULT_WATERING_DRAFT: WateringDraft = { volume: 1.0, presetId: '' };
+const DEFAULT_WATERING_DRAFT: WateringDraft = {
+  volume: 1.0,
+  presetId: '',
+  wateredAt: '',
+  fromMonitoredTank: false,
+};
+
+/** A blank value means "now"; explicit times must fit the backend's rolling window. */
+export function wateringTimeError(value: string, now = Date.now()): string | undefined {
+  if (!value) return undefined;
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return 'Enter a valid date and time';
+  if (timestamp > now) return 'Watering time cannot be in the future';
+  if (timestamp < now - 7 * 24 * 60 * 60 * 1000)
+    return 'Watering time cannot be more than 7 days ago';
+  return undefined;
+}
 
 interface WateringTabState {
   sub: WateringSub;
@@ -112,6 +130,8 @@ export type SMEvent =
   | { type: 'AdHocToggled' }
   | { type: 'WateringVolumeChanged'; volume: number }
   | { type: 'WateringPresetChanged'; presetId: string }
+  | { type: 'WateringTimeChanged'; wateredAt: string }
+  | { type: 'WateringTankSourceChanged'; fromMonitoredTank: boolean }
   | { type: 'WateringSubmitRequested' }
   | { type: 'WateringSubmitCompleted' }
   // Inventory
@@ -262,6 +282,24 @@ export function transition(sm: SM, event: SMEvent): SM {
           watering: {
             ...sm.tabs.watering,
             draft: { ...sm.tabs.watering.draft, presetId: event.presetId },
+          },
+        },
+      };
+
+    case 'WateringTimeChanged':
+    case 'WateringTankSourceChanged':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          watering: {
+            ...sm.tabs.watering,
+            draft: {
+              ...sm.tabs.watering.draft,
+              ...(event.type === 'WateringTimeChanged'
+                ? { wateredAt: event.wateredAt }
+                : { fromMonitoredTank: event.fromMonitoredTank }),
+            },
           },
         },
       };

@@ -1502,6 +1502,9 @@ export class GrowspaceDialogHost extends LitElement {
         .open=${true}
         .presetOptions=${presetOptions}
         .targetText=${targetText}
+        .tankMode=${!!selectedDeviceData?.environmentAttributes.irrigationTanks?.some(
+          (tank) => tank.volumeLiters != null
+        )}
         .inventory=${nutrientInventory}
         .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('WATERING')}
@@ -1517,7 +1520,8 @@ export class GrowspaceDialogHost extends LitElement {
     fallbackGrowspaceId?: string
   ): Promise<void> {
     try {
-      const { volume, nutrients, presetId } = e.detail;
+      const { volume, nutrients, presetId, wateredAt, fromMonitoredTank } = e.detail;
+      const wateringOptions = { wateredAt, fromMonitoredTank };
       const nutrientRecord: Record<string, number> = {};
       if (Array.isArray(nutrients)) {
         for (const n of nutrients as Array<{ name: string; concentration: number }>) {
@@ -1529,13 +1533,13 @@ export class GrowspaceDialogHost extends LitElement {
       if (payload?.mode === 'plant') {
         const plantIds = payload?.plantIds || (payload?.plant_id ? [payload.plant_id] : []);
         const promises = plantIds.map((pid: string) =>
-          sliceWaterPlant(pid, volume, nutrientRecord, presetId)
+          sliceWaterPlant(pid, volume, nutrientRecord, presetId, wateringOptions)
         );
         await Promise.all(promises);
       } else {
         const growspaceId = payload?.growspace_id || fallbackGrowspaceId;
         if (growspaceId) {
-          await sliceWaterGrowspace(growspaceId, volume, nutrientRecord, presetId);
+          await sliceWaterGrowspace(growspaceId, volume, nutrientRecord, presetId, wateringOptions);
         }
       }
       this.store?.ui.closeDialog();

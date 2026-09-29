@@ -189,6 +189,11 @@ function _swapPositions(id1: string, id2: string): PlantEntity[] {
 // Mutators (public write)
 // ---------------------------------------------------------------------------
 
+export interface WateringOptions {
+  wateredAt?: string;
+  fromMonitoredTank?: boolean;
+}
+
 /**
  * Water a plant.
  *
@@ -200,7 +205,8 @@ export async function waterPlant(
   plantId: string,
   amountMl: number,
   nutrients?: Record<string, number>,
-  presetId?: string
+  presetId?: string,
+  options: WateringOptions = {}
 ): Promise<void> {
   const payload: Record<string, unknown> = {
     plant_id: plantId,
@@ -212,6 +218,8 @@ export async function waterPlant(
   if (presetId) {
     payload.preset_id = presetId;
   }
+  if (options.wateredAt) payload.watered_at = options.wateredAt;
+  if (options.fromMonitoredTank) payload.from_monitored_tank = true;
 
   await mutate(
     {
@@ -239,7 +247,8 @@ export async function waterGrowspace(
   growspaceId: string,
   amountMl: number,
   nutrients?: Record<string, number>,
-  presetId?: string
+  presetId?: string,
+  options: WateringOptions = {}
 ): Promise<void> {
   const hasNutrients = Boolean(nutrients && Object.keys(nutrients).length > 0);
   const payload: Record<string, unknown> = {
@@ -252,6 +261,8 @@ export async function waterGrowspace(
   if (presetId) {
     payload.preset_id = presetId;
   }
+  if (options.wateredAt) payload.watered_at = options.wateredAt;
+  if (options.fromMonitoredTank) payload.from_monitored_tank = true;
 
   await mutate(
     {
