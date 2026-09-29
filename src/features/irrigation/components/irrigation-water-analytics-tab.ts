@@ -15,8 +15,8 @@
  * `tankBuckets24h` into a clock-aligned grid, and the recent-refills list reads
  * `tankRefills`; timestamps are `toLocaleString`-formatted here.
  *
- * Markup is transcribed verbatim from the former inline `_renderWaterAnalyticsTab`
- * in `irrigation-dialog.container.ts` so the rendered output stays byte-identical.
+ * Markup follows the former inline `_renderWaterAnalyticsTab` in
+ * `irrigation-dialog.container.ts`, with cap progress in the dispensed tile.
  */
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
@@ -110,7 +110,7 @@ export class IrrigationWaterAnalyticsTab extends LitElement {
         >
           ${this._kpiCard('Cycles today', String(vm.cyclesToday), '', token['--series-1'])}
           ${this._kpiCard(
-            'Dispensed today',
+            vm.dispensedTodayLabel,
             volToday > 0 ? volToday.toFixed(2) : '—',
             volToday > 0 ? 'L' : '',
             token['--series-2']

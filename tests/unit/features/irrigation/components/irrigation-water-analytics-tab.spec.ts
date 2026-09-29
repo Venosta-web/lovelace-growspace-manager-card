@@ -22,6 +22,7 @@ function makeVm(overrides: Partial<WaterAnalyticsTabViewModel> = {}): WaterAnaly
     hasPump: false,
     cyclesToday: 0,
     volumeDispensedToday: 0,
+    dispensedTodayLabel: 'Dispensed today',
     lastCycleTimestamp: null,
     nextScheduledCycle: null,
     waterUsage: undefined,

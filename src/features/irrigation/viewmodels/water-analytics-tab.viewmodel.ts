@@ -20,8 +20,8 @@
  * component so this factory is deterministic and DOM-free; the VM hands the
  * component the raw event arrays it needs for those.
  *
- * Markup-feeding values are copied verbatim from the dialog's former inline
- * `_renderWaterAnalyticsTab` so the rendered output stays byte-identical.
+ * Most markup-feeding values follow the dialog's former inline
+ * `_renderWaterAnalyticsTab`; the dispensed tile also derives cap progress.
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
@@ -97,6 +97,8 @@ export interface WaterAnalyticsTabViewModel {
   cyclesToday: number;
   /** Raw L dispensed today; component formats. */
   volumeDispensedToday: number;
+  /** Cap progress for the dispensed tile, or its plain label without caps. */
+  dispensedTodayLabel: string;
   /** Raw ms timestamp or null; component locale-formats. */
   lastCycleTimestamp: number | string | null;
   nextScheduledCycle: number | string | null;
@@ -156,6 +158,22 @@ function deriveScheduleRows(
     time: t.time ?? t.start_time ?? '',
     duration: t.duration ?? t.duration_seconds ?? fallbackDuration,
   }));
+}
+
+function dispensedTodayLabel(
+  volume: number,
+  cycles: number,
+  volumeCap: number | null | undefined,
+  cycleCap: number | null | undefined
+): string {
+  const progress: string[] = [];
+  if (volumeCap != null) {
+    progress.push(`${Number(volume.toFixed(2))} / ${volumeCap} L`);
+  }
+  if (cycleCap != null) {
+    progress.push(`${cycles} / ${cycleCap} cycles`);
+  }
+  return progress.length ? `Toward daily cap ${progress.join(' · ')}` : 'Dispensed today';
 }
 
 /**
@@ -243,6 +261,12 @@ export function createWaterAnalyticsTabViewModel(
       hasTank,
       cyclesToday: device?.cyclesToday ?? 0,
       volumeDispensedToday: device?.volumeDispensedToday ?? 0,
+      dispensedTodayLabel: dispensedTodayLabel(
+        device?.volumeDispensedToday ?? 0,
+        device?.cyclesToday ?? 0,
+        device?.irrigationConfig?.dailyVolumeCapLiters,
+        device?.irrigationConfig?.maxCyclesPerDay
+      ),
       lastCycleTimestamp: device?.lastCycleTimestamp ?? null,
       nextScheduledCycle: device?.nextScheduledCycle ?? null,
 
