@@ -155,7 +155,7 @@ export class FeedAndWaterDialog extends LitElement {
         box-sizing: border-box;
         width: 100%;
         padding: 10px 12px;
-        border: 1px solid var(--divider-color, #777);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
         border-radius: var(--border-radius-sm, 8px);
         background: var(--card-background-color, #1c1c1c);
         color: var(--primary-text-color, #fff);
@@ -163,7 +163,7 @@ export class FeedAndWaterDialog extends LitElement {
       }
 
       .watering-time [role='alert'] {
-        color: var(--error-color, #db4437);
+        color: var(--error-color, #f44336);
         font-size: 0.8rem;
       }
 
