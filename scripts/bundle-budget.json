@@ -5,7 +5,7 @@
       "id": "entry",
       "label": "Entry",
       "match": "growspace-manager-card.js",
-      "maxGzipBytes": 207500
+      "maxGzipBytes": 208000
     },
     {
       "id": "three",
@@ -59,7 +59,7 @@
     {
       "date": "2026-09-29",
       "rules": ["entry"],
-      "change": "#1034 raises the entry from 207,000 to 207,500 bytes gzip for optional Hand Watering time and monitored-tank source fields in the shared plant and growspace mutators and their Zod request schemas. The dialog UI stays in a lazy chunk. The CI build measured 207,041 bytes gzip, 41 bytes over the old limit; local builds measured about 207,000 bytes. The 500-byte step covers this addition and build-environment variation without changing lazy-chunk limits."
+      "change": "GSM#917 raises the entry from 207,500 to 208,000 bytes gzip for correcting a Grow Run. Measured before #1034 merged, at dev 189244e2 after GSM#675's Grow Run View: entry 207,004 bytes gzip; with reopening and discarding 207,628, 624 bytes over that dev build and 128 over the current limit. About 410 bytes are the localized labels of the discard dialog, the reopen form and the View's two new actions, which live in the one eagerly bundled locale file; the rest is the run chip routing the View's discard and reopen requests, the discard dialog's lazy-chunk wiring, and the refusal reasons the shared Run refusal schema now parses. The buttons are the Grow Run View's (already lazy), the discard dialog and the two commands are lazy chunks of their own (runDiscardDialog and the correction slice), and reopening lives in the already-lazy finalization dialog."
     }
   ]
 }

@@ -97,6 +97,16 @@ jobs:
           GSM_RELEASE_GROW_RUN_COMPARISON_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_comparison_v1.json
           GSM_PRERELEASE_GROW_RUN_COMPARISON_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_comparison_refused_v1.json
           GSM_RELEASE_GROW_RUN_COMPARISON_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_comparison_refused_v1.json
+          GSM_PRERELEASE_GROW_RUN_REOPENED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_reopened_v1.json
+          GSM_RELEASE_GROW_RUN_REOPENED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_reopened_v1.json
+          GSM_PRERELEASE_GROW_RUN_REOPEN_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_reopen_refused_v1.json
+          GSM_RELEASE_GROW_RUN_REOPEN_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_reopen_refused_v1.json
+          GSM_PRERELEASE_GROW_RUN_REFINALIZED_DETAILS_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_refinalized_details_v1.json
+          GSM_RELEASE_GROW_RUN_REFINALIZED_DETAILS_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_refinalized_details_v1.json
+          GSM_PRERELEASE_GROW_RUN_DISCARDED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_discarded_v1.json
+          GSM_RELEASE_GROW_RUN_DISCARDED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_discarded_v1.json
+          GSM_PRERELEASE_GROW_RUN_DISCARD_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_discard_refused_v1.json
+          GSM_RELEASE_GROW_RUN_DISCARD_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_discard_refused_v1.json
           TC_MAIN_MANIFEST_FIXTURE: ${{ runner.temp }}/tc-main-manifest.json
           TC_MAIN_CULTURE_MEDIA_FIXTURE: ${{ runner.temp }}/tc-main-culture-media.json
           TC_MAIN_CULTURE_LINES_FIXTURE: ${{ runner.temp }}/tc-main-culture-lines.json

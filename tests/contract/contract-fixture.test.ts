@@ -43,6 +43,10 @@ import {
   PreviewCompletionResultSchema,
 } from '../../src/slices/grow-run/completion-schema';
 import { CompareGrowRunsResultSchema } from '../../src/slices/grow-run/view-schema';
+import {
+  DiscardGrowRunResultSchema,
+  ReopenGrowRunResultSchema,
+} from '../../src/slices/grow-run/correction-schema';
 
 interface FixtureContract {
   name: string;
@@ -279,6 +283,42 @@ const CONTRACTS: FixtureContract[] = [
     schema: CompareGrowRunsResultSchema,
     leadingVariable: 'GSM_PRERELEASE_GROW_RUN_COMPARISON_REFUSED_FIXTURE',
     releaseVariable: 'GSM_RELEASE_GROW_RUN_COMPARISON_REFUSED_FIXTURE',
+    releaseRequired: false,
+  },
+  // Correcting a Run (GSM#917): reopening, a superseded snapshot, discarding.
+  {
+    name: 'Grow Run reopened',
+    schema: ReopenGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_REOPENED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_REOPENED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run reopen refused',
+    schema: ReopenGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_REOPEN_REFUSED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_REOPEN_REFUSED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Finalized-again Grow Run details',
+    schema: GetGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_REFINALIZED_DETAILS_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_REFINALIZED_DETAILS_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run discarded',
+    schema: DiscardGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_DISCARDED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_DISCARDED_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Grow Run discard refused',
+    schema: DiscardGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_DISCARD_REFUSED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_DISCARD_REFUSED_FIXTURE',
     releaseRequired: false,
   },
   // Growspace Manager TC is a separate repository that owns its own WebSocket

@@ -122,7 +122,10 @@ export const RunSnapshotSchema = z.object({
 });
 export type RunSnapshot = z.infer<typeof RunSnapshotSchema>;
 
-/** One Run Audit Entry: a lifecycle or metadata command, who, and when. */
+/**
+ * One Run Audit Entry: a lifecycle or metadata command, who, and when. `reason`
+ * (GSM#917) is why, for a command given one — every reopening is.
+ */
 const RunAuditEntrySchema = z.object({
   at: z.string(),
   command: z.string(),
@@ -131,6 +134,17 @@ const RunAuditEntrySchema = z.object({
   prior_revision: z.number().int().min(0),
   resulting_revision: z.number().int().min(1),
   changed_fields: z.array(z.string()),
+  reason: z.string().nullable().optional(),
+});
+
+/**
+ * A snapshot Run Reopening set aside (GSM#917), kept whole beside the Run
+ * Revision that froze it and the one that reopened it.
+ */
+const SupersededSnapshotSchema = z.object({
+  finalized_revision: z.number().int().min(1),
+  superseded_revision: z.number().int().min(1),
+  snapshot: RunSnapshotSchema,
 });
 
 export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
@@ -152,6 +166,8 @@ export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
       // marks Live, Pending or frozen. An older backend sends neither.
       participant_identities: z.array(ParticipantIdentitySchema).optional().default([]),
       metrics: z.array(RunMetricSchema).optional().default([]),
+      // GSM#917: every snapshot a reopening superseded, oldest first.
+      superseded_snapshots: z.array(SupersededSnapshotSchema).optional().default([]),
     }),
   }),
 ]);

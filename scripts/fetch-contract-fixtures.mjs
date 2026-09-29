@@ -74,6 +74,13 @@ const GROW_RUN_FIXTURES = [
   // Compare tab reads.
   'grow_run_comparison_v1',
   'grow_run_comparison_refused_v1',
+  // Correcting a Run (GSM#917): reopening and its reason refusal, a Run
+  // finalized again beside its superseded snapshot, and a discard's outcomes.
+  'grow_run_reopened_v1',
+  'grow_run_reopen_refused_v1',
+  'grow_run_refinalized_details_v1',
+  'grow_run_discarded_v1',
+  'grow_run_discard_refused_v1',
 ];
 // Every payload the card's TC chunk parses, and the local file each is written
 // to. One entry per contract, so adding a TC command is one line here rather

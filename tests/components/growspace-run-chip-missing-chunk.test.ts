@@ -115,3 +115,26 @@ describe('growspace-run-chip with a missing finalization chunk', () => {
     expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).toBeNull();
   });
 });
+
+describe('growspace-run-chip with a missing discard chunk', () => {
+  it('names the missing file when the View asks to discard', async () => {
+    vi.mocked(hassCall).mockResolvedValueOnce({ outcome: 'listed', run_revision: 4, runs: [] });
+    const chip = await fixture<GrowspaceRunChip>(html`
+      <growspace-run-chip .view=${ACTIVE}></growspace-run-chip>
+    `);
+    // What the Grow Run View's Discard run button dispatches (GSM#917).
+    (chip as any)._onViewAction(
+      new CustomEvent('run-view-action', {
+        detail: { action: 'discard', runId: 'run-4', sequenceNumber: 4, runRevision: 4 },
+      })
+    );
+    await vi.waitFor(() =>
+      expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).not.toBeNull()
+    );
+    expect(chip.shadowRoot!.querySelector('growspace-run-discard-dialog')).toBeNull();
+
+    chip.shadowRoot!.querySelector('ha-dialog')!.dispatchEvent(new CustomEvent('closed'));
+    await chip.updateComplete;
+    expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).toBeNull();
+  });
+});

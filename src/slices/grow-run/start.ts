@@ -106,6 +106,8 @@ const KNOWN_REFUSALS = new Set([
   'grow_run.not_finalized',
   'grow_run.insufficient_history',
   'grow_run.same_run',
+  'grow_run.reason_required',
+  'grow_run.has_activity',
 ]);
 
 /**

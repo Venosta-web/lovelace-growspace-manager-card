@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { mdiSprout } from '@mdi/js';
 
 import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
+import { getHass } from '../../../services/hass-call';
 import { listGrowRuns } from '../../../slices/grow-run';
 import type {
   GetGrowRunResult,
@@ -35,14 +36,20 @@ const TABS: readonly RunViewTab[] = [
 
 const KNOWN_METRICS = new Set(['yield', 'yield_per_harvest_source_plant']);
 const KNOWN_MOVEMENTS = new Set(['entry', 'removal', 'move', 're_entry', 'harvest', 'transplant']);
-const KNOWN_AUDIT = new Set(['start', 'complete', 'finalize', 'edit_metadata']);
+const KNOWN_AUDIT = new Set(['start', 'complete', 'finalize', 'edit_metadata', 'reopen']);
 
 type FoundRun = Extract<GetGrowRunResult, { outcome: 'found' }>['run'];
 
-/** What the grower asks the chip to do about the Run on show. */
+/**
+ * What the grower asks the chip to do about the Run on show. A discard names
+ * the Run's number and the Run Revision it was read at (GSM#917); a reopen is
+ * the finalization dialog's, opened on the Finalized Run.
+ */
 export interface RunViewAction {
-  action: 'complete' | 'finalize';
+  action: 'complete' | 'finalize' | 'discard' | 'reopen';
   runId: string;
+  sequenceNumber?: number;
+  runRevision?: number;
 }
 
 /**
@@ -59,8 +66,11 @@ export interface RunViewAction {
  * rather than showing one it cannot stand behind. Yield is neutral: it says
  * which way it moved, never that the move was better or worse.
  *
- * Completing and finalizing stay the chip's dialogs: the View asks for them
- * with a `run-view-action` event and closes. It is a lazy chunk.
+ * Completing, finalizing and correcting stay the chip's dialogs: the View asks
+ * for them with a `run-view-action` event and closes. It offers discarding an
+ * Active Run only while the Run shows nothing recorded, and reopening a
+ * Finalized Run only to a Home Assistant administrator (GSM#917). It is a
+ * lazy chunk.
  */
 @customElement('growspace-run-view')
 export class GrowspaceRunView extends LitElement {
@@ -378,10 +388,14 @@ export class GrowspaceRunView extends LitElement {
     this.dispatchEvent(new CustomEvent('closed', { bubbles: true, composed: true }));
   }
 
-  private _act(action: RunViewAction['action']): void {
+  private _act(action: RunViewAction['action'], run?: FoundRun): void {
     this.dispatchEvent(
       new CustomEvent<RunViewAction>('run-view-action', {
-        detail: { action, runId: this.runId },
+        detail: {
+          action,
+          runId: this.runId,
+          ...(run ? { sequenceNumber: run.sequence_number, runRevision: run.run_revision } : {}),
+        },
         bubbles: true,
         composed: true,
       })
@@ -526,33 +540,60 @@ export class GrowspaceRunView extends LitElement {
                     ${this._date(entry.at, run.timezone)} ·
                     ${KNOWN_AUDIT.has(entry.command)
                       ? this._t(`audit_${entry.command}`)
-                      : entry.command.replaceAll('_', ' ')}
+                      : entry.command.replaceAll('_', ' ')}${entry.reason
+                      ? html` · <q>${entry.reason}</q>`
+                      : nothing}
                   </li>`
               )}
             </ul>`
         : nothing}
-      ${run.status === 'active' || run.status === 'completed'
-        ? html`<div class="actions">
-            ${run.status === 'active'
-              ? html`<button
-                  type="button"
-                  class="primary"
-                  data-action="complete-run"
-                  @click=${() => this._act('complete')}
-                >
-                  ${this._t('complete_run')}
-                </button>`
-              : html`<button
-                  type="button"
-                  class="primary"
-                  data-action="finalize-run"
-                  @click=${() => this._act('finalize')}
-                >
-                  ${this._t('finalize')}
-                </button>`}
-          </div>`
-        : nothing}
+      ${this._renderActions(run)}
     `;
+  }
+
+  private _renderActions(run: FoundRun): TemplateResult | typeof nothing {
+    const actions: TemplateResult[] = [];
+    if (run.status === 'active' && !run.movement_history.length && !run.harvest_outcomes.length) {
+      actions.push(
+        html`<button
+          type="button"
+          data-action="discard-run"
+          @click=${() => this._act('discard', run)}
+        >
+          ${this._t('discard_offer')}
+        </button>`
+      );
+    }
+    if (run.status === 'active') {
+      actions.push(
+        html`<button
+          type="button"
+          class="primary"
+          data-action="complete-run"
+          @click=${() => this._act('complete')}
+        >
+          ${this._t('complete_run')}
+        </button>`
+      );
+    } else if (run.status === 'completed') {
+      actions.push(
+        html`<button
+          type="button"
+          class="primary"
+          data-action="finalize-run"
+          @click=${() => this._act('finalize')}
+        >
+          ${this._t('finalize')}
+        </button>`
+      );
+    } else if (run.status === 'finalized' && getHass()?.user?.is_admin === true) {
+      actions.push(
+        html`<button type="button" data-action="reopen-run" @click=${() => this._act('reopen')}>
+          ${this._t('reopen_offer')}
+        </button>`
+      );
+    }
+    return actions.length ? html`<div class="actions">${actions}</div>` : nothing;
   }
 
   private _renderParticipants(run: FoundRun): TemplateResult {

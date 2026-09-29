@@ -52,13 +52,16 @@ export type RunSummary = z.infer<typeof RunSummarySchema>;
 /**
  * Every refusal is a result, carrying where the ledger really is. `code`
  * stays a string so a refusal a newer backend adds still renders in the
- * backend's own words.
+ * backend's own words. `reasons` (GSM#917) names each cause of a refusal that
+ * has several, such as the activity that keeps a Run from being discarded; a
+ * backend before it omits the key, and it is empty for every other refusal.
  */
 export const RunRefusalSchema = z.object({
   code: z.string().min(1),
   message: z.string(),
   current_revision: z.number().int().min(0).nullable(),
   active_run: RunSummarySchema.nullable(),
+  reasons: z.array(z.string()).optional(),
 });
 export type RunRefusal = z.infer<typeof RunRefusalSchema>;
 

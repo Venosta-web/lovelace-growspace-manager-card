@@ -34,6 +34,12 @@ import '../../shared/ui/lazy-chunk-error';
  * harvest dries, and by then another Run may be Active. The chip asks for the
  * growspace's Runs whenever the Run Revision moves and, while one is still
  * Completed, offers `Finalize Run #3` beside itself; the dialog is a lazy chunk.
+ *
+ * Correcting a Run (GSM#917) starts from the View as well. An Active Run
+ * that shows nothing recorded can be discarded, the undo of a start, through
+ * its own lazy confirmation; the backend still judges, and a refusal lists the
+ * activity it found. A Finalized Run can be reopened by an administrator,
+ * which the finalization dialog does once it opens on that Run.
  */
 @customElement('growspace-run-chip')
 export class GrowspaceRunChip extends LitElement {
@@ -64,6 +70,9 @@ export class GrowspaceRunChip extends LitElement {
    * is read again: the dialog stays to show the frozen snapshot.
    */
   @state() private _finalizing: string | null = null;
+  @state() private _discard: 'closed' | 'loading' | 'ready' | 'missing' = 'closed';
+  /** The Active Run the open discard dialog is about, as the View read it. */
+  @state() private _discarding: { runId: string; number: number; revision: number } | null = null;
   /** The growspace and Run Revision the Run list was last asked for. */
   private _listed = '';
 
@@ -151,10 +160,16 @@ export class GrowspaceRunChip extends LitElement {
     if (this._view === 'loading') this._view = loaded ? 'ready' : 'missing';
   }
 
-  /** The View asks; completing and finalizing stay this chip's own dialogs. */
+  /**
+   * The View asks; completing, finalizing, discarding and reopening stay this
+   * chip's own dialogs. Reopening is the finalization dialog's, opened on a
+   * Finalized Run.
+   */
   private _onViewAction(event: CustomEvent<RunViewAction>): void {
     this._view = 'closed';
-    if (event.detail.action === 'complete') void this._openCompletion();
+    const { action } = event.detail;
+    if (action === 'complete') void this._openCompletion();
+    else if (action === 'discard') void this._openDiscard(event.detail);
     else void this._openFinalization(event.detail.runId);
   }
 
@@ -215,6 +230,43 @@ export class GrowspaceRunChip extends LitElement {
       return html`<ha-dialog open .headerTitle=${this._t('complete')} @closed=${close}>
         <growspace-lazy-chunk-error
           .chunk=${LAZY_CHUNKS.runCompletionDialog}
+        ></growspace-lazy-chunk-error>
+      </ha-dialog>`;
+    }
+    return nothing;
+  }
+
+  private async _openDiscard(action: RunViewAction): Promise<void> {
+    this._discarding = {
+      runId: action.runId,
+      number: action.sequenceNumber ?? 0,
+      revision: action.runRevision ?? 0,
+    };
+    this._discard = 'loading';
+    const loaded = await loadLazyChunk(
+      LAZY_CHUNKS.runDiscardDialog,
+      () => import('./growspace-run-discard-dialog')
+    );
+    if (this._discard === 'loading') this._discard = loaded ? 'ready' : 'missing';
+  }
+
+  private _renderDiscard(growspaceId: string) {
+    const close = () => (this._discard = 'closed');
+    const run = this._discarding;
+    if (this._discard === 'ready' && run) {
+      return html`<growspace-run-discard-dialog
+        .growspaceId=${growspaceId}
+        .runId=${run.runId}
+        .sequenceNumber=${run.number}
+        .runRevision=${run.revision}
+        .language=${this.language}
+        @closed=${close}
+      ></growspace-run-discard-dialog>`;
+    }
+    if (this._discard === 'missing') {
+      return html`<ha-dialog open .headerTitle=${this._t('discard')} @closed=${close}>
+        <growspace-lazy-chunk-error
+          .chunk=${LAZY_CHUNKS.runDiscardDialog}
         ></growspace-lazy-chunk-error>
       </ha-dialog>`;
     }
@@ -335,7 +387,7 @@ export class GrowspaceRunChip extends LitElement {
       view
     )}${this._renderAwaiting()}${this._renderView(view.growspaceId)}${this._renderCompletion(
       view.growspaceId
-    )}${this._renderFinalization(view.growspaceId)}`;
+    )}${this._renderFinalization(view.growspaceId)}${this._renderDiscard(view.growspaceId)}`;
   }
 
   private _renderChip(view: RunView) {
