@@ -17,6 +17,8 @@ import {
   MovePlantPayloadSchema,
   SwapPlantsPayloadSchema,
   TakeClonePayloadSchema,
+  WaterPlantPayloadSchema,
+  WaterGrowspacePayloadSchema,
   PrintLabelPayloadSchema,
   UpdateHarvestMetricsPayloadSchema,
   ScorePlantPayloadSchema,
@@ -24,7 +26,6 @@ import {
   LogMoistureReadingPayloadSchema,
   SetVisualTagPayloadSchema,
 } from './schema';
-import { WaterPlantPayloadSchema, WaterGrowspacePayloadSchema } from './watering-schema';
 
 // ---------------------------------------------------------------------------
 // AddPlantPayloadSchema

@@ -59,7 +59,7 @@
     {
       "date": "2026-09-29",
       "rules": ["entry"],
-      "change": "#1034 raises the entry from 207,000 to 207,500 bytes gzip for optional Hand Watering time and monitored-tank source fields in the shared plant and growspace mutators. The dialog UI and outgoing Zod request schemas stay outside the entry. Measured on this branch after splitting those schemas: 206,941 bytes gzip locally; the previous CI build exceeded the old limit by 41 bytes. The 500-byte step covers this addition and build-environment variation without changing lazy-chunk limits."
+      "change": "#1034 raises the entry from 207,000 to 207,500 bytes gzip for optional Hand Watering time and monitored-tank source fields in the shared plant and growspace mutators and their Zod request schemas. The dialog UI stays in a lazy chunk. The CI build measured 207,041 bytes gzip, 41 bytes over the old limit; local builds measured about 207,000 bytes. The 500-byte step covers this addition and build-environment variation without changing lazy-chunk limits."
     }
   ]
 }
