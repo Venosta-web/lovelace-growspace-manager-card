@@ -7,6 +7,8 @@ import type { CompletionPreview } from '../../src/slices/grow-run/completion';
 import type { GrowspaceRunCompletionDialog } from '../../src/features/grow-run/components/growspace-run-completion-dialog';
 import type { GrowspaceRunChip } from '../../src/features/grow-run/components/growspace-run-chip';
 import type { RunView } from '../../src/slices/grow-run';
+import { GetGrowRunResultSchema } from '../../src/slices/grow-run/details-schema';
+import type { GrowspaceRunView } from '../../src/features/grow-run/components/growspace-run-view';
 import '../../src/features/grow-run/components/growspace-run-completion-dialog';
 import '../../src/features/grow-run/components/growspace-run-chip';
 
@@ -332,26 +334,43 @@ describe('growspace-run-chip completion', () => {
     };
   }
 
+  /** Open the Active Run's Grow Run View (GSM#675) from the chip. */
   async function openDetails(result: unknown): Promise<GrowspaceRunChip> {
-    // The chip reads the Run list as it renders (GSM#673), then the details.
+    // The chip reads the Run list as it renders (GSM#673), then the View the details.
     hassCallMock
       .mockResolvedValueOnce({ outcome: 'listed', run_revision: 4, runs: [] })
-      .mockResolvedValueOnce(result);
+      // Parsed as `hassCall` would, so the details carry every default.
+      .mockResolvedValueOnce(GetGrowRunResultSchema.parse(result));
     const chip = await fixture<GrowspaceRunChip>(html`
       <growspace-run-chip .view=${ACTIVE}></growspace-run-chip>
     `);
     $(chip, '.chip')!.click();
+    await vi.waitFor(() => {
+      if (!$(chip, 'growspace-run-view')) throw new Error('view not loaded');
+    });
+    await settle($<GrowspaceRunView>(chip, 'growspace-run-view')!);
     await settle(chip);
     return chip;
   }
 
+  /** The open View, whose Overview holds the lifecycle actions. */
+  function inView<T extends Element = HTMLElement>(chip: GrowspaceRunChip, selector: string) {
+    return $(chip, 'growspace-run-view')!.shadowRoot!.querySelector<T>(selector);
+  }
+
   it('offers Complete run from the Active Run and opens the preview', async () => {
     const chip = await openDetails(details());
-    expect($(chip, '[data-testid="run-metrics-state"]')!.textContent).toContain('Live metrics');
+    expect(inView<HTMLElement & { subtitle: string }>(chip, 'gs-dialog')!.subtitle).toBe(
+      'Active · Live'
+    );
 
     hassCallMock.mockResolvedValueOnce({ outcome: 'preview', preview: preview() });
-    $<HTMLButtonElement>(chip, '[data-action="complete-run"]')!.click();
-    await settle(chip);
+    inView<HTMLButtonElement>(chip, '[data-action="complete-run"]')!.click();
+    await vi.waitFor(() => {
+      if (!$(chip, 'growspace-run-completion-dialog')) throw new Error('not loaded');
+    });
+    // The View hands completing to the chip and closes.
+    expect($(chip, 'growspace-run-view')).toBeNull();
 
     const dialog = $<GrowspaceRunCompletionDialog>(chip, 'growspace-run-completion-dialog')!;
     expect(dialog).not.toBeNull();
@@ -374,7 +393,6 @@ describe('growspace-run-chip completion', () => {
       outcome: 'found',
       run: { ...old, participations: [], movement_history: [] },
     });
-    expect($(chip, '[data-action="complete-run"]')).toBeNull();
-    expect($(chip, '[data-testid="run-metrics-state"]')).toBeNull();
+    expect(inView(chip, '[data-action="complete-run"]')).toBeNull();
   });
 });

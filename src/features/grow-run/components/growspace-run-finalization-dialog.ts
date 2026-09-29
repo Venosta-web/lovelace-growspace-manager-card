@@ -3,7 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 
 import { localize, localizePlural, localizeWithParams } from '../../../localize/localize';
 import { refusalText } from '../../../slices/grow-run/start';
-import type { RunSnapshot, RunSummary } from '../../../slices/grow-run/schema';
+import type { RunSnapshot } from '../../../slices/grow-run/details-schema';
+import type { RunSummary } from '../../../slices/grow-run/schema';
 import {
   finalizeGrowRun,
   previewGrowRunFinalization,

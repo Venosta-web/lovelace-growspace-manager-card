@@ -169,6 +169,14 @@ export const LAZY_CHUNKS = {
     feature: 'The run finalization dialog',
     onDemandOnly: true,
   },
+  // The Grow Run View (GSM#675): a Run's overview, participants, performance,
+  // the growspace's Run history and the Run Comparison. The run chip is the
+  // only Grow Run surface in the main card; everything it opens is here.
+  runView: {
+    name: 'growspace-run-view',
+    feature: 'The grow run view',
+    onDemandOnly: true,
+  },
   // The Setup Checklist only ever renders for a growspace still being set up,
   // so every established dashboard would otherwise carry it in the entry.
   setupChecklist: {

@@ -33,36 +33,40 @@ const ACTIVE: RunView = {
   summary: 'Run #4 · 70 days · 3 plants',
 };
 
-describe('growspace-run-chip with a missing completion chunk', () => {
+describe('growspace-run-chip with a missing Grow Run View chunk', () => {
   it('names the missing file instead of doing nothing', async () => {
-    // The chip reads the Run list as it renders (GSM#673), then the details.
+    // The chip reads the Run list as it renders (GSM#673).
     vi.mocked(hassCall).mockResolvedValueOnce({ outcome: 'listed', run_revision: 4, runs: [] });
-    vi.mocked(hassCall).mockResolvedValueOnce({
-      outcome: 'found',
-      run: {
-        run_id: 'run-4',
-        sequence_number: 4,
-        label: null,
-        status: 'active',
-        started_at: ACTIVE.startedAt,
-        completed_at: null,
-        timezone: 'Europe/Berlin',
-        participant_count: 3,
-        metrics_state: 'live',
-        run_revision: 4,
-        notes: null,
-        participations: [],
-        movement_history: [],
-      },
-    });
     const chip = await fixture<GrowspaceRunChip>(html`
       <growspace-run-chip .view=${ACTIVE}></growspace-run-chip>
     `);
     chip.shadowRoot!.querySelector<HTMLButtonElement>('.chip')!.click();
     await vi.waitFor(() =>
-      expect(chip.shadowRoot!.querySelector('[data-action="complete-run"]')).not.toBeNull()
+      expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).not.toBeNull()
     );
-    chip.shadowRoot!.querySelector<HTMLButtonElement>('[data-action="complete-run"]')!.click();
+    expect(
+      chip.shadowRoot!.querySelector<HTMLElement & { chunk: { name: string } }>(
+        'growspace-lazy-chunk-error'
+      )!.chunk.name
+    ).toBe('growspace-run-view');
+    expect(chip.shadowRoot!.querySelector('growspace-run-view')).toBeNull();
+
+    chip.shadowRoot!.querySelector('ha-dialog')!.dispatchEvent(new CustomEvent('closed'));
+    await chip.updateComplete;
+    expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).toBeNull();
+  });
+});
+
+describe('growspace-run-chip with a missing completion chunk', () => {
+  it('names the missing file when the View asks to complete', async () => {
+    vi.mocked(hassCall).mockResolvedValueOnce({ outcome: 'listed', run_revision: 4, runs: [] });
+    const chip = await fixture<GrowspaceRunChip>(html`
+      <growspace-run-chip .view=${ACTIVE}></growspace-run-chip>
+    `);
+    // What the Grow Run View's Complete run button dispatches (GSM#675).
+    (chip as any)._onViewAction(
+      new CustomEvent('run-view-action', { detail: { action: 'complete', runId: 'run-4' } })
+    );
     await vi.waitFor(() =>
       expect(chip.shadowRoot!.querySelector('growspace-lazy-chunk-error')).not.toBeNull()
     );

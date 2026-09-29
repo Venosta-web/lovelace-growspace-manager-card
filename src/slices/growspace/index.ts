@@ -6,14 +6,10 @@ import { GrowspaceAdapter } from '../../adapters/growspace-adapter';
 import { devices$, patchDeviceEnvironmentAttributes, patchDeviceSetup } from '../grid';
 import {
   GrowspaceAPICollectionSchema,
-  GrowReportSchema,
-  type GrowReport,
   type CirculationFanConfig,
   type SetupModules,
 } from './schema';
 import type { GrowspaceDevice, GrowspaceAPIResponse } from '../../services/types';
-
-export type { GrowReport } from './schema';
 
 export const growspaceDevices$ = atom<GrowspaceDevice[] | null>(null);
 
@@ -152,24 +148,6 @@ export async function stampSetupPreset(growspaceId: string, preset: string): Pro
     patchDeviceSetup(growspaceId, { setupPreset: previous });
     throw err;
   }
-}
-
-export async function exportGrowReport(
-  growspaceId: string,
-  format: 'json' | 'pdf' = 'json'
-): Promise<void> {
-  await callService('growspace_manager', 'export_grow_report', {
-    growspace_id: growspaceId,
-    format,
-  });
-}
-
-export async function fetchGrowReport(growspaceId: string): Promise<GrowReport> {
-  return hassCall(
-    'growspace_manager/get_grow_report',
-    { growspace_id: growspaceId },
-    GrowReportSchema
-  );
 }
 
 export async function removeEnvironment(growspaceId: string): Promise<void> {

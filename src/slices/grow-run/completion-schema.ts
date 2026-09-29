@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { ParticipationSchema, RunRefusalSchema, RunSummarySchema } from './schema';
+import { ParticipationSchema } from './details-schema';
+import { RunRefusalSchema, RunSummarySchema } from './schema';
 
 /** The warnings a completion must acknowledge. Unknown ones still render. */
 export const COMPLETION_WARNINGS = [
