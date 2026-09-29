@@ -233,8 +233,8 @@ describe('GrowspaceDialogHost – _handleWateringSubmit', () => {
       fromMonitoredTank: true,
     });
     const options = {
-      wateredAt: '2026-09-28T12:00:00.000Z',
-      fromMonitoredTank: true,
+      watered_at: '2026-09-28T12:00:00.000Z',
+      from_monitored_tank: true,
     };
     await (el as any)._handleWateringSubmit(event, { mode: 'plant', plantIds: ['p1'] });
     expect(mockWaterPlant).toHaveBeenCalledWith('p1', 2, { CalMag: 1.5 }, '', options);

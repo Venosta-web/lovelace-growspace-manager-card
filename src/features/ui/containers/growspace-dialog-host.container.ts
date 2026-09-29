@@ -1521,7 +1521,10 @@ export class GrowspaceDialogHost extends LitElement {
   ): Promise<void> {
     try {
       const { volume, nutrients, presetId, wateredAt, fromMonitoredTank } = e.detail;
-      const wateringOptions = { wateredAt, fromMonitoredTank };
+      const wateringOptions = {
+        ...(wateredAt ? { watered_at: wateredAt } : {}),
+        ...(fromMonitoredTank ? { from_monitored_tank: true } : {}),
+      };
       const nutrientRecord: Record<string, number> = {};
       if (Array.isArray(nutrients)) {
         for (const n of nutrients as Array<{ name: string; concentration: number }>) {
