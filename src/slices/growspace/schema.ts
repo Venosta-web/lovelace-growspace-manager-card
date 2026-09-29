@@ -412,6 +412,9 @@ const WaterUsageSchema = z.object({
   // Rolling-window size the backend enforces on daily_readings. Serialized by
   // the dataclass, unused by the card, declared so the shape stays complete.
   max_daily_readings: z.number().optional(),
+  // Backend tracks tank-derived liters separately from the cap's dispensed
+  // volume. The card does not display this internal subtotal.
+  monitored_tank_liters: z.number().optional(),
   // Aggregate Water Use figure. Omitted by the backend when it can't be
   // computed, so the Today's Usage KPI must treat absent and zero differently.
   liters_today: z.number().nullable().optional(),

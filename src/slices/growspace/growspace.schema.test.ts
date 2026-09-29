@@ -827,6 +827,7 @@ describe('Growspace Zod Schemas', () => {
           { date: '2026-08-09', liters: 3.75, source: 'pump_estimate' },
         ],
         max_daily_readings: 365,
+        monitored_tank_liters: 2.5,
         liters_today: 4.25,
       };
 
