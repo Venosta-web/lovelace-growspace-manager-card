@@ -85,7 +85,8 @@ function connect() {
         return;
       }
       if (msg.type === 'auth_ok') return resolve({ send, close: () => ws.close() });
-      if (msg.type === 'auth_invalid') return reject(new Error('Home Assistant rejected the token'));
+      if (msg.type === 'auth_invalid')
+        return reject(new Error('Home Assistant rejected the token'));
       if (msg.type === 'result') {
         const entry = pending.get(msg.id);
         if (!entry) return;
@@ -113,26 +114,6 @@ const READ_COMMANDS = [
   ['growspace_manager/get_strain_library', {}],
 ];
 
-// Entities belonging to other growspaces on a shared dev instance.
-const isRelevant = (entityId) =>
-  /^(sensor|binary_sensor|switch|calendar)\.(demo_tent|e2e_flower|sim_e2e_flower)/.test(entityId);
-
-const DROP = new Set([
-  'sensor.e2e_flower_overview',
-  'sensor.e2e_flower_e2e_anchor_11',
-  'binary_sensor.e2e_flower_stress',
-  'binary_sensor.e2e_flower_mold_risk',
-  'binary_sensor.e2e_flower_optimal_conditions',
-  'calendar.e2e_flower_tasks',
-  'sensor.e2e_flower_tank_depletion_tank_1',
-  'sensor.e2e_flower_tank_depletion_tank',
-  'sensor.e2e_flower_energy_usage',
-  'sensor.e2e_flower_power_usage',
-  'sensor.e2e_flower_water_usage',
-  'sensor.e2e_flower_ec_target',
-  'sensor.e2e_flower_air_exchange',
-]);
-
 const scrub = (value) => {
   if (Array.isArray(value)) return value.map(scrub);
   if (value && typeof value === 'object') {
@@ -159,8 +140,33 @@ async function main() {
   const { send, close } = await connect();
 
   const allStates = await send({ type: 'get_states' });
+  const data = await send({ type: 'growspace_manager/get_data' });
+  const growspace = data[GROWSPACE_ID];
+  const overviewEntity = growspace?.identity?.overview_entity_id;
+  const overview = allStates.find((state) => state.entity_id === overviewEntity);
+  if (!growspace || !overview || ['unavailable', 'unknown'].includes(overview.state)) {
+    throw new Error(
+      'The requested demo growspace is not loaded — restore or provision it before recording.'
+    );
+  }
+
+  // Follow the backend's references, including dictionary keys (sensor_types).
+  // The declared demo now owns its sensors and uses number actuators; an old
+  // e2e_flower prefix filter silently omitted both from a fresh recording.
+  const referenced = new Set([overviewEntity]);
+  const collect = (value) => {
+    if (typeof value === 'string') referenced.add(value);
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (value && typeof value === 'object') {
+      for (const [key, inner] of Object.entries(value)) {
+        referenced.add(key);
+        collect(inner);
+      }
+    }
+  };
+  collect(growspace);
   const states = allStates
-    .filter((s) => isRelevant(s.entity_id) && !DROP.has(s.entity_id))
+    .filter((state) => referenced.has(state.entity_id))
     .map(({ entity_id, state, attributes, last_changed, last_updated }) => ({
       entity_id,
       state,
@@ -169,9 +175,6 @@ async function main() {
       last_updated,
     }));
 
-  if (!states.some((s) => s.entity_id === 'sensor.demo_tent_overview')) {
-    throw new Error('sensor.demo_tent_overview is not present — is the demo growspace set up?');
-  }
   console.log(`states: ${states.length}`);
 
   const history = await send({
@@ -186,7 +189,8 @@ async function main() {
   const responses = {};
   for (const [type, params] of READ_COMMANDS) {
     try {
-      responses[type] = await send({ type, ...params });
+      responses[type] =
+        type === 'growspace_manager/get_data' ? data : await send({ type, ...params });
       console.log(`  ok   ${type}`);
     } catch (err) {
       responses[type] = null;
@@ -195,7 +199,6 @@ async function main() {
   }
 
   // Keep only the recorded growspace, and drop the e2e fixture strain.
-  const data = responses['growspace_manager/get_data'];
   if (data) responses['growspace_manager/get_data'] = { [GROWSPACE_ID]: data[GROWSPACE_ID] };
   const library = responses['growspace_manager/get_strain_library'];
   if (library?.strains) delete library.strains['E2E Anchor'];
@@ -207,6 +210,8 @@ async function main() {
   // `sim_e2e_flower` is not half-rewritten by the `e2e_flower` rule.
   const renamed = JSON.parse(
     JSON.stringify({ states, history, responses })
+      .replaceAll('sim_e2e_demo', 'sim_demo_room')
+      .replaceAll('e2e_demo', 'demo_room')
       .replaceAll('sim_e2e_flower', 'sim_demo_room')
       .replaceAll('e2e_flower', 'demo_room')
       .replaceAll('sim e2e flower ', 'Demo Room ')
@@ -221,7 +226,7 @@ async function main() {
   const payload = {
     capturedAt: new Date().toISOString(),
     growspaceId: GROWSPACE_ID,
-    overviewEntity: 'sensor.demo_tent_overview',
+    overviewEntity,
     states: scrub(renamed.states),
     history: renamed.history,
     responses: scrub(renamed.responses),
@@ -234,7 +239,9 @@ async function main() {
 
   const dest = path.join(ROOT, 'demo', 'demo-data.json');
   fs.writeFileSync(dest, JSON.stringify(payload));
-  console.log(`\nwrote ${path.relative(ROOT, dest)} (${(fs.statSync(dest).size / 1024).toFixed(0)}KB)`);
+  console.log(
+    `\nwrote ${path.relative(ROOT, dest)} (${(fs.statSync(dest).size / 1024).toFixed(0)}KB)`
+  );
   close();
 }
 

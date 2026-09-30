@@ -49,6 +49,27 @@ describe('GrowspaceOptionsController', () => {
     expect(controller.options).toEqual([]);
   });
 
+  it('discovers the translated service entity and handles its object values on events', async () => {
+    const hass = makeHass(null) as any;
+    const entityId = 'sensor.growspace_manager_service_growspaces_list';
+    hass.states[entityId] = {
+      attributes: { growspaces: { demo: { name: 'Demo Tent', total_plants: 17 } } },
+    };
+    controller.update(hass);
+    expect(controller.options).toEqual([{ id: 'demo', name: 'Demo Tent' }]);
+    await Promise.resolve();
+    const listener = hass.connection.subscribeEvents.mock.calls[0][0];
+    listener({
+      data: {
+        new_state: {
+          entity_id: entityId,
+          attributes: { growspaces: { demo: { name: 'Renamed Tent', total_plants: 17 } } },
+        },
+      },
+    });
+    expect(controller.options).toEqual([{ id: 'demo', name: 'Renamed Tent' }]);
+  });
+
   it('calls host.requestUpdate() after loading options', () => {
     const hass = makeHass({ 'gs-1': 'Tent A' }) as any;
     controller.update(hass);
