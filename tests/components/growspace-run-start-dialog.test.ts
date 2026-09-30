@@ -178,7 +178,15 @@ describe('growspace-run-start-dialog', () => {
     );
     expect(startButton(dialog).disabled).toBe(true);
 
-    answer({ outcome: 'preview', preview: PREVIEW });
+    answer({
+      outcome: 'preview',
+      preview: {
+        ...PREVIEW,
+        claimed_safety_facts: [
+          { fact_id: 'stop-1', at: '2026-08-03T06:00:00+00:00', kind: 'emergency_stop' },
+        ],
+      },
+    });
     await settle(dialog);
 
     const claim = $(dialog, '[data-testid="start-preview"]')!;
@@ -186,6 +194,9 @@ describe('growspace-run-start-dialog', () => {
     expect($(dialog, '[data-testid="participants"]')!.textContent).toBe('2 plants take part.');
     expect($(dialog, '[data-testid="claimed-activity"]')!.textContent!.trim()).toBe(
       'Claims 1 movement over 2 recorded days.'
+    );
+    expect($(dialog, '[data-testid="claimed-safety"]')!.textContent!.trim()).toBe(
+      '1 safety event will join this run.'
     );
     const participants = [...claim.querySelectorAll('[data-testid="start-participations"] li')];
     expect(participants.map((li) => li.textContent!.replace(/\s+/g, ' ').trim())).toEqual([

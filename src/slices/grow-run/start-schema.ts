@@ -80,6 +80,10 @@ const StartPreviewSchema = z.object({
   participant_count: z.number().int().min(0),
   participations: z.array(ParticipationSchema.extend({ name: z.string().nullable() })),
   claimed_facts: z.array(MovementFactSchema),
+  claimed_safety_facts: z
+    .array(z.object({ fact_id: z.string(), at: z.string(), kind: z.string() }))
+    .optional()
+    .default([]),
   claimed_days: z.array(DailySummarySchema),
   gaps: z.array(CoverageGapSchema),
   conflict: StartConflictSchema.nullable(),

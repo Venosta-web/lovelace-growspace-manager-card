@@ -195,6 +195,56 @@ describe('growspace-run-view', () => {
   });
 
   describe('Performance', () => {
+    it('shows a selected Run’s safety counts and latest fault acknowledgement', async () => {
+      const details = structuredClone(finalizedDetails);
+      const response = {
+        ...details,
+        run: {
+          ...details.run,
+          snapshot: {
+            ...details.run.snapshot,
+            reliability: {
+              state: 'final',
+              definition_version: 1,
+              coverage_started_at: details.run.started_at,
+              complete: true,
+              counts: { fault: 2, inhibit: 1, emergency_stop: 1, ha_restart: 1 },
+              latest_fault: {
+                fact_id: 'fault-2',
+                at: '2026-03-01T10:00:00+00:00',
+                reason_code: 'pump_stuck',
+                acknowledged: true,
+              },
+            },
+          },
+        },
+      };
+      backend(response);
+      const runView = await renderView('performance');
+      expect(text(runView, '[data-kind="fault"]')).toBe('2');
+      expect(text(runView, '[data-kind="inhibit"]')).toBe('1');
+      expect(text(runView, '[data-kind="ha_restart"]')).toBe('1');
+      expect(text(runView, '[data-testid="run-latest-fault"]')).toContain(
+        'pump_stuck · Mar 1, 2026 · Acknowledged'
+      );
+    });
+
+    it('shows old finalized Runs as not recorded', async () => {
+      const details = structuredClone(finalizedDetails);
+      backend({
+        ...details,
+        run: {
+          ...details.run,
+          reliability: { state: 'not_recorded', definition_version: null },
+          snapshot: { ...details.run.snapshot, reliability: null },
+        },
+      });
+      const runView = await renderView('performance');
+      expect(text(runView, '[data-testid="run-reliability"]')).toContain(
+        'Not recorded for this run.'
+      );
+    });
+
     it('names each water source and leaves unknown volume incomplete', async () => {
       const details = structuredClone(finalizedDetails);
       details.run.snapshot!.water_applications = [
