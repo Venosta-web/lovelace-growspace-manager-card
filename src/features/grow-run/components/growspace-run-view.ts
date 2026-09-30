@@ -43,16 +43,6 @@ const KNOWN_METRICS = new Set([
 ]);
 const KNOWN_MOVEMENTS = new Set(['entry', 'removal', 'move', 're_entry', 'harvest', 'transplant']);
 const KNOWN_AUDIT = new Set(['start', 'complete', 'finalize', 'edit_metadata', 'reopen']);
-const RELIABILITY_KINDS = [
-  'fault',
-  'inhibit',
-  'emergency_stop',
-  'cycle_not_delivered',
-  'ha_restart',
-  'controller_transition',
-  'override_set',
-  'unexpected_on',
-];
 
 type FoundRun = Extract<GetGrowRunResult, { outcome: 'found' }>['run'];
 
@@ -767,7 +757,6 @@ export class GrowspaceRunView extends LitElement {
       </section>`;
     }
     const counts = reliability.counts ?? {};
-    const kinds = [...new Set([...RELIABILITY_KINDS, ...Object.keys(counts)])];
     return html`<section data-testid="run-reliability">
       <h3>${this._t('reliability_heading')}</h3>
       <p>
@@ -777,14 +766,10 @@ export class GrowspaceRunView extends LitElement {
         ${reliability.complete === false ? this._t('reliability_partial') : nothing}
       </p>
       <dl>
-        ${kinds.map(
-          (kind) => html`
-            <dt>
-              ${RELIABILITY_KINDS.includes(kind)
-                ? this._t(`reliability_${kind}`)
-                : kind.replaceAll('_', ' ')}
-            </dt>
-            <dd data-kind=${kind}>${counts[kind] ?? 0}</dd>
+        ${Object.entries(counts).map(
+          ([kind, count]) => html`
+            <dt style="text-transform: capitalize">${kind.replaceAll('_', ' ')}</dt>
+            <dd data-kind=${kind}>${count}</dd>
           `
         )}
       </dl>
