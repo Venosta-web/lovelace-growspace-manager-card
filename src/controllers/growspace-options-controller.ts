@@ -5,6 +5,20 @@ import { localize } from '../localize/localize';
 
 export type GrowspaceOption = { id: string; name: string };
 
+const isGrowspacesList = (entityId: string): boolean =>
+  entityId.startsWith('sensor.') && /(?:^|_)growspaces_list(?:_\d+)?$/.test(entityId.slice(7));
+
+function growspaceOptions(raw: unknown): GrowspaceOption[] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [];
+  return Object.entries(raw).map(([id, value]) => ({
+    id,
+    name:
+      typeof value === 'object' && value !== null
+        ? String((value as Record<string, unknown>).name ?? id)
+        : String(value),
+  }));
+}
+
 export class GrowspaceOptionsController implements ReactiveController {
   private _host: ReactiveControllerHost;
   private _subscriptionController: HassSubscriptionController;
@@ -49,19 +63,9 @@ export class GrowspaceOptionsController implements ReactiveController {
   }
 
   private _loadFromState(hass: HomeAssistant): void {
-    const entity = hass.states['sensor.growspaces_list'];
-    const raw = entity?.attributes?.growspaces;
-    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-      this.options = Object.entries(raw as Record<string, unknown>).map(([id, value]) => ({
-        id,
-        name:
-          typeof value === 'object' && value !== null
-            ? String((value as Record<string, unknown>).name ?? id)
-            : String(value),
-      }));
-    } else {
-      this.options = [];
-    }
+    this.options = Object.entries(hass.states)
+      .filter(([id]) => isGrowspacesList(id))
+      .flatMap(([, entity]) => growspaceOptions(entity?.attributes?.growspaces));
     this._host.requestUpdate();
   }
 
@@ -76,17 +80,13 @@ export class GrowspaceOptionsController implements ReactiveController {
           data?: {
             new_state?: {
               entity_id?: string;
-              attributes?: { growspaces?: Record<string, string> };
+              attributes?: { growspaces?: unknown };
             };
           };
         };
-        if (e.data?.new_state?.entity_id !== 'sensor.growspaces_list') return;
-        const raw = e.data.new_state.attributes?.growspaces;
-        if (raw) {
-          this.options = Object.entries(raw).map(([id, name]) => ({ id, name: String(name) }));
-        } else {
-          this.options = [];
-        }
+        if (!isGrowspacesList(e.data?.new_state?.entity_id ?? '')) return;
+        const raw = e.data?.new_state?.attributes?.growspaces;
+        this.options = growspaceOptions(raw);
         this._host.requestUpdate();
       },
       'state_changed'
