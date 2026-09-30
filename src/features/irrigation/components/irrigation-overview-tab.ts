@@ -25,16 +25,36 @@ import {
   type ShotCompositionPanel,
 } from '../viewmodels/overview-tab.viewmodel';
 import '../../shared/ui/gs-help-tooltip';
+import type { SafetyView } from '../../../slices/safety';
+import { statusTokens } from '../../../styles/status.styles';
 
 @customElement('irrigation-overview-tab')
 export class IrrigationOverviewTab extends LitElement {
   @property({ attribute: false }) vm!: OverviewTabViewModel;
+  @property({ attribute: false }) safetyView: SafetyView | null = null;
 
   static styles = [
     dialogStyles,
+    statusTokens,
     css`
       :host {
         display: block;
+      }
+      .safety-banner {
+        margin-bottom: 16px;
+        padding: 12px 16px;
+        border: 1px solid var(--gm-status-warning-outline);
+        border-radius: 12px;
+        background: var(--gm-status-warning-fill);
+        color: var(--primary-text-color);
+        overflow-wrap: anywhere;
+      }
+      .safety-banner.danger {
+        border-color: var(--gm-status-danger-outline);
+        background: var(--gm-status-danger-fill);
+      }
+      .safety-banner p {
+        margin: 6px 0 0;
       }
       /* ── Crop Steering Overview tab (copied from irrigation-dialog) ── */
       .cs-metric-grid {
@@ -136,17 +156,38 @@ export class IrrigationOverviewTab extends LitElement {
   render(): TemplateResult {
     const vm = this.vm;
     if (!vm || vm.unavailable) {
-      return this._renderUnavailable();
+      return html`${this._renderSafetyBanners()}${this._renderUnavailable()}`;
     }
 
     return html`
-      ${this._renderScoreHeader(vm)}
+      ${this._renderSafetyBanners()} ${this._renderScoreHeader(vm)}
       <div class="cs-metric-grid">
         ${this._renderOvernightDrybackCard(vm.overnightDryback)}
         ${this._renderInCycleDrybackCard(vm.inCycleDryback)} ${this._renderEcTrendCard(vm.ecTrend)}
       </div>
       ${this._renderShotComposition(vm.shotComposition)}
     `;
+  }
+
+  /** Safety remains visible even when steering metrics cannot be read. */
+  private _renderSafetyBanners() {
+    const view = this.safetyView;
+    if (!view || (view.state !== 'inhibited' && view.state !== 'fault')) return nothing;
+    return view.reasons
+      .filter((reason) => reason.guidance)
+      .map(
+        (reason) => html`
+          <div
+            class="safety-banner ${view.severity === 'danger' ? 'danger' : ''}"
+            role="status"
+            data-code=${reason.code}
+          >
+            <strong>${reason.label}</strong>
+            <p>${reason.detail}</p>
+            <p>${reason.guidance}</p>
+          </div>
+        `
+      );
   }
 
   private _renderUnavailable(): TemplateResult {

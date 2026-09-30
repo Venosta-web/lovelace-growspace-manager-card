@@ -19,7 +19,7 @@ vi.mock('../../src/services/hass-call', () => ({
 
 function hassWith(
   state: string,
-  reasons: { code: string; detail: string }[] = [],
+  reasons: { code: string; detail: string; zone_id?: string; zone_name?: string }[] = [],
   states: Record<string, string> = {}
 ): HomeAssistant {
   const entity = (translation_key: string) => ({
@@ -96,6 +96,52 @@ describe('growspace-safety-chip', () => {
     vi.spyOn(Date, 'now').mockImplementation(() => clock);
     vi.mocked(callService).mockReset();
     vi.mocked(callService).mockResolvedValue(undefined);
+  });
+
+  it.each([
+    [
+      'inhibited',
+      'probe_unresponsive',
+      'Probe not responding',
+      'Check the probe is in the pot and the emitter is dripping.',
+    ],
+    ['fault', 'zone_migration_invalid', 'Invalid irrigation zones', 'Pre-Migration Copy'],
+  ])('shows actionable %s / %s advice', async (state, code, label, advice) => {
+    const view = deriveSafetyView(
+      'flower',
+      hassWith(state, [{ code, detail: 'Backend context' }]),
+      [],
+      'en',
+      'Flower Tent'
+    )!;
+    const chip = await renderChip(view);
+    expect($(chip, '.chip')!.textContent).toContain(label);
+    expect($(chip, '.chip')!.textContent).not.toContain('Unrecognised');
+    await tap(chip, '.chip');
+    const reason = $(chip, `li[data-code="${code}"]`)!;
+    expect(reason.textContent).toContain(advice);
+    expect(reason.textContent).toContain('Backend context');
+    if (code === 'zone_migration_invalid') {
+      expect(reason.textContent).toContain('Flower Tent');
+      expect(reason.textContent).toContain('Repairs');
+    }
+  });
+
+  it('names each zone hold when the controller carries zone context', async () => {
+    const chip = await renderChip(
+      viewOf('inhibited', [
+        {
+          code: 'probe_unresponsive',
+          detail: 'Flat readings',
+          zone_id: 'left',
+          zone_name: 'Left bench',
+        },
+        { code: 'sensor_stale', detail: 'No sample', zone_id: 'right', zone_name: 'Right bench' },
+      ])
+    );
+    expect($(chip, '.chip')!.textContent).toContain('Left bench · Probe not responding');
+    await tap(chip, '.chip');
+    expect($(chip, 'ul')!.textContent).toContain('Right bench · Sensor not reporting');
   });
 
   it('shows the state and its deciding reason, coloured by severity', async () => {

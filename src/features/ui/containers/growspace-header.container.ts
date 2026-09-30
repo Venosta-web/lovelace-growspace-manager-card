@@ -465,7 +465,8 @@ export class GrowspaceHeaderContainer extends LitElement {
       this.device.deviceId,
       this.hass,
       [config?.irrigationPumpEntity, config?.drainPumpEntity],
-      this.hass?.language ?? 'en'
+      this.hass?.language ?? 'en',
+      this.device.name
     );
   }
 

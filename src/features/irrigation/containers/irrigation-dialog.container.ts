@@ -1635,6 +1635,15 @@ export class IrrigationDialog extends LitElement {
         // tabs below still render through their inline `_renderXTab()` methods.
         return html`<irrigation-overview-tab
           .vm=${this._overviewVmController.value}
+          .safetyView=${this.device
+            ? deriveSafetyView(
+                this.device.deviceId,
+                this.hass,
+                [],
+                this.hass?.language ?? 'en',
+                this.growspaceName || this.device.name
+              )
+            : null}
         ></irrigation-overview-tab>`;
       case 'schedules':
         return html`<irrigation-schedules-tab

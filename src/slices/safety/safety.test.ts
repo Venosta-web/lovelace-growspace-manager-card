@@ -282,6 +282,43 @@ describe('labels', () => {
     expect(new Set(labels).size).toBe(labels.length);
   });
 
+  it.each(['de', 'es', 'fr', 'it', 'pt_BR'])(
+    'falls back to English recovery advice for %s',
+    (language) => {
+      const hass = makeHass(controller('fault', [{ code: 'zone_migration_invalid' }]));
+      const view = deriveSafetyView('flower', hass, [], language, 'Flower Tent')!;
+      expect(view.reasons[0].label).toBe('Invalid irrigation zones');
+      expect(view.reasons[0].guidance).toContain('Flower Tent');
+      expect(view.reasons[0].guidance).toContain('Repairs');
+      expect(view.reasons[0].guidance).toContain('Pre-Migration Copy');
+      const probe = deriveSafetyView(
+        'flower',
+        makeHass(controller('inhibited', [{ code: 'probe_unresponsive' }])),
+        [],
+        language
+      )!;
+      expect(probe.reasons[0].guidance).toBe(
+        'Check the probe is in the pot and the emitter is dripping.'
+      );
+    }
+  );
+
+  it('preserves optional zone context, using its ID when its name is absent', () => {
+    const data = controller('inhibited', [{ code: 'probe_unresponsive' }]);
+    data.attributes.reasons = [
+      {
+        code: 'probe_unresponsive',
+        detail: 'Flat readings',
+        since: '2026-09-30T10:00:00Z',
+        zone_id: 'west',
+        zone_name: null,
+      },
+    ];
+    const reason = deriveSafetyView('flower', makeHass(data))!.reasons[0];
+    expect(reason.zone_id).toBe('west');
+    expect(reason.label).toBe('west · Probe not responding');
+  });
+
   it('names a code it does not know instead of hiding it', () => {
     expect(reasonLabel('runoff_ec_halt:sensor.runoff')).toBe(
       'Unrecognised reason (runoff_ec_halt)'

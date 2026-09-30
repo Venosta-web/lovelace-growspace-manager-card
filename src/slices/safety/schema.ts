@@ -26,6 +26,9 @@ const SafetyReasonSchema = z.object({
   code: z.string().min(1),
   detail: z.string(),
   since: z.string(),
+  // Optional zone context from newer controllers; older releases omit it.
+  zone_id: z.string().nullable().optional(),
+  zone_name: z.string().nullable().optional(),
 });
 export type SafetyReason = z.infer<typeof SafetyReasonSchema>;
 
