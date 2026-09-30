@@ -10,6 +10,7 @@ import type {
   ParticipantIdentity,
   RunMetric,
   RunSnapshot,
+  ReliabilitySummary,
 } from '../../../slices/grow-run/details-schema';
 import type { RunSummary } from '../../../slices/grow-run/schema';
 import { refusalText } from '../../../slices/grow-run/start';
@@ -42,6 +43,16 @@ const KNOWN_METRICS = new Set([
 ]);
 const KNOWN_MOVEMENTS = new Set(['entry', 'removal', 'move', 're_entry', 'harvest', 'transplant']);
 const KNOWN_AUDIT = new Set(['start', 'complete', 'finalize', 'edit_metadata', 'reopen']);
+const RELIABILITY_KINDS = [
+  'fault',
+  'inhibit',
+  'emergency_stop',
+  'cycle_not_delivered',
+  'ha_restart',
+  'controller_transition',
+  'override_set',
+  'unexpected_on',
+];
 
 type FoundRun = Extract<GetGrowRunResult, { outcome: 'found' }>['run'];
 
@@ -562,6 +573,7 @@ export class GrowspaceRunView extends LitElement {
       run.status === 'active' &&
       !run.movement_history.length &&
       !run.water_applications.length &&
+      !run.safety_facts.length &&
       !run.harvest_outcomes.length
     ) {
       actions.push(
@@ -681,7 +693,7 @@ export class GrowspaceRunView extends LitElement {
     const coverage = run.snapshot?.coverage ?? run.coverage;
     const water = run.snapshot?.water_applications ?? run.water_applications;
     return html`
-      ${this._metricsState(run)}
+      ${this._metricsState(run)} ${this._renderReliability(run)}
       ${run.metrics.length
         ? html`<dl data-testid="run-metrics">
             ${run.metrics.map(
@@ -743,6 +755,52 @@ export class GrowspaceRunView extends LitElement {
           </ul>`
         : html`<p>${this._t('none_yet')}</p>`}
     `;
+  }
+
+  private _renderReliability(run: FoundRun): TemplateResult {
+    const reliability: ReliabilitySummary | undefined | null =
+      run.snapshot?.reliability ?? run.reliability;
+    if (!reliability || reliability.state === 'not_recorded') {
+      return html`<section data-testid="run-reliability">
+        <h3>${this._t('reliability_heading')}</h3>
+        <p>${this._t('reliability_not_recorded')}</p>
+      </section>`;
+    }
+    const counts = reliability.counts ?? {};
+    const kinds = [...new Set([...RELIABILITY_KINDS, ...Object.keys(counts)])];
+    return html`<section data-testid="run-reliability">
+      <h3>${this._t('reliability_heading')}</h3>
+      <p>
+        <span class="badge" data-state=${reliability.state}>
+          ${this._t(`state_${reliability.state === 'final' ? 'frozen' : reliability.state}`)}
+        </span>
+        ${reliability.complete === false ? this._t('reliability_partial') : nothing}
+      </p>
+      <dl>
+        ${kinds.map(
+          (kind) => html`
+            <dt>
+              ${RELIABILITY_KINDS.includes(kind)
+                ? this._t(`reliability_${kind}`)
+                : kind.replaceAll('_', ' ')}
+            </dt>
+            <dd data-kind=${kind}>${counts[kind] ?? 0}</dd>
+          `
+        )}
+      </dl>
+      ${reliability.latest_fault
+        ? html`<p data-testid="run-latest-fault">
+            ${this._t('reliability_latest_fault')}:
+            ${reliability.latest_fault.reason_code ?? this._t('reliability_fault')} ·
+            ${this._date(reliability.latest_fault.at, run.timezone)} ·
+            ${this._t(
+              reliability.latest_fault.acknowledged
+                ? 'reliability_acknowledged'
+                : 'reliability_unacknowledged'
+            )}
+          </p>`
+        : nothing}
+    </section>`;
   }
 
   private _renderHistory(): TemplateResult {
