@@ -94,6 +94,16 @@ export type ParticipantIdentity = z.infer<typeof ParticipantIdentitySchema>;
  * at all; `missing` says which facts, and never becomes a zero.
  */
 export const RunSnapshotSchema = z.object({
+  metadata: z
+    .object({
+      label: z.string().nullable(),
+      tags: z.array(z.string()),
+      goals: z.string().nullable(),
+      notes: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
+  harvest_outcomes: z.array(HarvestOutcomeSchema).nullable().optional(),
   format: z.number().int().min(1),
   finalized_at: z.string(),
   run_id: z.string(),

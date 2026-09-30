@@ -10,6 +10,7 @@ import '../../src/features/grow-run/components/growspace-run-view';
 import activeDetails from '../fixtures/contract/grow_run_details_v1.json';
 import completedDetails from '../fixtures/contract/grow_run_completed_details_v1.json';
 import finalizedDetails from '../fixtures/contract/grow_run_finalized_details_v1.json';
+import exportFixture from '../fixtures/contract/grow_run_exported_v1.json';
 import comparisonFixture from '../fixtures/contract/grow_run_comparison_v1.json';
 import comparisonRefused from '../fixtures/contract/grow_run_comparison_refused_v1.json';
 
@@ -136,8 +137,8 @@ describe('growspace-run-view', () => {
         $$(runView, '[data-testid="run-audit"] li').map((row) => row.textContent)
       ).toHaveLength(4);
       expect(text(runView, '[data-testid="run-audit"]')).toContain('Description edited');
-      // A Finalized Run has nothing left to act on.
-      expect($(runView, '.actions')).toBeNull();
+      // A Finalized Run offers its frozen JSON document.
+      expect($(runView, '[data-action="export-run"]')).not.toBeNull();
     });
 
     it.each([
@@ -472,5 +473,80 @@ describe('growspace-run-view', () => {
       const runView = await renderView('compare', 900);
       expect(getComputedStyle($(runView, 'tr[data-metric="yield"]')!).display).toBe('table-row');
     });
+  });
+});
+
+describe('selected Run JSON export', () => {
+  it.each([activeDetails, completedDetails])(
+    'offers no export for an unfrozen Run',
+    async (details) => {
+      backend(details);
+      const view = await renderView();
+      expect($(view, '[data-action="export-run"]')).toBeNull();
+    }
+  );
+
+  it('downloads exactly the backend document as JSON', async () => {
+    backend();
+    const view = await renderView();
+    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:run-export');
+    const revokeUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    hassCallMock.mockResolvedValueOnce(exportFixture);
+    try {
+      $(view, '[data-action="export-run"]')!.click();
+      await settle(view);
+      expect(hassCallMock).toHaveBeenLastCalledWith(
+        'growspace_manager/export_grow_run',
+        { growspace_id: 'tent', run_id: 'run-1' },
+        expect.anything()
+      );
+      const blob = createUrl.mock.calls[0][0];
+      if (!(blob instanceof Blob)) throw new Error('JSON is a Blob');
+      expect(blob.type).toBe('application/json');
+      expect(JSON.parse(await blob.text())).toEqual(exportFixture.document);
+      expect(click.mock.instances[0].download).toBe('grow-run-run-1.json');
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+      expect(revokeUrl).toHaveBeenCalledWith('blob:run-export');
+    } finally {
+      createUrl.mockRestore();
+      revokeUrl.mockRestore();
+      click.mockRestore();
+    }
+  });
+
+  it('disables duplicate requests while pending and shows a refusal without a download', async () => {
+    backend();
+    const view = await renderView();
+    let finish!: (value: unknown) => void;
+    hassCallMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    const button = $(view, '[data-action="export-run"]') as HTMLButtonElement;
+    button.click();
+    button.click();
+    await view.updateComplete;
+    expect(button.disabled).toBe(true);
+    finish({
+      ...comparisonRefused,
+      refusal: { ...comparisonRefused.refusal, code: 'grow_run.not_finalized' },
+    });
+    await settle(view);
+    expect(button.disabled).toBe(false);
+    expect(text(view, '[role="alert"]')).toContain('Only finalized runs can be exported');
+  });
+
+  it('keeps the Run visible and offers retry after a connection failure', async () => {
+    backend();
+    const view = await renderView();
+    hassCallMock.mockRejectedValueOnce(new Error('Disconnected'));
+    $(view, '[data-action="export-run"]')!.click();
+    await settle(view);
+    expect(text(view, '[role="alert"]')).toContain('Try again');
+    expect($(view, '[data-testid="run-status"]')).not.toBeNull();
+    expect(($(view, '[data-action="export-run"]') as HTMLButtonElement).disabled).toBe(false);
   });
 });

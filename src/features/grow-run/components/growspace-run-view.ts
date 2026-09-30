@@ -15,6 +15,8 @@ import type { RunSummary } from '../../../slices/grow-run/schema';
 import { refusalText } from '../../../slices/grow-run/start';
 import {
   compareGrowRuns,
+  exportGrowRun,
+  downloadGrowRun,
   getGrowRun,
   type CompareGrowRunsResult,
   type MetricComparison,
@@ -85,6 +87,8 @@ export class GrowspaceRunView extends LitElement {
   @property() tab: RunViewTab = 'overview';
 
   @state() private _details: GetGrowRunResult | null = null;
+  @state() private _exporting = false;
+  @state() private _exportError: string | null = null;
   @state() private _detailError: string | null = null;
   @state() private _runs: RunSummary[] | null = null;
   @state() private _runsError: string | null = null;
@@ -340,6 +344,7 @@ export class GrowspaceRunView extends LitElement {
   private async _loadDetails(): Promise<void> {
     const { growspaceId, runId } = this;
     this._details = null;
+    this._exportError = null;
     this._detailError = null;
     if (!growspaceId || !runId) return;
     try {
@@ -556,8 +561,42 @@ export class GrowspaceRunView extends LitElement {
     `;
   }
 
+  private async _exportRun(): Promise<void> {
+    if (this._exporting) return;
+    const runId = this.runId;
+    this._exporting = true;
+    this._exportError = null;
+    try {
+      const result = await exportGrowRun(this.growspaceId, runId);
+      if (result.outcome === 'exported') {
+        downloadGrowRun(result.document, runId);
+      } else if (this.runId === runId) {
+        this._exportError =
+          result.refusal.code === 'grow_run.not_finalized'
+            ? this._t('export_not_finalized')
+            : refusalText(result.refusal, this.language);
+      }
+    } catch {
+      if (this.runId === runId) this._exportError = this._t('export_failed');
+    } finally {
+      this._exporting = false;
+    }
+  }
+
   private _renderActions(run: FoundRun): TemplateResult | typeof nothing {
     const actions: TemplateResult[] = [];
+    if (run.status === 'finalized') {
+      actions.push(
+        html`<button
+          type="button"
+          data-action="export-run"
+          ?disabled=${this._exporting}
+          @click=${() => void this._exportRun()}
+        >
+          ${this._t(this._exporting ? 'exporting' : 'export_json')}
+        </button>`
+      );
+    }
     if (
       run.status === 'active' &&
       !run.movement_history.length &&
@@ -603,7 +642,14 @@ export class GrowspaceRunView extends LitElement {
         </button>`
       );
     }
-    return actions.length ? html`<div class="actions">${actions}</div>` : nothing;
+    return actions.length
+      ? html`
+          <div class="actions">${actions}</div>
+          ${this._exportError
+            ? html`<p class="refusal" role="alert">${this._exportError}</p>`
+            : nothing}
+        `
+      : nothing;
   }
 
   private _renderParticipants(run: FoundRun): TemplateResult {

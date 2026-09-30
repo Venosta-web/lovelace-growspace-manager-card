@@ -85,6 +85,8 @@ jobs:
           GSM_RELEASE_GROW_RUN_COMPLETED_DETAILS_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_completed_details_v1.json
           GSM_PRERELEASE_GROW_RUN_FINALIZATION_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_finalization_preview_v1.json
           GSM_RELEASE_GROW_RUN_FINALIZATION_PREVIEW_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_finalization_preview_v1.json
+          GSM_PRERELEASE_GROW_RUN_EXPORTED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_exported_v1.json
+          GSM_RELEASE_GROW_RUN_EXPORTED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_exported_v1.json
           GSM_PRERELEASE_GROW_RUN_FINALIZED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_finalized_v1.json
           GSM_RELEASE_GROW_RUN_FINALIZED_FIXTURE: ${{ runner.temp }}/gsm-release-grow_run_finalized_v1.json
           GSM_PRERELEASE_GROW_RUN_FINALIZATION_REFUSED_FIXTURE: ${{ runner.temp }}/gsm-prerelease-grow_run_finalization_refused_v1.json

@@ -1224,6 +1224,10 @@
     "tank_irrigation_held": "Irrigation held"
   },
   "grow_run": {
+    "export_not_finalized": "Only finalized runs can be exported. Complete and finalize this run first.",
+    "export_json": "Export JSON",
+    "exporting": "Exporting…",
+    "export_failed": "The run could not be exported. Try again.",
     "chip_active": "Run #{number}",
     "chip_active_label": "Run #{number} · {label}",
     "days_one": "{count} day",

@@ -7,7 +7,9 @@ import activeDetailsFixture from '../../../tests/fixtures/contract/grow_run_deta
 import completedDetailsFixture from '../../../tests/fixtures/contract/grow_run_completed_details_v1.json';
 import finalizedDetailsFixture from '../../../tests/fixtures/contract/grow_run_finalized_details_v1.json';
 import { GetGrowRunResultSchema } from './details-schema';
-import { compareGrowRuns, getGrowRun } from './view';
+import exportFixture from '../../../tests/fixtures/contract/grow_run_exported_v1.json';
+import { ExportGrowRunResultSchema } from './export-schema';
+import { compareGrowRuns, getGrowRun, exportGrowRun } from './view';
 import { CompareGrowRunsResultSchema } from './view-schema';
 
 vi.mock('../../services/hass-call', () => ({
@@ -108,5 +110,67 @@ describe('compareGrowRuns (GSM#675)', () => {
   it('refuses an empty Run id before sending it', () => {
     expect(() => compareGrowRuns('flower', ['run-6', ''])).toThrow();
     expect(hassCall).not.toHaveBeenCalled();
+  });
+});
+
+describe('Finalized Run export (GSM#683)', () => {
+  it('parses the golden JSON document without changing any fact', () => {
+    expect(ExportGrowRunResultSchema.parse(exportFixture)).toEqual(exportFixture);
+  });
+
+  it('preserves additional harvest facts and new metric names in the archive', () => {
+    const fixture = structuredClone(exportFixture);
+    const document = fixture.document;
+    const extended = {
+      ...fixture,
+      document: {
+        ...document,
+        snapshot: {
+          ...document.snapshot,
+          harvest_outcomes: document.snapshot.harvest_outcomes.map((row) => ({
+            ...row,
+            metrics: { ...row.metrics, future_weight: null },
+          })),
+          metrics: [
+            ...document.snapshot.metrics,
+            {
+              metric: 'future_metric',
+              unit: 'x',
+              definition_version: 2,
+              value: null,
+              complete: false,
+              missing: [],
+            },
+          ],
+        },
+      },
+    };
+    expect(ExportGrowRunResultSchema.parse(extended)).toEqual(extended);
+  });
+
+  it('refuses malformed document versions and facts', () => {
+    expect(
+      ExportGrowRunResultSchema.safeParse({
+        ...exportFixture,
+        document: { ...exportFixture.document, version: 2 },
+      }).success
+    ).toBe(false);
+    expect(
+      ExportGrowRunResultSchema.safeParse({
+        ...exportFixture,
+        document: { ...exportFixture.document, snapshot: {} },
+      }).success
+    ).toBe(false);
+  });
+
+  it('requests exactly the selected growspace and Run and parses refusals', async () => {
+    vi.mocked(hassCall).mockResolvedValue(exportFixture);
+    await exportGrowRun('flower', 'run-1');
+    expect(hassCall).toHaveBeenCalledWith(
+      'growspace_manager/export_grow_run',
+      { growspace_id: 'flower', run_id: 'run-1' },
+      ExportGrowRunResultSchema
+    );
+    expect(ExportGrowRunResultSchema.parse(comparisonRefusedFixture).outcome).toBe('refused');
   });
 });
