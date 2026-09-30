@@ -130,6 +130,8 @@ export interface SafetyReasonView extends SafetyReason {
   /** The entity the code is scoped to, when it has one. */
   subject: string | null;
   label: string;
+  /** Localized recovery advice, alongside the backend's own detail. */
+  guidance?: string;
 }
 
 export interface SafetyView {
@@ -177,6 +179,8 @@ export const KNOWN_REASON_KINDS = [
   'tank_unknown',
   'sensor_stale',
   'sensor_implausible',
+  'probe_unresponsive',
+  'zone_migration_invalid',
   'cap_cycles',
   'cap_volume',
   'dark',
@@ -201,13 +205,27 @@ export function stateLabel(state: SafetyViewState, language = 'en'): string {
   return localize(`safety.state_${state}`, '', '', language);
 }
 
-function toReasonView(reason: SafetyReason, language: string): SafetyReasonView {
+function toReasonView(
+  reason: SafetyReason,
+  language: string,
+  growspaceName: string
+): SafetyReasonView {
   const separator = reason.code.indexOf(':');
+  const kind = separator < 0 ? reason.code : reason.code.slice(0, separator);
+  const label = reasonLabel(reason.code, language);
+  const zone = reason.zone_name || reason.zone_id;
+  const guidance =
+    kind === 'probe_unresponsive' || kind === 'zone_migration_invalid'
+      ? localizeWithParams(`safety.guidance_${kind}`, { growspace: growspaceName }, language)
+      : undefined;
   return {
     ...reason,
-    kind: separator < 0 ? reason.code : reason.code.slice(0, separator),
+    kind,
     subject: separator < 0 ? null : reason.code.slice(separator + 1) || null,
-    label: reasonLabel(reason.code, language),
+    label: zone
+      ? localizeWithParams('safety.zone_reason', { zone, reason: label }, language)
+      : label,
+    ...(guidance ? { guidance } : {}),
   };
 }
 
@@ -228,7 +246,8 @@ export function deriveSafetyView(
   growspaceId: string,
   hass: HomeAssistant | undefined,
   configuredPumps: readonly (string | null | undefined)[] = [],
-  language = 'en'
+  language = 'en',
+  growspaceName = growspaceId
 ): SafetyView | null {
   const entities = resolveSafetyEntities(growspaceId, hass);
   if (!hass || !entities) return null;
@@ -236,7 +255,7 @@ export function deriveSafetyView(
   const parsed = IrrigationControllerSchema.safeParse(hass.states[entities.controller]);
   const state: SafetyViewState = parsed.success ? parsed.data.state : 'unavailable';
   const attributes = parsed.success ? parsed.data.attributes : null;
-  const reasons = (attributes?.reasons ?? []).map((r) => toReasonView(r, language));
+  const reasons = (attributes?.reasons ?? []).map((r) => toReasonView(r, language, growspaceName));
 
   const faultOutputs =
     state === 'fault'

@@ -320,6 +320,7 @@ export class GrowspaceSafetyChip extends LitElement {
             <li data-code=${reason.code}>
               <strong>${reason.label}</strong>
               <span class="muted">${reason.detail}</span>
+              ${reason.guidance ? html`<span>${reason.guidance}</span>` : nothing}
               ${since
                 ? html`<span class="muted">${this._t('since', { time: since })}</span>`
                 : nothing}
