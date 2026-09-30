@@ -287,6 +287,7 @@ describe('growspace-run-view corrections', () => {
         status,
         run_revision: 7,
         movement_history: run.movement_history.slice(0, movements),
+        safety_facts: [],
         harvest_outcomes: [],
         audit: audit.length ? audit : run.audit,
         snapshot: status === 'finalized' ? snapshot(88) : null,
@@ -330,6 +331,13 @@ describe('growspace-run-view corrections', () => {
   it('does not offer it once the run has recorded a movement', async () => {
     const runView = await renderView(details('active', 1));
     expect($(runView, '[data-action="complete-run"]')).not.toBeNull();
+    expect($(runView, '[data-action="discard-run"]')).toBeNull();
+  });
+
+  it('does not offer discard once the run has recorded safety activity', async () => {
+    const result = details('active', 0);
+    result.run.safety_facts = activeDetails.run.safety_facts;
+    const runView = await renderView(result);
     expect($(runView, '[data-action="discard-run"]')).toBeNull();
   });
 

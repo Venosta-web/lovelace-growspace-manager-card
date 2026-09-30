@@ -276,6 +276,16 @@ export class GrowspaceRunStartDialog extends LitElement {
             ),
           })}
         </p>
+        ${preview.claimed_safety_facts?.length
+          ? html`<p class="muted" data-testid="claimed-safety">
+              ${localizePlural(
+                'grow_run.claim_safety_events',
+                preview.claimed_safety_facts.length,
+                {},
+                this.language
+              )}
+            </p>`
+          : nothing}
         ${preview.participations.length
           ? html`<ul data-testid="start-participations">
               ${preview.participations.map(

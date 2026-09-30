@@ -77,6 +77,33 @@ const WaterApplicationSchema = z.object({
   liters: z.number().nullable(),
 });
 
+const SafetyFactSchema = z.object({
+  fact_id: z.string(),
+  growspace_id: z.string().optional(),
+  at: z.string().optional(),
+  kind: z.string().optional(),
+  fault_id: z.string().nullable().optional(),
+  reason_code: z.string().nullable().optional(),
+  // Opaque diagnostics: each safety fault kind supplies its own detail keys.
+  details: z.record(z.string(), z.unknown()).optional(),
+});
+
+const ReliabilitySchema = z.object({
+  state: z.enum(['live', 'pending', 'final', 'not_recorded']),
+  definition_version: z.number().int().min(1).nullable(),
+  coverage_started_at: z.string().optional(),
+  complete: z.boolean().optional(),
+  counts: z.record(z.string(), z.number().int().min(0)).optional(),
+  latest_fault: SafetyFactSchema.extend({
+    at: z.string(),
+    reason_code: z.string().nullable(),
+    acknowledged: z.boolean(),
+  })
+    .nullable()
+    .optional(),
+});
+export type ReliabilitySummary = z.infer<typeof ReliabilitySchema>;
+
 /** Who a Run Participant was: a Participant Identity Snapshot (GSM#673). */
 const ParticipantIdentitySchema = z.object({
   plant_id: z.string(),
@@ -133,6 +160,7 @@ export const RunSnapshotSchema = z.object({
   ),
   metrics: z.array(RunMetricSchema),
   water_applications: z.array(WaterApplicationSchema).optional().default([]),
+  reliability: ReliabilitySchema.nullable().optional(),
   coverage: z.array(z.object({ metric: z.string(), coverage_percent: z.number() })),
   uncovered_gaps: z.array(z.object({ start: z.string(), end: z.string(), reason: z.string() })),
   missing: z.array(MissingFactSchema),
@@ -174,6 +202,8 @@ export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
       participations: z.array(ParticipationSchema),
       movement_history: z.array(MovementFactSchema),
       water_applications: z.array(WaterApplicationSchema).optional().default([]),
+      reliability: ReliabilitySchema.optional(),
+      safety_facts: z.array(SafetyFactSchema).optional().default([]),
       water_coverage_started_at: z.string().nullable().optional(),
       harvest_outcomes: z.array(HarvestOutcomeSchema).optional().default([]),
       // GSM#673: the Run's description, its audit, and a Finalized Run's
