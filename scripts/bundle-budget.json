@@ -5,7 +5,7 @@
       "id": "entry",
       "label": "Entry",
       "match": "growspace-manager-card.js",
-      "maxGzipBytes": 208000
+      "maxGzipBytes": 208128
     },
     {
       "id": "three",
@@ -60,6 +60,11 @@
       "date": "2026-09-29",
       "rules": ["entry"],
       "change": "GSM#917 raises the entry from 207,500 to 208,000 bytes gzip for correcting a Grow Run. Measured before #1034 merged, at dev 189244e2 after GSM#675's Grow Run View: entry 207,004 bytes gzip; with reopening and discarding 207,628, 624 bytes over that dev build and 128 over the current limit. About 410 bytes are the localized labels of the discard dialog, the reopen form and the View's two new actions, which live in the one eagerly bundled locale file; the rest is the run chip routing the View's discard and reopen requests, the discard dialog's lazy-chunk wiring, and the refusal reasons the shared Run refusal schema now parses. The buttons are the Grow Run View's (already lazy), the discard dialog and the two commands are lazy chunks of their own (runDiscardDialog and the correction slice), and reopening lives in the already-lazy finalization dialog."
+    },
+    {
+      "date": "2026-09-30",
+      "rules": ["entry"],
+      "change": "Allow 128 gzip bytes for the four localized Finalized Run JSON export labels (GSM#683); export logic and schemas remain in the lazy Run view."
     }
   ]
 }

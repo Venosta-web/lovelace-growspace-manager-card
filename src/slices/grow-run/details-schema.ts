@@ -77,19 +77,28 @@ const WaterApplicationSchema = z.object({
   liters: z.number().nullable(),
 });
 
+const SafetyFactSchema = z.object({
+  fact_id: z.string(),
+  growspace_id: z.string().optional(),
+  at: z.string().optional(),
+  kind: z.string().optional(),
+  fault_id: z.string().nullable().optional(),
+  reason_code: z.string().nullable().optional(),
+  // Opaque diagnostics: each safety fault kind supplies its own detail keys.
+  details: z.record(z.string(), z.unknown()).optional(),
+});
+
 const ReliabilitySchema = z.object({
   state: z.enum(['live', 'pending', 'final', 'not_recorded']),
   definition_version: z.number().int().min(1).nullable(),
   coverage_started_at: z.string().optional(),
   complete: z.boolean().optional(),
   counts: z.record(z.string(), z.number().int().min(0)).optional(),
-  latest_fault: z
-    .object({
-      fact_id: z.string(),
-      at: z.string(),
-      reason_code: z.string().nullable(),
-      acknowledged: z.boolean(),
-    })
+  latest_fault: SafetyFactSchema.extend({
+    at: z.string(),
+    reason_code: z.string().nullable(),
+    acknowledged: z.boolean(),
+  })
     .nullable()
     .optional(),
 });
@@ -112,6 +121,16 @@ export type ParticipantIdentity = z.infer<typeof ParticipantIdentitySchema>;
  * at all; `missing` says which facts, and never becomes a zero.
  */
 export const RunSnapshotSchema = z.object({
+  metadata: z
+    .object({
+      label: z.string().nullable(),
+      tags: z.array(z.string()),
+      goals: z.string().nullable(),
+      notes: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
+  harvest_outcomes: z.array(HarvestOutcomeSchema).nullable().optional(),
   format: z.number().int().min(1),
   finalized_at: z.string(),
   run_id: z.string(),
@@ -184,10 +203,7 @@ export const GetGrowRunResultSchema = z.discriminatedUnion('outcome', [
       movement_history: z.array(MovementFactSchema),
       water_applications: z.array(WaterApplicationSchema).optional().default([]),
       reliability: ReliabilitySchema.optional(),
-      safety_facts: z
-        .array(z.object({ fact_id: z.string() }))
-        .optional()
-        .default([]),
+      safety_facts: z.array(SafetyFactSchema).optional().default([]),
       water_coverage_started_at: z.string().nullable().optional(),
       harvest_outcomes: z.array(HarvestOutcomeSchema).optional().default([]),
       // GSM#673: the Run's description, its audit, and a Finalized Run's

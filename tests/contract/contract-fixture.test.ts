@@ -42,6 +42,7 @@ import {
   CompleteGrowRunResultSchema,
   PreviewCompletionResultSchema,
 } from '../../src/slices/grow-run/completion-schema';
+import { ExportGrowRunResultSchema } from '../../src/slices/grow-run/export-schema';
 import { CompareGrowRunsResultSchema } from '../../src/slices/grow-run/view-schema';
 import {
   DiscardGrowRunResultSchema,
@@ -261,6 +262,13 @@ const CONTRACTS: FixtureContract[] = [
     schema: GetGrowRunResultSchema,
     leadingVariable: 'GSM_PRERELEASE_GROW_RUN_FINALIZED_DETAILS_FIXTURE',
     releaseVariable: 'GSM_RELEASE_GROW_RUN_FINALIZED_DETAILS_FIXTURE',
+    releaseRequired: false,
+  },
+  {
+    name: 'Finalized Grow Run export',
+    schema: ExportGrowRunResultSchema,
+    leadingVariable: 'GSM_PRERELEASE_GROW_RUN_EXPORTED_FIXTURE',
+    releaseVariable: 'GSM_RELEASE_GROW_RUN_EXPORTED_FIXTURE',
     releaseRequired: false,
   },
   {

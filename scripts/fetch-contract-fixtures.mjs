@@ -67,6 +67,7 @@ const GROW_RUN_FIXTURES = [
   // command, a Finalized Run's details, and the Run list the chip reads.
   'grow_run_finalization_preview_v1',
   'grow_run_finalized_v1',
+  'grow_run_exported_v1',
   'grow_run_finalization_refused_v1',
   'grow_run_finalized_details_v1',
   'grow_run_list_v1',
