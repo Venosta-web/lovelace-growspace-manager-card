@@ -50,6 +50,7 @@ export class IrrigationRecipeLibrary extends LitElement {
         gap: 8px;
       }
       .list-item {
+        box-sizing: border-box;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -160,8 +161,73 @@ export class IrrigationRecipeLibrary extends LitElement {
   render(): TemplateResult {
     const vm = this.vm;
     if (!vm) return html``;
+    if (vm.reapply) return this._renderReapply(vm);
     if (vm.deleteConfirm) return this._renderDeleteConfirm(vm.deleteConfirm, vm.busy);
     return vm.selected ? this._renderDetail(vm) : this._renderList(vm);
+  }
+
+  private _renderReapply(vm: RecipeLibraryViewModel): TemplateResult {
+    const offer = vm.reapply!;
+    return html`
+      <div class="detail-card" data-reapply>
+        <h3>Apply revision ${offer.revision} to zones?</h3>
+        <p>
+          The recipe is saved. These zones still use an older revision. Applying replaces their
+          irrigation settings, including hand tweaks.
+        </p>
+        <div class="list">
+          ${offer.zones.map(
+            (zone) => html`
+              <label class="list-item">
+                <input
+                  type="checkbox"
+                  .checked=${zone.selected}
+                  ?disabled=${vm.busy}
+                  @change=${() =>
+                    this._emit('recipe-reapply-toggled', {
+                      growspaceId: zone.growspaceId,
+                      zoneId: zone.zoneId,
+                    })}
+                />
+                <span class="item-body">
+                  <strong>${zone.label}</strong>
+                  <span class="item-meta" style="display:block;">
+                    Revision ${zone.revision} ·
+                    ${zone.drifted === true
+                      ? 'Hand tweaked'
+                      : zone.drifted === false
+                        ? 'Untweaked'
+                        : 'Drift unknown'}
+                    ${zone.autoAdvance ? ' · Auto-advance will apply this revision on refresh' : ''}
+                  </span>
+                  ${zone.error
+                    ? html`<span class="error" role="alert">${zone.error}</span>`
+                    : nothing}
+                </span>
+              </label>
+            `
+          )}
+        </div>
+        <div class="button-group" style="margin-top:16px;">
+          <button
+            type="button"
+            class="md3-button text"
+            ?disabled=${vm.busy}
+            @click=${() => this._emit('recipe-reapply-dismissed')}
+          >
+            Keep zones as they are
+          </button>
+          <button
+            type="button"
+            class="md3-button primary"
+            ?disabled=${vm.busy || !offer.zones.some((zone) => zone.selected)}
+            @click=${() => this._emit('recipe-reapply-requested')}
+          >
+            ${vm.busy ? 'Applying…' : 'Apply to selected zones'}
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   // ─── List ──────────────────────────────────────────────────────────────────

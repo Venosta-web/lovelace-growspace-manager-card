@@ -376,7 +376,7 @@ const RecipeProvenanceSchema = z.object({
  * never pump seconds ([[Substrate-Relative Shot Storage]]).
  */
 const CropSteeringRecipeSchema = z.object({
-  lights_on_time: z.string(),
+  lights_on_time: z.string().optional(),
   p0_duration_minutes: z.number(),
   p2_stop_before_lights_off_minutes: z.number(),
   target_vwc_percent: z.number(),
@@ -385,7 +385,7 @@ const CropSteeringRecipeSchema = z.object({
   p1_shot_interval_minutes: z.number(),
   p2_shot_volume_percent: z.number(),
   p2_shot_interval_minutes: z.number(),
-  auto_light_tracking: z.boolean(),
+  auto_light_tracking: z.boolean().optional(),
   dynamic_shot_enabled: z.boolean(),
   dynamic_aggressiveness: z.number(),
   dynamic_recovery: z.number(),
@@ -405,12 +405,12 @@ export type CropSteeringRecipeValues = z.infer<typeof CropSteeringRecipeSchema>;
  */
 const ScheduleRecipeSchema = z.object({
   irrigation_times: z.array(RecipeScheduleItemSchema),
-  drain_times: z.array(RecipeScheduleItemSchema),
+  drain_times: z.array(RecipeScheduleItemSchema).optional(),
   irrigation_duration: z.number().nullable(),
-  drain_duration: z.number().nullable(),
-  daily_volume_cap_liters: z.number().nullable(),
-  max_cycles_per_day: z.number().nullable(),
-  skip_during_dark: z.boolean(),
+  drain_duration: z.number().nullable().optional(),
+  daily_volume_cap_liters: z.number().nullable().optional(),
+  max_cycles_per_day: z.number().nullable().optional(),
+  skip_during_dark: z.boolean().optional(),
 });
 
 /** The schedule half's stored values, in the backend's own field names. */
@@ -424,6 +424,7 @@ export type ScheduleRecipeValues = z.infer<typeof ScheduleRecipeSchema>;
 export const IrrigationRecipeSchema = z.object({
   id: z.string(),
   name: z.string(),
+  revision: z.number().int().positive().optional(),
   kind: IrrigationRecipeKindSchema,
   provenance: RecipeProvenanceSchema,
   crop_steering: CropSteeringRecipeSchema.nullable(),
@@ -441,9 +442,16 @@ export const SaveIrrigationRecipePayloadSchema = z.strictObject({
   recipe_id: z.string().optional(),
 });
 
+export const AppliedRecipeSchema = z.object({
+  id: z.string(),
+  revision: z.number().int().positive(),
+  values: z.union([CropSteeringRecipeSchema, ScheduleRecipeSchema]),
+});
+
 export const ApplyIrrigationRecipePayloadSchema = z.strictObject({
   growspace_id: z.string(),
   recipe_id: z.string(),
+  zone_id: z.string().optional(),
 });
 
 /**
@@ -457,7 +465,8 @@ export const ApplyIrrigationRecipePayloadSchema = z.strictObject({
  */
 export const ApplyIrrigationRecipeResultSchema = z.object({
   growspace_id: z.string(),
-  applied_recipe_id: z.string().nullable(),
+  applied_recipe_id: z.string().nullable().optional().default(null),
+  applied_recipe: AppliedRecipeSchema.nullable().optional(),
   recipe_applied_at: z.string().nullable(),
   warning: z.string().nullable(),
 });

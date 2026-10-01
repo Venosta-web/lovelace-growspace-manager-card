@@ -1,5 +1,6 @@
-import { fixture, html } from '@open-wc/testing-helpers';
-import { describe, expect, it } from 'vitest';
+import { fixture, fixtureCleanup, html } from '@open-wc/testing-helpers';
+import { afterEach, describe, expect, it } from 'vitest';
+import { page } from 'vitest/browser';
 import { IrrigationRecipeLibrary } from '../../src/features/irrigation/components/irrigation-recipe-library';
 import type {
   RecipeFieldVM,
@@ -7,6 +8,8 @@ import type {
   RecipeRowVM,
 } from '../../src/features/irrigation/viewmodels/recipe-library.viewmodel';
 import type { IrrigationRecipe } from '../../src/services/types';
+
+afterEach(() => fixtureCleanup());
 
 if (!customElements.get('irrigation-recipe-library')) {
   customElements.define('irrigation-recipe-library', IrrigationRecipeLibrary);
@@ -94,9 +97,7 @@ describe('irrigation-recipe-library — the list', () => {
   it('an empty library explains where recipes come from', async () => {
     const el = await mount(makeVm({ rows: [] }));
 
-    expect(root(el).querySelector('[data-empty]')?.textContent).toContain(
-      'No recipes saved yet'
-    );
+    expect(root(el).querySelector('[data-empty]')?.textContent).toContain('No recipes saved yet');
   });
 
   it('clicking a row asks to open it', async () => {
@@ -116,9 +117,7 @@ describe('irrigation-recipe-library — the detail', () => {
   it('shows the recipe name and its provenance line', async () => {
     const el = await mount(detailVm());
 
-    expect(root(el).querySelector('[data-recipe-name]')?.textContent).toContain(
-      'Flower week 3'
-    );
+    expect(root(el).querySelector('[data-recipe-name]')?.textContent).toContain('Flower week 3');
     const provenance = root(el).querySelector('[data-provenance]')?.textContent ?? '';
     expect(provenance).toContain('Crop steering');
     expect(provenance).toContain('Flower · week 3');
@@ -257,9 +256,7 @@ describe('irrigation-recipe-library — the delete confirmation', () => {
     const text = root(el).querySelector('[data-referencing-programs]')!.textContent ?? '';
     expect(text).toContain('Autoflower run, Photo run');
     // Never refused: a slot with no recipe holds, it does not water wrongly.
-    expect(root(el).querySelector<HTMLButtonElement>('.btn-delete-confirm')!.disabled).toBe(
-      false
-    );
+    expect(root(el).querySelector<HTMLButtonElement>('.btn-delete-confirm')!.disabled).toBe(false);
   });
 
   it('confirming and cancelling both report an intent', async () => {
@@ -273,4 +270,64 @@ describe('irrigation-recipe-library — the delete confirmation', () => {
     expect(confirmed.detail).toEqual({});
     expect(cancelled.detail).toEqual({});
   });
+});
+
+const reapply = {
+  recipeId: 'r1',
+  revision: 2,
+  zones: [
+    {
+      growspaceId: 'g1',
+      zoneId: 'left',
+      label: 'Flower tent · Left',
+      revision: 1,
+      drifted: false,
+      selected: true,
+      autoAdvance: true,
+    },
+    {
+      growspaceId: 'g2',
+      zoneId: 'default',
+      label: 'Propagation tent',
+      revision: 1,
+      drifted: true,
+      selected: false,
+      autoAdvance: false,
+    },
+  ],
+};
+
+describe('recipe reapply selection', () => {
+  afterEach(async () => {
+    await page.viewport(1280, 720);
+  });
+  it('dispatches the zone identity from the labelled checkbox', async () => {
+    const el = await mount(makeVm({ reapply }));
+    const changed = intent(el, 'recipe-reapply-toggled');
+    root(el).querySelector<HTMLInputElement>('input')!.click();
+    expect(changed.detail).toEqual({ growspaceId: 'g1', zoneId: 'left' });
+    expect(el.textContent).toBe('');
+    expect(root(el).textContent).toContain('Hand tweaked');
+    expect(root(el).textContent).toContain('Auto-advance will apply this revision');
+  });
+  it('disables selection and both actions while applying', async () => {
+    const el = await mount(makeVm({ reapply, busy: true }));
+    expect(
+      Array.from(
+        root(el).querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button'),
+        (input) => input.disabled
+      )
+    ).toEqual([true, true, true, true]);
+    expect(root(el).textContent).toContain('Applying…');
+  });
+  for (const width of [390, 800]) {
+    it(`renders the zone offer at ${width}px without horizontal overflow`, async () => {
+      await page.viewport(width, 900);
+      const el = await mount(makeVm({ reapply }));
+      el.style.color = 'var(--primary-text-color)';
+      el.style.width = '100%';
+      expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+      await expect(page.elementLocator(el)).toMatchScreenshot(`recipe-reapply-${width}.png`);
+    });
+  }
 });

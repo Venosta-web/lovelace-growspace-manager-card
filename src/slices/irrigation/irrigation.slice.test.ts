@@ -1070,6 +1070,23 @@ describe('saveIrrigationRecipe', () => {
 });
 
 describe('applyIrrigationRecipe', () => {
+  it('stamps an explicit zone without changing the default-zone mirrors', async () => {
+    setIrrigationStrategy('gs1', makeStrategy({ appliedRecipeId: 'default-recipe' }));
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      growspace_id: 'gs1',
+      applied_recipe: { id: 'r1', revision: 2, values: {} },
+      recipe_applied_at: null,
+      warning: null,
+    });
+    await applyIrrigationRecipe('gs1', 'r1', 'zone-right');
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/apply_irrigation_recipe',
+      { growspace_id: 'gs1', recipe_id: 'r1', zone_id: 'zone-right' },
+      expect.anything()
+    );
+    expect(irrigationStrategies$.get().get('gs1')?.appliedRecipeId).toBe('default-recipe');
+  });
+
   const REPLY = {
     growspace_id: 'gs1',
     applied_recipe_id: 'r1',

@@ -3,8 +3,8 @@
  *
  * The standalone [[Irrigation Recipe]] library editor's host: it owns the
  * RecipeLibrarySM, projects it through the Recipe Library ViewModel, and runs
- * the two mutations the editor can cause — editing a recipe in place and
- * deleting one.
+ * the editor's mutations — editing or deleting a recipe, and explicitly
+ * reapplying a new revision to selected zones.
  *
  * It exists **beside** the irrigation dialog's Recipe tab rather than inside
  * it, because the library is global while that tab is one growspace's. A
@@ -33,10 +33,13 @@ import {
   createInitialSM,
   transition,
   type RecipeDraft,
+  type RecipeReapplyOffer,
+  type RecipeReapplyZone,
   type RecipeLibraryEvent,
   type RecipeLibrarySM,
 } from '../../../dialogs/recipe-library-sm';
 import {
+  applyIrrigationRecipe,
   irrigationPrograms$,
   irrigationRecipes$,
   removeIrrigationRecipe,
@@ -44,6 +47,8 @@ import {
 } from '../../../slices/irrigation';
 import type { CropSteeringRecipeValues, ScheduleRecipeValues } from '../../../services/types';
 import { createRecipeLibraryViewModel } from '../viewmodels/recipe-library.viewmodel';
+import { devices$ } from '../../../slices/grid';
+import { recipeReapplyOffer } from '../viewmodels/recipe-reapply';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui/gs-dialog';
 import '../components/irrigation-recipe-library';
@@ -104,6 +109,7 @@ export class RecipeLibraryDialog extends LitElement {
     const status = this._sm.status;
     if (status.kind === prev?.status.kind) return;
     if (status.kind === 'applying') this._runSave(status.draft);
+    if (status.kind === 'reapplying') this._runReapply(status.offer);
     if (status.kind === 'deleting') this._runDelete(status.id);
   }
 
@@ -113,7 +119,7 @@ export class RecipeLibraryDialog extends LitElement {
     // from the field names — the backend refuses the other half outright.
     const values = Object.keys(draft.values).length > 0 ? draft.values : undefined;
     try {
-      await updateIrrigationRecipe({
+      const saved = await updateIrrigationRecipe({
         recipeId: draft.id,
         // Sent only when it actually changed, so a value-only edit is not
         // also a rename that happens to write the same string.
@@ -125,10 +131,28 @@ export class RecipeLibraryDialog extends LitElement {
           ? { schedule: values as Partial<ScheduleRecipeValues> }
           : {}),
       });
-      this._dispatch({ type: 'SaveResolved' });
+      const offer =
+        saved?.revision !== undefined && saved.revision > (recipe?.revision ?? 1)
+          ? recipeReapplyOffer(saved.id, saved.revision, devices$.get())
+          : undefined;
+      this._dispatch({ type: 'SaveResolved', offer });
     } catch (err) {
       this._dispatch({ type: 'SaveFailed', message: messageOf(err) });
     }
+  }
+
+  private async _runReapply(offer: RecipeReapplyOffer): Promise<void> {
+    const failures: RecipeReapplyZone[] = [];
+    for (const zone of offer.zones) {
+      if (!zone.selected) continue;
+      try {
+        await applyIrrigationRecipe(zone.growspaceId, offer.recipeId, zone.zoneId);
+      } catch (err) {
+        failures.push({ ...zone, error: messageOf(err) });
+      }
+    }
+    // Successful rows are never repeated when retrying a partial failure.
+    this._dispatch({ type: 'ReapplyResolved', failures });
   }
 
   private async _runDelete(recipeId: string): Promise<void> {
@@ -188,6 +212,10 @@ export class RecipeLibraryDialog extends LitElement {
         <div class="glass-dialog-container">
           <irrigation-recipe-library
             .vm=${vm}
+            @recipe-reapply-toggled=${(e: CustomEvent<{ growspaceId: string; zoneId: string }>) =>
+              this._dispatch({ type: 'ReapplyToggled', ...e.detail })}
+            @recipe-reapply-requested=${() => this._dispatch({ type: 'ReapplyRequested' })}
+            @recipe-reapply-dismissed=${() => this._dispatch({ type: 'ReapplyDismissed' })}
             @recipe-selected=${this._onSelected}
             @recipe-back-to-list=${this._onBackToList}
             @recipe-edit-started=${this._onEditStarted}

@@ -413,6 +413,7 @@ export async function applySteeringMode(growspaceId: string, mode: SteeringMode)
 function toIrrigationRecipe(wire: SerializedIrrigationRecipe): IrrigationRecipe {
   return {
     id: wire.id,
+    ...(wire.revision !== undefined ? { revision: wire.revision } : {}),
     name: wire.name,
     kind: wire.kind,
     provenance: {
@@ -544,8 +545,17 @@ export async function removeIrrigationRecipe(recipeId: string): Promise<void> {
  */
 export async function applyIrrigationRecipe(
   growspaceId: string,
-  recipeId: string
+  recipeId: string,
+  zoneId?: string
 ): Promise<ApplyIrrigationRecipeResult> {
+  if (zoneId !== undefined) {
+    // A zone stamp must never project onto the default-zone mirrors.
+    return hassCall(
+      'growspace_manager/apply_irrigation_recipe',
+      { growspace_id: growspaceId, recipe_id: recipeId, zone_id: zoneId },
+      ApplyIrrigationRecipeResultSchema
+    );
+  }
   const prev = readIrrigationStrategy(growspaceId);
   const prevStamp = {
     appliedRecipeId: prev.appliedRecipeId ?? null,
@@ -579,11 +589,11 @@ export async function applyIrrigationRecipe(
         // The reply carries the authoritative stamp; a fresh stamp cannot have
         // drifted, so the tab's verdict is known without waiting for a sync.
         patchIrrigationStrategy(growspaceId, {
-          appliedRecipeId: result.applied_recipe_id,
+          appliedRecipeId: result.applied_recipe?.id ?? result.applied_recipe_id,
           recipeAppliedAt: result.recipe_applied_at,
         });
         patchDeviceRecipeStamp(growspaceId, {
-          appliedRecipeId: result.applied_recipe_id,
+          appliedRecipeId: result.applied_recipe?.id ?? result.applied_recipe_id,
           recipeAppliedAt: result.recipe_applied_at,
           drifted: false,
         });

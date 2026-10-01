@@ -49,6 +49,7 @@ function parseSensorGroups(raw: unknown[] | undefined): SensorGroup[] {
 function toIrrigationRecipe(r: SerializedIrrigationRecipe): IrrigationRecipe {
   return {
     id: r.id,
+    ...(r.revision !== undefined ? { revision: r.revision } : {}),
     name: r.name,
     kind: r.kind,
     provenance: {
@@ -581,6 +582,7 @@ export class GrowspaceAdapter {
       irrigationStrategy,
       volumeModeCapable: irrigation?.volume_mode_capable ?? false,
       irrigationRecipes,
+      irrigationZones: irrigation?.zones,
       irrigationPrograms,
       irrigationProgram,
       // `?? null` keeps "the backend omitted the key" and "the question does not

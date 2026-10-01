@@ -28,7 +28,7 @@ import type {
   IrrigationRecipe,
   ScheduleRecipeValues,
 } from '../../../services/types';
-import type { RecipeLibrarySM } from '../../../dialogs/recipe-library-sm';
+import type { RecipeLibrarySM, RecipeReapplyOffer } from '../../../dialogs/recipe-library-sm';
 import type { IrrigationRecipeKind } from '../../../slices/irrigation/schema';
 
 /** One row of the library list. */
@@ -82,6 +82,7 @@ export interface DeleteConfirmVM {
 export interface RecipeLibraryViewModel {
   /** Every saved recipe, name-ordered. Empty → the library's empty state. */
   rows: RecipeRowVM[];
+  reapply?: RecipeReapplyOffer | null;
   /** The recipe whose detail is open, or null for the list. */
   selected: IrrigationRecipe | null;
   /** The open recipe's fields, or empty when the list is showing. */
@@ -301,11 +302,13 @@ export function createRecipeLibraryViewModel(
         : null;
     const draftValues = (draft?.values ?? {}) as Record<string, unknown>;
 
-    const busy = status.kind === 'applying' || status.kind === 'deleting';
+    const busy =
+      status.kind === 'applying' || status.kind === 'deleting' || status.kind === 'reapplying';
     const nameDraft = draft ? draft.name : (selected?.name ?? '');
     const nameChanged = selected !== null && nameDraft.trim() !== selected.name;
 
     return {
+      reapply: status.kind === 'reapply' || status.kind === 'reapplying' ? status.offer : null,
       rows: recipes.map((r) => toRow(r, sm.selectedId)),
       selected,
       fields: selected ? toFields(selected, draftValues) : [],
