@@ -143,6 +143,7 @@ export interface IrrigationStrategy {
  */
 export interface IrrigationRecipe {
   id: string;
+  revision?: number;
   name: string;
   /** Which half the recipe carries. A recipe is never half-applied. */
   kind: IrrigationRecipeKind;
@@ -553,6 +554,23 @@ export interface GrowspaceDevice {
    * payload. Global, not per-growspace: every device carries the same list.
    */
   irrigationRecipes?: IrrigationRecipe[];
+  /** Zone facts retained from the authoritative irrigation payload. */
+  irrigationZones?: {
+    id: string;
+    name: string;
+    applied_recipe?: {
+      id: string;
+      revision: number;
+      values: CropSteeringRecipeValues | ScheduleRecipeValues;
+    } | null;
+    recipe_updated?: boolean;
+    applied_recipe_drifted?: boolean | null;
+    program?: {
+      auto_advance: boolean;
+      recipe: { id: string } | null;
+      progression: { state: string; hold: string | null };
+    } | null;
+  }[];
   /**
    * Whether this growspace's irrigation settings still match the recipe it last
    * had applied. `null`/undefined means the question does not apply — no recipe

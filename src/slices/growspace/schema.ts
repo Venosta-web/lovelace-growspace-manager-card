@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { VisionCheckupConfigSchema } from '../camera/schema';
 import { GridApiSchema } from '../grid/schema';
 import {
+  AppliedRecipeSchema,
   GrowspaceProgramStateSchema,
   IrrigationProgramSchema,
   IrrigationRecipeSchema,
@@ -612,11 +613,21 @@ export const GrowspaceAPIResponseSchema = z.object({
       // every growspace payload (the same library on each) so the irrigation
       // dialog's Recipe tab seeds from the device it already has.
       recipes: z.record(z.string(), IrrigationRecipeSchema).optional(),
-      // Whether the growspace still holds what its applied recipe stamped.
-      // Computed on read, never stored — recipes are held by reference, so a
-      // hash written at stamp time would go stale the moment the recipe itself
-      // was edited. null means the question does not apply: no recipe was ever
-      // applied, or the applied one has since been removed from the library.
+      recipe_updated: z.boolean().optional(),
+      zones: z
+        .array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            applied_recipe: AppliedRecipeSchema.nullable().optional(),
+            recipe_updated: z.boolean().optional(),
+            applied_recipe_drifted: z.boolean().nullable().optional(),
+            program: GrowspaceProgramStateSchema.nullable().optional(),
+          })
+        )
+        .optional(),
+      // Default-zone mirror. Drift compares live values with the stamped
+      // Applied Recipe copy; a newer library revision is a separate fact.
       applied_recipe_drifted: z.boolean().nullable().optional(),
       // The global [[Irrigation Program]] library, keyed by program id. Rides
       // every payload for the same reason the recipe library above does: the

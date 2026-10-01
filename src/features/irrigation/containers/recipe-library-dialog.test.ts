@@ -7,16 +7,20 @@ import type { CropSteeringRecipeValues, IrrigationRecipe } from '../../../servic
 // behaviour, not this container's.
 vi.mock('../../../slices/irrigation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../slices/irrigation')>()),
+  applyIrrigationRecipe: vi.fn().mockResolvedValue({}),
   updateIrrigationRecipe: vi.fn().mockResolvedValue(undefined),
   removeIrrigationRecipe: vi.fn().mockResolvedValue(undefined),
 }));
 import {
+  applyIrrigationRecipe as sliceApply,
   irrigationRecipes$,
   removeIrrigationRecipe as sliceRemove,
   setIrrigationRecipes,
   updateIrrigationRecipe as sliceUpdate,
 } from '../../../slices/irrigation';
 
+import { setDevices } from '../../../slices/grid';
+import type { GrowspaceDevice } from '../../../types';
 import type { RecipeLibraryDialog } from './recipe-library-dialog.container';
 import './recipe-library-dialog.container';
 
@@ -63,6 +67,10 @@ function recipe(over: Partial<IrrigationRecipe> = {}): IrrigationRecipe {
 afterEach(() => {
   document.body.innerHTML = '';
   setIrrigationRecipes([]);
+  setDevices([]);
+  vi.mocked(sliceApply)
+    .mockReset()
+    .mockResolvedValue({} as never);
   vi.mocked(sliceUpdate)
     .mockClear()
     .mockResolvedValue(undefined as never);
@@ -230,5 +238,85 @@ describe('recipe-library-dialog — deleting', () => {
     expect(vm.toast).toBe('not found');
     expect(vm.rows).toHaveLength(1);
     expect(irrigationRecipes$.get()).toHaveLength(1);
+  });
+});
+
+function zoneDevice(id: string, drifted: boolean): GrowspaceDevice {
+  return {
+    deviceId: id,
+    name: id,
+    plants: [],
+    irrigationZones: [
+      {
+        id: 'z1',
+        name: '',
+        applied_recipe: { id: 'r1', revision: 1, values: CROP_STEERING },
+        applied_recipe_drifted: drifted,
+      },
+    ],
+  } as unknown as GrowspaceDevice;
+}
+
+async function saveRevision(el: RecipeLibraryDialog): Promise<void> {
+  await intent(el, 'recipe-edit-started', { recipeId: 'r1' });
+  await intent(el, 'recipe-value-changed', { field: 'target_vwc_percent', value: 60 });
+  await intent(el, 'recipe-save-requested');
+}
+
+describe('recipe edit — reapply offer', () => {
+  it('offers older zones after a revision increase without stamping on save', async () => {
+    setDevices([zoneDevice('A', false), zoneDevice('B', true)]);
+    vi.mocked(sliceUpdate).mockResolvedValueOnce(recipe({ revision: 2 }));
+    const el = await mount([recipe({ revision: 1 })]);
+    await saveRevision(el);
+    const editor = el.shadowRoot!.querySelector('irrigation-recipe-library')!;
+    await (editor as any).updateComplete;
+    const checkboxes =
+      editor.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type=checkbox]');
+    expect(Array.from(checkboxes, (input) => input.checked)).toEqual([true, false]);
+    expect(sliceApply).not.toHaveBeenCalled();
+    await intent(el, 'recipe-reapply-requested');
+    expect(sliceApply).toHaveBeenCalledExactlyOnceWith('A', 'r1', 'z1');
+  });
+  it('keeps failed rows with errors and retries only those rows', async () => {
+    setDevices([zoneDevice('A', false), zoneDevice('B', false), zoneDevice('C', true)]);
+    vi.mocked(sliceUpdate).mockResolvedValueOnce(recipe({ revision: 2 }));
+    vi.mocked(sliceApply)
+      .mockResolvedValueOnce({} as never)
+      .mockRejectedValueOnce(new Error('Pump unavailable'));
+    const el = await mount([recipe({ revision: 1 })]);
+    await saveRevision(el);
+    await intent(el, 'recipe-reapply-requested');
+    const editor = el.shadowRoot!.querySelector('irrigation-recipe-library')! as any;
+    expect(editor.vm.reapply.zones).toMatchObject([
+      { growspaceId: 'B', error: 'Pump unavailable' },
+    ]);
+    await intent(el, 'recipe-reapply-requested');
+    expect(vi.mocked(sliceApply).mock.calls).toEqual([
+      ['A', 'r1', 'z1'],
+      ['B', 'r1', 'z1'],
+      ['B', 'r1', 'z1'],
+    ]);
+  });
+  it('does not offer reapplication for a rename or a value no-op', async () => {
+    setDevices([zoneDevice('A', false)]);
+    vi.mocked(sliceUpdate).mockResolvedValueOnce(recipe({ revision: 1 }));
+    const el = await mount([recipe({ revision: 1 })]);
+    await saveRevision(el);
+    const editor = el.shadowRoot!.querySelector('irrigation-recipe-library')! as any;
+    expect(editor.vm.reapply).toBeNull();
+    expect(sliceApply).not.toHaveBeenCalled();
+  });
+  it('allows selecting a tweaked zone and dismissing without applying', async () => {
+    setDevices([zoneDevice('B', true)]);
+    vi.mocked(sliceUpdate).mockResolvedValueOnce(recipe({ revision: 2 }));
+    const el = await mount([recipe({ revision: 1 })]);
+    await saveRevision(el);
+    await intent(el, 'recipe-reapply-toggled', { growspaceId: 'B', zoneId: 'z1' });
+    const editor = el.shadowRoot!.querySelector('irrigation-recipe-library')! as any;
+    expect(editor.vm.reapply.zones[0].selected).toBe(true);
+    await intent(el, 'recipe-reapply-dismissed');
+    expect(editor.vm.reapply).toBeNull();
+    expect(sliceApply).not.toHaveBeenCalled();
   });
 });

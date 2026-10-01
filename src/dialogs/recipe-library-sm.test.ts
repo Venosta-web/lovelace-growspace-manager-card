@@ -210,3 +210,73 @@ describe('recipe library SM — draft seeding', () => {
     });
   });
 });
+
+describe('recipe library SM — reapplying a revision', () => {
+  const offer = {
+    recipeId: 'r1',
+    revision: 2,
+    zones: [
+      {
+        growspaceId: 'A',
+        zoneId: 'default',
+        label: 'A',
+        revision: 1,
+        drifted: false,
+        autoAdvance: false,
+        selected: true,
+      },
+      {
+        growspaceId: 'B',
+        zoneId: 'default',
+        label: 'B',
+        revision: 1,
+        drifted: true,
+        autoAdvance: false,
+        selected: false,
+      },
+    ],
+  };
+  function offered(): RecipeLibrarySM {
+    return transition(transition(editing(), { type: 'SaveRequested' }), {
+      type: 'SaveResolved',
+      offer,
+    });
+  }
+  it('opens the offer only when an in-flight save resolves with affected zones', () => {
+    expect(offered().status).toEqual({ kind: 'reapply', offer });
+    const idle = createInitialSM();
+    expect(transition(idle, { type: 'SaveResolved', offer })).toBe(idle);
+  });
+  it('keeps a shared zone id scoped to its growspace', () => {
+    const sm = transition(offered(), {
+      type: 'ReapplyToggled',
+      growspaceId: 'B',
+      zoneId: 'default',
+    });
+    expect(sm.status).toMatchObject({ offer: { zones: [{ selected: true }, { selected: true }] } });
+  });
+  it('refuses an empty selection and ignores selection while applying', () => {
+    const sm = transition(offered(), {
+      type: 'ReapplyToggled',
+      growspaceId: 'A',
+      zoneId: 'default',
+    });
+    expect(transition(sm, { type: 'ReapplyRequested' })).toBe(sm);
+    const running = transition(offered(), { type: 'ReapplyRequested' });
+    expect(transition(running, { type: 'ReapplyDismissed' })).toBe(running);
+    expect(
+      transition(running, { type: 'ReapplyToggled', growspaceId: 'A', zoneId: 'default' })
+    ).toBe(running);
+  });
+  it('keeps only failed zones selected for retry and closes after success', () => {
+    const running = transition(offered(), { type: 'ReapplyRequested' });
+    const failure = { ...offer.zones[0], error: 'Unavailable' };
+    expect(transition(running, { type: 'ReapplyResolved', failures: [failure] }).status).toEqual({
+      kind: 'reapply',
+      offer: { ...offer, zones: [failure] },
+    });
+    expect(transition(running, { type: 'ReapplyResolved', failures: [] }).status).toEqual({
+      kind: 'idle',
+    });
+  });
+});

@@ -8,10 +8,9 @@
  * Does NOT satisfy DialogStateMachine — the library editor has no navigation
  * tabs with per-tab draft state. Shape is flat, like the Inbox panel's.
  *
- * The editor is a **library** surface, not a growspace one: it edits recipes
- * as objects, and the growspaces that carry them are not in scope here. That
- * is what makes the state this small — a selection, an optional draft over the
- * selected recipe, and the delete confirmation.
+ * The library is global. After a value edit raises the revision, the editor
+ * offers explicit reapplication to zones across every growspace; saving alone
+ * never changes a zone. Selection and partial failures live in this machine.
  *
  * The draft holds the values wire-shaped, exactly as `IrrigationRecipe` carries
  * them, because that is what `update_irrigation_recipe` accepts. Only the
@@ -45,8 +44,27 @@ export interface RecipeDraft {
 
 // ─── Status ───────────────────────────────────────────────────────────────────
 
+export interface RecipeReapplyZone {
+  growspaceId: string;
+  zoneId: string;
+  label: string;
+  revision: number;
+  drifted: boolean | null;
+  autoAdvance: boolean;
+  selected: boolean;
+  error?: string;
+}
+
+export interface RecipeReapplyOffer {
+  recipeId: string;
+  revision: number;
+  zones: RecipeReapplyZone[];
+}
+
 type RecipeLibraryStatus =
   | { kind: 'idle' }
+  | { kind: 'reapply'; offer: RecipeReapplyOffer }
+  | { kind: 'reapplying'; offer: RecipeReapplyOffer }
   | { kind: 'editing'; draft: RecipeDraft }
   | { kind: 'applying'; draft: RecipeDraft }
   | { kind: 'error'; draft: RecipeDraft; message: string }
@@ -70,7 +88,11 @@ export type RecipeLibraryEvent =
   | { type: 'NameChanged'; name: string }
   | { type: 'ValueChanged'; field: string; value: number | string | boolean | null }
   | { type: 'SaveRequested' }
-  | { type: 'SaveResolved' }
+  | { type: 'SaveResolved'; offer?: RecipeReapplyOffer }
+  | { type: 'ReapplyToggled'; growspaceId: string; zoneId: string }
+  | { type: 'ReapplyRequested' }
+  | { type: 'ReapplyResolved'; failures: RecipeReapplyZone[] }
+  | { type: 'ReapplyDismissed' }
   | { type: 'SaveFailed'; message: string }
   | { type: 'DeleteRequested'; id: string; name: string }
   | { type: 'DeleteConfirmed' }
@@ -148,7 +170,51 @@ export function transition(sm: RecipeLibrarySM, event: RecipeLibraryEvent): Reci
 
     case 'SaveResolved':
       if (sm.status.kind !== 'applying') return sm;
-      return { ...sm, status: { kind: 'idle' }, toast: 'Recipe saved' };
+      return {
+        ...sm,
+        status: event.offer?.zones.length
+          ? { kind: 'reapply', offer: event.offer }
+          : { kind: 'idle' },
+        toast: 'Recipe saved',
+      };
+
+    case 'ReapplyToggled':
+      if (sm.status.kind !== 'reapply') return sm;
+      return {
+        ...sm,
+        status: {
+          kind: 'reapply',
+          offer: {
+            ...sm.status.offer,
+            zones: sm.status.offer.zones.map((zone) =>
+              zone.growspaceId === event.growspaceId && zone.zoneId === event.zoneId
+                ? { ...zone, selected: !zone.selected }
+                : zone
+            ),
+          },
+        },
+      };
+
+    case 'ReapplyRequested':
+      if (sm.status.kind !== 'reapply' || !sm.status.offer.zones.some((zone) => zone.selected))
+        return sm;
+      return { ...sm, status: { kind: 'reapplying', offer: sm.status.offer } };
+
+    case 'ReapplyResolved':
+      if (sm.status.kind !== 'reapplying') return sm;
+      return {
+        ...sm,
+        status: event.failures.length
+          ? { kind: 'reapply', offer: { ...sm.status.offer, zones: event.failures } }
+          : { kind: 'idle' },
+        toast: event.failures.length
+          ? 'Some zones could not be updated. Retry the failed zones.'
+          : 'Selected zones updated',
+      };
+
+    case 'ReapplyDismissed':
+      if (sm.status.kind !== 'reapply') return sm;
+      return { ...sm, status: { kind: 'idle' } };
 
     case 'SaveFailed':
       if (sm.status.kind !== 'applying') return sm;
