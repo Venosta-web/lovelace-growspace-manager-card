@@ -27,7 +27,7 @@
  * **Confirm flows (ADR-0012).** Both the Steering Mode selector and the Phase card
  * gesture open a confirm overlay. The VM only projects the confirm sub-state
  * (`confirmMode` / `confirmPhase`); the Shell keeps the confirm side-effects (the
- * `applySteeringMode` store action and `_saveSettings`).
+ * `applySteeringMode` and `setSteeringPhase` store actions).
  *
  * **Derived help copy (ADR-0046).** The Timing section's explainer names this
  * growspace's own phase boundaries, so alone among the tab's help it is derived

@@ -1,3 +1,9 @@
+## [1.3.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.3.1...v1.3.2) (2026-11-03)
+
+### Bug Fixes
+
+* **irrigation:** fix settings saves rejected by Growspace Manager 1.2.4 at `active_steering_phase`. Ordinary settings saves no longer submit the live steering phase; deliberate phase overrides use `set_steering_phase` instead.
+
 ## [1.3.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.3.0...v1.3.1) (2026-08-26)
 
 

@@ -272,9 +272,8 @@ describe('IrrigationDialog', () => {
       element.device = undefined;
       const consoleSpy = vi.spyOn(console, 'error');
 
-      // ADR-0015: _saveSettings / _saveAll are synchronous dispatchers; with no
-      // device they return early without dispatching, so no effect runs.
-      (element as any)._saveSettings();
+      // ADR-0015: _saveAll is a synchronous dispatcher; with no device it
+      // returns early without dispatching, so no effect runs.
       await (element as any)._addIrrigationTime('12:00');
       await (element as any)._removeIrrigationTime('12:00');
       await (element as any)._addDrainTime('12:00');

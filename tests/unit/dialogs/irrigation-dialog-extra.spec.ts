@@ -452,7 +452,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
       // runs the effect post-render and owns failure handling. When the effect
       // rejects, SaveFailed -> idle + a transient error toast (no unhandled rejection).
       sliceMocks.saveIrrigationSettings.mockRejectedValueOnce(new Error('no hass'));
-      (element as any)._saveSettings();
+      (element as any)._saveAll();
       await runController(element);
       expect((element as any)._sm.toast).toBe('Failed to save irrigation settings');
 

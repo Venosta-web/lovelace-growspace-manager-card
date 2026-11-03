@@ -1,7 +1,7 @@
-/*! growspace-e2e-build source=ece825f31165362b1d2786c46bfa476960ee53d975d24d5645ea2aa2e4c3529e id=ce21957c3471ab801f933aea7298efd0 */
-import { h as hassCall, c as callServiceReturning, T as TriggerVisionCheckupResponseSchema, a as atom, G as GetSnapshotsResponseSchema, C as CaptureSnapshotResponseSchema, b as GetVisionHistoryResponseSchema, U as UpdateVisionCheckupConfigResponseSchema, S as SaveNotificationSettingsResponseSchema, d as dialogStyles, i, _ as __decorate, n, t, e as i$1, E, m as mdiPlus, x, f as mdiArrowLeft, g as mdiPencil, j as mdiDelete, k as mdiFlask, l as mdiCheck, o as mdiAlertCircle, p as libExports, q as nutrientPresets$, r as nutrientInventory$, s as fetchNutrientPresets, u as reducedMotion, v as c, w as hassContext, y as r, z as fetchStrainLibrary, A as mdiSprout, B as mdiClose, D as mdiContentCopy, F as mdiChevronRight, H as mdiDna, I as mdiInformationOutline, J as activeThreadId$, K as conversationThreads$, L as isAiLoading$, M as aiError$, N as aiEnabled$, O as sendMessage, P as startConversation, Q as mdiMessageOutline, R as mdiPinOff, V as mdiPin, W as togglePin, X as mdiBrain, Y as c$1, Z as applyAction, $ as mdiPaperclip, a0 as mdiSend, a1 as saveAiAgent, a2 as aiBriefing$, a3 as briefingError$, a4 as fetchBriefing, a5 as aiMode$, a6 as mdiRefresh, a7 as aiAlerts$, a8 as fetchAlerts, a9 as resolveAlert, aa as mdiInbox, ab as fetchConversationThreads, ac as fetchAiSettings, ad as mdiCog, ae as mdiNewspaper, af as saveAiSettings, ag as mdiMicrophone, ah as storeContext, ai as scorePlant, aj as advancePlantStage, ak as mdiLeaf, al as computed, am as mdiWeatherNight, an as mdiCounter, ao as mdiMinus, ap as mdiArrowUp, aq as mdiArrowDown, ar as token, as as computeCropSteeringCycle, at as computePhases, au as resolveSaturationCrossing, av as fmtMinuteOfDay, aw as mdiChartTimelineVariantShimmer, ax as mdiInformation, ay as mdiContentSave, az as mdiLockOutline, aA as mdiAlert, aB as irrigationConfigs$, aC as tankLevels$, aD as fetchECRampCurves, aE as cropSteeringHistory$, aF as fetchCropSteeringHistory, aG as PollingController, aH as saveIrrigationSettings, aI as updateIrrigationStrategy, aJ as configureDrainMonitoring, aK as setEcTargetRanges, aL as getIrrigationAnalytics, aM as runIrrigationCycle, aN as addIrrigationTime, aO as removeIrrigationTime, aP as addDrainTime, aQ as removeDrainTime, aR as resetWaterTracking, aS as logDrainReading, aT as mdiCompassOutline, aU as mdiBullseyeArrow, aV as mdiCalendarClock, aW as mdiWater, aX as mdiChartBar, aY as mdiArrowDownCircle, aZ as mdiTrendingUp, a_ as applySteeringMode, a$ as configureEnvironment, b0 as ecRampCurves$, b1 as saveECRampCurve, b2 as removeECRampCurve, b3 as e$1, b4 as mdiCamera, b5 as mdiImageMultiple, b6 as mdiCameraFlip, b7 as PlantUtils, b8 as mdiCameraPlus, b9 as fetchGrowReport, ba as withToast, bb as exportGrowReport, bc as mdiCodeJson, bd as mdiFilePdfBox, be as addGrowspaceNote, bf as mdiFormatListBulleted, bg as mdiChartTimelineVariant, bh as mdiFileChart, bi as i$2, bj as t$1, bk as T, bl as e$2, bm as mdiPrinter, bn as mdiBluetooth, bo as mdiBattery, bp as printLabel, bq as activeDevices$, br as showToast, bs as takeClone, bt as mdiEye, bu as mdiAlertCircleOutline, bv as e$3, bw as mdiFullscreen, bx as mdiDownload, by as mdiChevronLeft, bz as mdiPause, bA as mdiPlay, bB as o$2, bC as mdiCompare, bD as mdiAccountGroup, bE as mdiImage, bF as mdiCloudUpload, bG as mdiFilterRemoveOutline, bH as mdiMagnify, bI as mdiWeatherSunny, bJ as mdiTuneVariant, bK as mdiWeb, bL as mdiSeed, bM as mdiChartDonut, bN as mdiClockOutline, bO as mdiTrophy, bP as mdiText, bQ as getStrainLineageTree, bR as updateStrainLineageTree, bS as showError, bT as mdiStar, bU as mdiStarOutline, bV as mdiFileUpload, bW as b, bX as mdiChevronDown, bY as mdiBookOpenVariant, bZ as mdiFitToPageOutline, b_ as updateStrainMeta, b$ as mdiArrowCollapse, c0 as mdiArrowExpand, c1 as mdiLoading, c2 as TrainingTechnique, c3 as mdiDumbbell, c4 as fetchIPMPresets, c5 as mdiBug, c6 as mdiTestTube, c7 as mdiMoleculeCo2, c8 as mdiBottleTonicPlus, c9 as removeNutrientStock, ca as updateNutrientStock, cb as fetchNutrientInventory, cc as removeNutrientPreset, cd as saveNutrientPreset, ce as mdiWaterOutline, cf as sharedStyles, cg as variables, ch as statusTokens, ci as mdiFlower, cj as mdiHairDryer, ck as mdiCannabis, cl as mdiNoteText, cm as addPlantNote, cn as deleteEvent, co as getDateKey, cp as formatRelativeDay, cq as formatTime, cr as mdiThermometer, cs as mdiWaterPercent, ct as mdiGauge, cu as mdiFlaskOutline, cv as mdiFlash, cw as mdiCupWater, cx as mdiTag, cy as saveHarvestMetrics, cz as setVisualTag, cA as logDryingWeight, cB as logMoistureReading, cC as fetchPlantEvents, cD as fetchGrowspaceEvents, cE as mdiNoteOutline, cF as deletePlant, cG as PlantStage, cH as openDialog, cI as movePlantToGrowspace, cJ as strainLibrary$, cK as setHass, cL as seedBatches$, cM as pollinationEvents$, cN as fetchGeneticsData, cO as updatePlant, cP as openTrainingDialog, cQ as addSeedBatch, cR as updateSeedBatch, cS as logPollinationEvent, cT as harvestSeeds, cU as updatePollinationEvent, cV as deletePollinationEvent, cW as removeSeedBatch, cX as addPlants, cY as openStrainRecommendationDialog, cZ as addStrain, c_ as removeStrain, c$ as setStrainLibrary, d0 as addPlant, d1 as closeDialog, d2 as activeDialog$, d3 as updateBreeder, d4 as deleteBreeder, d5 as addGrowspace, d6 as updateGrowspace, d7 as removeGrowspace, d8 as removeEnvironment, d9 as configureExhaustFan, da as getStrainRecommendation, db as waterPlant, dc as waterGrowspace, dd as saveIPMPreset, de as removeIPMPreset, df as applyIPM, dg as portalVariables, dh as e$4, di as configContext } from './growspace-index-Cd02-Yps.js';
-import { n as needsExhaustCall } from './growspace-config-dialog-ES-ejrjj.js';
-import { r as rampPalettesEqual, a as resolveRamp, b as rampVar } from './growspace-environment-ramp-xrUWW1pn.js';
+/*! growspace-e2e-build source=ebaf56ae70c264b3853898c96d721e7750b8f907d426d425633e211bd257e8a6 id=d09c01be3773fe87fde33251bcde0661 */
+import { h as hassCall, c as callServiceReturning, T as TriggerVisionCheckupResponseSchema, a as atom, G as GetSnapshotsResponseSchema, C as CaptureSnapshotResponseSchema, b as GetVisionHistoryResponseSchema, U as UpdateVisionCheckupConfigResponseSchema, S as SaveNotificationSettingsResponseSchema, d as dialogStyles, i, _ as __decorate, n, t, e as i$1, E, m as mdiPlus, x, f as mdiArrowLeft, g as mdiPencil, j as mdiDelete, k as mdiFlask, l as mdiCheck, o as mdiAlertCircle, p as libExports, q as nutrientPresets$, r as nutrientInventory$, s as fetchNutrientPresets, u as reducedMotion, v as c, w as hassContext, y as r, z as fetchStrainLibrary, A as mdiSprout, B as mdiClose, D as mdiContentCopy, F as mdiChevronRight, H as mdiDna, I as mdiInformationOutline, J as activeThreadId$, K as conversationThreads$, L as isAiLoading$, M as aiError$, N as aiEnabled$, O as sendMessage, P as startConversation, Q as mdiMessageOutline, R as mdiPinOff, V as mdiPin, W as togglePin, X as mdiBrain, Y as c$1, Z as applyAction, $ as mdiPaperclip, a0 as mdiSend, a1 as saveAiAgent, a2 as aiBriefing$, a3 as briefingError$, a4 as fetchBriefing, a5 as aiMode$, a6 as mdiRefresh, a7 as aiAlerts$, a8 as fetchAlerts, a9 as resolveAlert, aa as mdiInbox, ab as fetchConversationThreads, ac as fetchAiSettings, ad as mdiCog, ae as mdiNewspaper, af as saveAiSettings, ag as mdiMicrophone, ah as storeContext, ai as scorePlant, aj as advancePlantStage, ak as mdiLeaf, al as computed, am as mdiWeatherNight, an as mdiCounter, ao as mdiMinus, ap as mdiArrowUp, aq as mdiArrowDown, ar as token, as as computeCropSteeringCycle, at as computePhases, au as resolveSaturationCrossing, av as fmtMinuteOfDay, aw as mdiChartTimelineVariantShimmer, ax as mdiInformation, ay as mdiContentSave, az as mdiLockOutline, aA as mdiAlert, aB as irrigationConfigs$, aC as tankLevels$, aD as fetchECRampCurves, aE as cropSteeringHistory$, aF as fetchCropSteeringHistory, aG as PollingController, aH as saveIrrigationSettings, aI as updateIrrigationStrategy, aJ as configureDrainMonitoring, aK as setEcTargetRanges, aL as setSteeringPhase, aM as getIrrigationAnalytics, aN as runIrrigationCycle, aO as addIrrigationTime, aP as removeIrrigationTime, aQ as addDrainTime, aR as removeDrainTime, aS as resetWaterTracking, aT as logDrainReading, aU as mdiCompassOutline, aV as mdiBullseyeArrow, aW as mdiCalendarClock, aX as mdiWater, aY as mdiChartBar, aZ as mdiArrowDownCircle, a_ as mdiTrendingUp, a$ as applySteeringMode, b0 as configureEnvironment, b1 as ecRampCurves$, b2 as saveECRampCurve, b3 as removeECRampCurve, b4 as e$1, b5 as mdiCamera, b6 as mdiImageMultiple, b7 as mdiCameraFlip, b8 as PlantUtils, b9 as mdiCameraPlus, ba as fetchGrowReport, bb as withToast, bc as exportGrowReport, bd as mdiCodeJson, be as mdiFilePdfBox, bf as addGrowspaceNote, bg as mdiFormatListBulleted, bh as mdiChartTimelineVariant, bi as mdiFileChart, bj as i$2, bk as t$1, bl as T, bm as e$2, bn as mdiPrinter, bo as mdiBluetooth, bp as mdiBattery, bq as printLabel, br as activeDevices$, bs as showToast, bt as takeClone, bu as mdiEye, bv as mdiAlertCircleOutline, bw as e$3, bx as mdiFullscreen, by as mdiDownload, bz as mdiChevronLeft, bA as mdiPause, bB as mdiPlay, bC as o$2, bD as mdiCompare, bE as mdiAccountGroup, bF as mdiImage, bG as mdiCloudUpload, bH as mdiFilterRemoveOutline, bI as mdiMagnify, bJ as mdiWeatherSunny, bK as mdiTuneVariant, bL as mdiWeb, bM as mdiSeed, bN as mdiChartDonut, bO as mdiClockOutline, bP as mdiTrophy, bQ as mdiText, bR as getStrainLineageTree, bS as updateStrainLineageTree, bT as showError, bU as mdiStar, bV as mdiStarOutline, bW as mdiFileUpload, bX as b, bY as mdiChevronDown, bZ as mdiBookOpenVariant, b_ as mdiFitToPageOutline, b$ as updateStrainMeta, c0 as mdiArrowCollapse, c1 as mdiArrowExpand, c2 as mdiLoading, c3 as TrainingTechnique, c4 as mdiDumbbell, c5 as fetchIPMPresets, c6 as mdiBug, c7 as mdiTestTube, c8 as mdiMoleculeCo2, c9 as mdiBottleTonicPlus, ca as removeNutrientStock, cb as updateNutrientStock, cc as fetchNutrientInventory, cd as removeNutrientPreset, ce as saveNutrientPreset, cf as mdiWaterOutline, cg as sharedStyles, ch as variables, ci as statusTokens, cj as mdiFlower, ck as mdiHairDryer, cl as mdiCannabis, cm as mdiNoteText, cn as addPlantNote, co as deleteEvent, cp as getDateKey, cq as formatRelativeDay, cr as formatTime, cs as mdiThermometer, ct as mdiWaterPercent, cu as mdiGauge, cv as mdiFlaskOutline, cw as mdiFlash, cx as mdiCupWater, cy as mdiTag, cz as saveHarvestMetrics, cA as setVisualTag, cB as logDryingWeight, cC as logMoistureReading, cD as fetchPlantEvents, cE as fetchGrowspaceEvents, cF as mdiNoteOutline, cG as deletePlant, cH as PlantStage, cI as openDialog, cJ as movePlantToGrowspace, cK as strainLibrary$, cL as setHass, cM as seedBatches$, cN as pollinationEvents$, cO as fetchGeneticsData, cP as updatePlant, cQ as openTrainingDialog, cR as addSeedBatch, cS as updateSeedBatch, cT as logPollinationEvent, cU as harvestSeeds, cV as updatePollinationEvent, cW as deletePollinationEvent, cX as removeSeedBatch, cY as addPlants, cZ as openStrainRecommendationDialog, c_ as addStrain, c$ as removeStrain, d0 as setStrainLibrary, d1 as addPlant, d2 as closeDialog, d3 as activeDialog$, d4 as updateBreeder, d5 as deleteBreeder, d6 as addGrowspace, d7 as updateGrowspace, d8 as removeGrowspace, d9 as removeEnvironment, da as configureExhaustFan, db as getStrainRecommendation, dc as waterPlant, dd as waterGrowspace, de as saveIPMPreset, df as removeIPMPreset, dg as applyIPM, dh as portalVariables, di as e$4, dj as configContext } from './growspace-index-BsfmE8Mc.js';
+import { n as needsExhaustCall } from './growspace-config-dialog-0bhjP4TU.js';
+import { r as rampPalettesEqual, a as resolveRamp, b as rampVar } from './growspace-environment-ramp-TTehMv4n.js';
 
 /**
  * Camera slice — atoms and mutators for snapshot and vision checkup data.
@@ -7945,6 +7945,7 @@ function resetActiveTabDraft(sm, device) {
 const ACTION_ERROR_MESSAGES = {
     'save-all': 'Failed to save irrigation settings',
     'save-settings': 'Failed to save irrigation settings',
+    'set-steering-phase': 'Failed to change the steering phase',
     'run-now': 'Failed to run irrigation cycle',
     'edit-irrigation-time': 'Failed to save irrigation time',
     'edit-drain-time': 'Failed to save drain time',
@@ -9438,7 +9439,7 @@ function createSubstrateEcTabViewModel($sm, $caps, $device) {
  * **Confirm flows (ADR-0012).** Both the Steering Mode selector and the Phase card
  * gesture open a confirm overlay. The VM only projects the confirm sub-state
  * (`confirmMode` / `confirmPhase`); the Shell keeps the confirm side-effects (the
- * `applySteeringMode` store action and `_saveSettings`).
+ * `applySteeringMode` and `setSteeringPhase` store actions).
  *
  * **Derived help copy (ADR-0046).** The Timing section's explainer names this
  * growspace's own phase boundaries, so alone among the tab's help it is derived
@@ -12839,7 +12840,7 @@ const ADAPTIVE = {
  *
  * Confirm flows (ADR-0012) — the component renders the overlays from
  * `vm.confirmMode` / `vm.confirmPhase` and emits intents; the Shell owns the
- * side-effects (the `applySteeringMode` store action and `_saveSettings`):
+ * side-effects (the `applySteeringMode` and `setSteeringPhase` store actions):
  *       `steering-mode-requested`  detail: { mode: SteeringMode }   (open confirm)
  *       `steering-mode-confirmed`                                   (Apply)
  *       `steering-mode-cancelled`                                   (Cancel/close)
@@ -13636,6 +13637,7 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
         this.effects = {
             'save-all': (params) => this._effectSaveAll(params),
             'save-settings': (params) => this._effectSaveSettings(params),
+            'set-steering-phase': (params) => this._effectSetSteeringPhase(params),
             'run-now': () => this._effectRunNow(),
             'edit-irrigation-time': (params) => this._effectEditIrrigationTime(params),
             'edit-drain-time': (params) => this._effectEditDrainTime(params),
@@ -13891,7 +13893,6 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
             autoAdvanceP1ToP2: cfg.autoAdvanceP1ToP2,
             autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
             haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
-            activeSteeringPhase: this._sm.tabs.steering.phase,
         };
         // Older integration releases expose this value in the growspace payload but
         // reject it in set_irrigation_settings. Only send the newer service field
@@ -13955,20 +13956,15 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
         await configureDrainMonitoring(id, params.drainConfig);
         await setEcTargetRanges(id, params.ecTargetRanges);
     }
-    /** Save just the settings (used by phase-change confirm). Synchronous dispatcher. */
-    _saveSettings() {
-        if (!this.device?.deviceId)
-            return;
-        this.dispatch({
-            type: 'SaveRequested',
-            action: 'save-settings',
-            params: this._buildSettingsParams(),
-        });
-    }
     async _effectSaveSettings(params) {
         if (!this.device?.deviceId)
             return;
         await saveIrrigationSettings(this.device.deviceId, params);
+    }
+    async _effectSetSteeringPhase(params) {
+        if (!this.device?.deviceId)
+            return;
+        await setSteeringPhase(this.device.deviceId, params.phase);
     }
     async _fetchStageAnalytics() {
         if (!this.device?.deviceId)
@@ -14541,7 +14537,7 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
     // The Shell owns the translation. The steering UI writes TWO drafts, so the
     // steering tab emits two distinct draft intents (steering vs config). The two
     // confirm-CONFIRMED intents keep their preserved side-effects here (ADR-0012):
-    // the `applySteeringMode` store action and `_saveSettings`.
+    // the `applySteeringMode` and `setSteeringPhase` store actions.
     /** Steering draft field → UPDATE_STEERING_DRAFT. */
     _onSteeringDraftChanged(e) {
         this._sm = transition$6(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: e.detail.partial });
@@ -14579,10 +14575,23 @@ let IrrigationDialog = class IrrigationDialog extends i$1 {
             return;
         this._sm = transition$6(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: e.detail.phase });
     }
-    /** Confirm the phase change (ADR-0012): commit the transition, then persist. */
+    /** Confirm the phase change (ADR-0012): commit the transition, then persist.
+     *
+     * Persisted by its own action, not by a settings save: the phase belongs to
+     * the backend steering machine, so writing it is this one gesture and never
+     * a passenger on the buffered form.
+     */
     _onPhaseChangeConfirmed() {
+        const phase = this._sm.tabs.steering.sub;
+        if (phase.kind !== 'confirm-phase')
+            return;
+        const pending = phase.pending;
         this._sm = transition$6(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
-        this._saveSettings();
+        this.dispatch({
+            type: 'SaveRequested',
+            action: 'set-steering-phase',
+            params: { phase: pending },
+        });
     }
     /** Cancel/close the phase-change confirm overlay. */
     _onPhaseChangeCancelled() {
@@ -40751,4 +40760,4 @@ GrowspaceDialogHost = __decorate([
 ], GrowspaceDialogHost);
 
 export { GrowspaceDialogHost };
-//# sourceMappingURL=growspace-growspace-dialog-host.container-BETc3dx7.js.map
+//# sourceMappingURL=growspace-growspace-dialog-host.container-tE98v1LQ.js.map

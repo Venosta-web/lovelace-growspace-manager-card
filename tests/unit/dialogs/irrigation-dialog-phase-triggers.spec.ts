@@ -41,6 +41,7 @@ vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
 // keeping the real atoms the dialog subscribes to.
 const sliceMocks = vi.hoisted(() => ({
   getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
+  setSteeringPhase: vi.fn().mockResolvedValue(undefined),
   configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
   setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
   logDrainReading: vi.fn().mockResolvedValue(undefined),
@@ -51,6 +52,7 @@ vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
   return {
     ...actual,
     getIrrigationAnalytics: sliceMocks.getIrrigationAnalytics,
+    setSteeringPhase: sliceMocks.setSteeringPhase,
     configureDrainMonitoring: sliceMocks.configureDrainMonitoring,
     setEcTargetRanges: sliceMocks.setEcTargetRanges,
     logDrainReading: sliceMocks.logDrainReading,
@@ -439,7 +441,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
     await element.updateComplete;
 
     // The confirm gesture now flows as a Tab Intent the Shell translates
-    // (CONFIRM_PHASE_CHANGE + _saveSettings).
+    // (CONFIRM_PHASE_CHANGE + the `set-steering-phase` effect). The phase is
+    // written by its own action, never as part of a settings save.
     const child = element.shadowRoot!.querySelector('irrigation-steering-tab')!;
     child.dispatchEvent(
       new CustomEvent('phase-change-confirmed', { bubbles: true, composed: true })
@@ -448,6 +451,11 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
     expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
     expect((element as any)._sm.tabs.steering.phase).toBe('p1');
+
+    // The MutationRunController runs the effect post-render.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await element.updateComplete;
+    expect(sliceMocks.setSteeringPhase).toHaveBeenCalledWith('gs-pt', 'p1');
   });
 
   it('clicking Cancel button in dialog closes the dialog and keeps active phase unchanged', async () => {

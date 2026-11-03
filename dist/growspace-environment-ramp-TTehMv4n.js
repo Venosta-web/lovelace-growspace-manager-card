@@ -1,4 +1,4 @@
-/*! growspace-e2e-build source=ece825f31165362b1d2786c46bfa476960ee53d975d24d5645ea2aa2e4c3529e id=ce21957c3471ab801f933aea7298efd0 */
+/*! growspace-e2e-build source=ebaf56ae70c264b3853898c96d721e7750b8f907d426d425633e211bd257e8a6 id=d09c01be3773fe87fde33251bcde0661 */
 /**
  * The environment ramp: one five-stop scale, authored once as token NAMES.
  *
@@ -86,4 +86,4 @@ function resolveRamp(probe) {
 const rampPalettesEqual = (a, b) => a !== undefined && ENVIRONMENT_RAMP.every((stop) => a[stop.role] === b[stop.role]);
 
 export { ENVIRONMENT_RAMP as E, resolveRamp as a, rampVar as b, rampPalettesEqual as r };
-//# sourceMappingURL=growspace-environment-ramp-xrUWW1pn.js.map
+//# sourceMappingURL=growspace-environment-ramp-TTehMv4n.js.map

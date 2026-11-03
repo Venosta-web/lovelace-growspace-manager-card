@@ -1717,6 +1717,7 @@ describe('mutation-run events (ADR-0015)', () => {
   it('actionErrorMessage maps known actions and falls back for unknown ones', () => {
     expect(actionErrorMessage('save-settings')).toBe('Failed to save irrigation settings');
     expect(actionErrorMessage('edit-drain-time')).toBe('Failed to save drain time');
+    expect(actionErrorMessage('set-steering-phase')).toBe('Failed to change the steering phase');
     expect(actionErrorMessage('nonexistent')).toBe('Operation failed');
   });
 });
