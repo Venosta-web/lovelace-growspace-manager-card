@@ -225,6 +225,7 @@ export class ConfigGrowlightTab extends LitElement {
           </div>
         </div>
       </div>
+      <slot name="supplemental-lights"></slot>
       <div class="detail-card">
         <config-section-header
           .icon=${mdiWhiteBalanceSunny}
