@@ -108,7 +108,6 @@ export const StrainDataSchema = z.object({
       aroma: z.unknown().optional(),
       taste: z.unknown().optional(),
     })
-    .optional()
     // `.prefault` rather than `.default`: the meta fields transform null to
     // undefined, so the output type carries them as present-but-undefined and
     // an output-side default of {} no longer satisfies it.

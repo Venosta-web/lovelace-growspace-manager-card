@@ -563,7 +563,6 @@ export const GrowspaceAPIResponseSchema = z.object({
       drain_pump_state: z.string().nullable().optional(),
       active_events: z.record(z.string(), z.unknown()).optional().default({}),
     })
-    .optional()
     .prefault({}),
 
   sensors: z
@@ -583,7 +582,6 @@ export const GrowspaceAPIResponseSchema = z.object({
         .default({}),
       sensor_groups: z.array(z.unknown()).optional().default([]),
     })
-    .optional()
     .prefault({}),
 
   // Same wire shape as get_subareas (SubareaSchema). Optional: older backends
@@ -592,7 +590,7 @@ export const GrowspaceAPIResponseSchema = z.object({
 
   irrigation: z
     .object({
-      irrigation_config: IrrigationConfigSchema.optional().prefault({}),
+      irrigation_config: IrrigationConfigSchema.prefault({}),
       irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
       // Server-authoritative Volume Mode gate (ADR-0017): true only when a
       // substrate profile and a positive pump flow rate are both configured.
@@ -638,7 +636,6 @@ export const GrowspaceAPIResponseSchema = z.object({
       // library no longer holds.
       program: GrowspaceProgramStateSchema.nullable().optional(),
     })
-    .optional()
     .prefault({}),
 
   metrics: z
@@ -699,7 +696,6 @@ export const GrowspaceAPIResponseSchema = z.object({
         .nullable()
         .optional(),
     })
-    .optional()
     .prefault({}),
 
   // Global notification settings duplicated onto every growspace payload so

@@ -141,7 +141,6 @@ export const GridApiSchema = z
       .optional()
       .transform((v) => v ?? {}),
   })
-  .optional()
   .prefault({});
 
 export type PlantSlot = z.infer<typeof PlantSlotSchema>;
