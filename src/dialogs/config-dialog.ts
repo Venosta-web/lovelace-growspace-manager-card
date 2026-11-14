@@ -59,6 +59,13 @@ import '../features/config/components/config-sensors-tab';
 import { createSensorsTabViewModel } from '../features/config/viewmodels/sensors-tab.viewmodel';
 import '../features/config/components/config-climate-tab';
 import '../features/config/components/config-growlight-tab';
+import '../features/config/components/supplemental-lights-editor';
+import {
+  getSupplementalLights,
+  saveSupplementalLight,
+  type SupplementalLightEdit,
+  type SupplementalLightSchedule,
+} from '../slices/growspace/supplemental-lights';
 import { createGrowlightTabViewModel } from '../features/config/viewmodels/growlight-tab.viewmodel';
 import {
   isAutomatedMode,
@@ -181,6 +188,13 @@ export class ConfigDialog extends LitElement {
   // ── VPD targets accordion (pure UI ephemeral state) ───────────────────────
   @state() private _openVpdStageId: FanVpdStageKey | '' = '';
 
+  @state() private _supplementalSchedule?: SupplementalLightSchedule;
+  @state() private _supplementalReadError = '';
+  @state() private _supplementalUnsupported = false;
+  private _supplementalGrowspaceId = '';
+  private _supplementalPoll?: number;
+  private _supplementalRead?: AbortController;
+
   private _initialStateApplied = false;
 
   private _entityOptionsStates?: HomeAssistant['states'];
@@ -189,6 +203,7 @@ export class ConfigDialog extends LitElement {
   private _cancelGuardTarget?: HTMLElement;
 
   disconnectedCallback(): void {
+    this._stopSupplementalStatus();
     this._cancelGuardTarget?.removeEventListener('cancel', this._onDialogCancel, true);
     this._cancelGuardTarget = undefined;
     super.disconnectedCallback();
@@ -1228,6 +1243,7 @@ export class ConfigDialog extends LitElement {
       this._initialStateApplied = false;
     }
     if (this.open) this._bindDialogCancelGuard();
+    this._syncSupplementalStatus();
   }
 
   private _seedFromDevice(device?: GrowspaceDevice) {
@@ -1252,7 +1268,12 @@ export class ConfigDialog extends LitElement {
 
   private _close = () => {
     const { heatmap, subareas } = this._sm.tabs;
-    if (heatmap.sub.kind === 'editing-group' || subareas.sub.kind === 'editing-subarea') return;
+    if (
+      heatmap.sub.kind === 'editing-group' ||
+      subareas.sub.kind === 'editing-subarea' ||
+      this._sm.supplementalLightEdit?.saving
+    )
+      return;
     const device = this._deviceForDirtyCheck();
     if (device && isActiveTabDirty(this._sm, device)) {
       this._t({ type: 'REQUEST_CLOSE' });
@@ -1295,6 +1316,7 @@ export class ConfigDialog extends LitElement {
   };
 
   private _switchTab(tab: ConfigTab) {
+    if (this._sm.supplementalLightEdit?.saving) return;
     const device = this._deviceForDirtyCheck();
     this._sm = device
       ? requestTabSwitch(this._sm, tab as ConfigTabId, device)
@@ -1820,6 +1842,10 @@ export class ConfigDialog extends LitElement {
   }
 
   private _handleEnvGrowspaceChange(e: Event) {
+    if (this._sm.supplementalLightEdit?.saving) {
+      (e.target as HTMLSelectElement).value = this._sm.environment.values.selectedGrowspaceId;
+      return;
+    }
     const growspaceId = (e.target as HTMLSelectElement).value;
     const currentDevice = this._deviceForDirtyCheck();
     if (currentDevice && isActiveTabDirty(this._sm, currentDevice)) {
@@ -1830,6 +1856,7 @@ export class ConfigDialog extends LitElement {
   }
 
   private _applyEnvGrowspaceChange(growspaceId: string) {
+    this._t({ type: 'SET_SUPPLEMENTAL_LIGHT_EDIT' });
     const device = this.devices.find((d) => d.deviceId === growspaceId);
     if (device) {
       this._t({ type: 'RESET_FROM_DEVICE', device });
@@ -2138,6 +2165,100 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
+  private _stopSupplementalStatus(): void {
+    window.clearInterval(this._supplementalPoll);
+    this._supplementalRead?.abort();
+    this._supplementalRead = undefined;
+    this._supplementalGrowspaceId = '';
+  }
+
+  private _syncSupplementalStatus(): void {
+    const id =
+      this.open && this.currentTab === ConfigTab.GROWLIGHT
+        ? this._sm.environment.values.selectedGrowspaceId
+        : '';
+    if (id === this._supplementalGrowspaceId) return;
+    this._stopSupplementalStatus();
+    this._supplementalSchedule = undefined;
+    this._supplementalReadError = '';
+    this._supplementalUnsupported = false;
+    if (!id) return;
+    this._supplementalGrowspaceId = id;
+    this._supplementalPoll = window.setInterval(() => void this._refreshSupplementalStatus(), 5000);
+    void this._refreshSupplementalStatus();
+  }
+
+  private async _refreshSupplementalStatus(): Promise<void> {
+    const id = this._supplementalGrowspaceId;
+    if (
+      !id ||
+      this._supplementalUnsupported ||
+      this._supplementalRead ||
+      this._sm.supplementalLightEdit?.saving
+    )
+      return;
+    const request = new AbortController();
+    this._supplementalRead = request;
+    try {
+      const schedule = await getSupplementalLights(id);
+      if (request.signal.aborted) return;
+      this._supplementalSchedule = schedule;
+      this._supplementalReadError = '';
+    } catch (error) {
+      if (request.signal.aborted) return;
+      this._supplementalReadError = error instanceof Error ? error.message : String(error);
+      this._supplementalUnsupported = /unknown command/i.test(this._supplementalReadError);
+    } finally {
+      if (this._supplementalRead === request) this._supplementalRead = undefined;
+    }
+  }
+
+  private async _saveSupplementalLight({
+    remove,
+    releaseAnyway,
+  }: {
+    remove: boolean;
+    releaseAnyway: boolean;
+  }): Promise<void> {
+    const edit = this._sm.supplementalLightEdit;
+    const id = this._supplementalGrowspaceId;
+    if (!id || !edit || edit.saving) return;
+    const pending: SupplementalLightEdit = { ...edit, saving: true, error: undefined };
+    this._t({ type: 'SET_SUPPLEMENTAL_LIGHT_EDIT', edit: pending });
+    this._supplementalRead?.abort();
+    this._supplementalRead = undefined;
+    try {
+      const result = await saveSupplementalLight(
+        id,
+        edit.original,
+        remove ? undefined : edit.light,
+        releaseAnyway
+      );
+      if (this._sm.supplementalLightEdit !== pending) return;
+      this._t({
+        type: 'SET_SUPPLEMENTAL_LIGHT_EDIT',
+        edit: result.release_required
+          ? {
+              ...edit,
+              error: undefined,
+              release: {
+                entityId: result.release_required.entity_id,
+                reason: result.release_required.reason,
+                remove,
+              },
+            }
+          : undefined,
+      });
+    } catch (error) {
+      if (this._sm.supplementalLightEdit !== pending) return;
+      this._t({
+        type: 'SET_SUPPLEMENTAL_LIGHT_EDIT',
+        edit: { ...edit, error: error instanceof Error ? error.message : String(error) },
+      });
+    }
+    void this._refreshSupplementalStatus();
+  }
+
   private _renderGrowlightTab() {
     const growspaceId = this._sm.environment.values.selectedGrowspaceId;
     const deps = {
@@ -2159,7 +2280,26 @@ export class ConfigDialog extends LitElement {
         @lights-on-changed=${(e: CustomEvent) => this._onLightsOnChanged(e.detail.lightsOnTime)}
         @pick-ac-infinity-device=${(e: CustomEvent) =>
           this._pickAcInfinityPort(e.detail.field, e.detail.index, e.detail.deviceId)}
-      ></config-growlight-tab>
+      >
+        ${growspaceId && !this._supplementalUnsupported
+          ? html`<supplemental-lights-editor
+              slot="supplemental-lights"
+              .schedule=${this._supplementalGrowspaceId === growspaceId
+                ? this._supplementalSchedule
+                : undefined}
+              .readError=${this._supplementalReadError}
+              .edit=${this._sm.supplementalLightEdit}
+              .entityOptions=${deps.entityOptions(['light', 'switch'], null)}
+              .canEdit=${this.hass?.user?.is_admin ?? false}
+              @supplemental-edit-changed=${(
+                event: CustomEvent<SupplementalLightEdit | undefined>
+              ) => this._t({ type: 'SET_SUPPLEMENTAL_LIGHT_EDIT', edit: event.detail })}
+              @supplemental-save-requested=${(
+                event: CustomEvent<{ remove: boolean; releaseAnyway: boolean }>
+              ) => this._saveSupplementalLight(event.detail)}
+            ></supplemental-lights-editor>`
+          : nothing}
+      </config-growlight-tab>
     `;
   }
 

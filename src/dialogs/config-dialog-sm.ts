@@ -15,6 +15,7 @@
 
 import type { DialogStateMachine } from './dialog-sm';
 import type { GrowspaceDevice, SensorGroup } from '../types';
+import type { SupplementalLightEdit } from '../slices/growspace/supplemental-lights';
 import type { Subarea } from '../slices/subarea/schema';
 import type { TimedNotificationTriggerValue } from '../slices/notification/triggers';
 import {
@@ -210,6 +211,7 @@ export interface ConfigDialogSM extends Omit<
 > {
   status: ConfigDialogStatus;
   environment: EnvironmentDraftState;
+  supplementalLightEdit?: SupplementalLightEdit;
 }
 
 // ─── Events ───────────────────────────────────────────────────────────────────
@@ -271,6 +273,7 @@ export type ConfigDialogEvent =
 
   // ── Environment (shared across env-group tabs) ──
   | { type: 'UPDATE_ENV_DRAFT'; partial: Partial<EnvironmentDraft> }
+  | { type: 'SET_SUPPLEMENTAL_LIGHT_EDIT'; edit?: SupplementalLightEdit }
 
   // ── Tanks ──
   | { type: 'BEGIN_ADD_TANK' }
@@ -390,6 +393,7 @@ function applyDeviceToSM(sm: ConfigDialogSM, device: GrowspaceDevice): ConfigDia
   return {
     ...sm,
     environment: reseedEnvironmentDraftState(device),
+    supplementalLightEdit: undefined,
     tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(device) },
   };
 }
@@ -457,7 +461,7 @@ export function isActiveTabDirty(sm: ConfigDialogSM, device: GrowspaceDevice): b
   if (sm.activeTab === 'notifications') {
     return isNotificationsDirty(sm, device);
   }
-  return hasEnvironmentDraftDiverged(sm.environment);
+  return Boolean(sm.supplementalLightEdit) || hasEnvironmentDraftDiverged(sm.environment);
 }
 
 // ─── Transition helpers ───────────────────────────────────────────────────────
@@ -787,6 +791,9 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
       };
 
     // ── Environment ───────────────────────────────────────────────────────────
+
+    case 'SET_SUPPLEMENTAL_LIGHT_EDIT':
+      return { ...sm, supplementalLightEdit: event.edit };
 
     case 'UPDATE_ENV_DRAFT':
       return { ...sm, environment: editEnvironmentDraft(sm.environment, event.partial) };
