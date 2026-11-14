@@ -195,6 +195,8 @@ export class GrowspaceAdapter {
       growlightEntities: environment?.growlight_entities,
       growlightAcInfinityDevices: environment?.growlight_ac_infinity_devices,
       growlightConfig: environment?.growlight_config,
+      supplementalLights: environment?.supplemental_lights,
+      supplementalLightStatuses: environment?.supplemental_light_statuses,
       lightLeakConfig: environment?.light_leak_config,
       vpd: environment?.vpd ?? undefined,
       soilMoistureValue: environment?.soil_moisture_value ?? undefined,

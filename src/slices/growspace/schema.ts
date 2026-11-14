@@ -213,6 +213,43 @@ const DrybackEventSchema = z.object({
  * reason this card has never heard of — neither may fail validation here. The
  * Overview VM maps known values to labels and falls back for the rest.
  */
+const SupplementalAnchorSchema = z.enum(['lights_on', 'lights_off']);
+export type SupplementalAnchor = z.infer<typeof SupplementalAnchorSchema>;
+
+const SupplementalLightWindowSchema = z.object({
+  id: z.string().default(''),
+  start_anchor: SupplementalAnchorSchema,
+  start_offset_minutes: z.number(),
+  end_anchor: SupplementalAnchorSchema,
+  end_offset_minutes: z.number(),
+});
+export type SupplementalLightWindow = z.infer<typeof SupplementalLightWindowSchema>;
+
+export const SupplementalLightSchema = z.object({
+  id: z.string().default(''),
+  entity_id: z.string(),
+  enabled: z.boolean().default(true),
+  windows: z.array(SupplementalLightWindowSchema).default([]),
+});
+export type SupplementalLight = z.infer<typeof SupplementalLightSchema>;
+
+export const SupplementalLightStatusSchema = z.object({
+  id: z.string().default(''),
+  entity_id: z.string(),
+  enabled: z.boolean(),
+  reported_state: z.string(),
+  available: z.boolean(),
+  is_active_now: z.boolean(),
+  held_off_reason: z.string().nullable().default(null),
+  override_expires_at: z.string().nullable().default(null),
+  current_window: z.object({ start: z.string(), end: z.string() }).nullable().default(null),
+  next_window: z.object({ start: z.string(), end: z.string() }).nullable().default(null),
+  skipped_windows: z.array(z.object({ window_id: z.string(), reason: z.string() })).default([]),
+  lights_on_time: z.string().optional(),
+  photoperiod_hours: z.number().optional(),
+});
+export type SupplementalLightStatus = z.infer<typeof SupplementalLightStatusSchema>;
+
 const ShotCompositionSchema = z.object({
   infiltration: z.string().nullable().optional(),
   suppressed_by: z.string().nullable().optional(),
@@ -483,6 +520,8 @@ export const GrowspaceAPIResponseSchema = z.object({
       growlight_entities: z.array(z.string()).optional().default([]),
       growlight_ac_infinity_devices: z.array(AcInfinityGrowLightSchema).optional().default([]),
       growlight_config: GrowLightConfigSchema.optional(),
+      supplemental_lights: z.array(SupplementalLightSchema).optional().default([]),
+      supplemental_light_statuses: z.array(SupplementalLightStatusSchema).optional().default([]),
       // Optional: backends before GSM#813 do not send it.
       light_leak_config: LightLeakConfigSchema.optional(),
       // Optional: backends before GSM#792 do not send it.

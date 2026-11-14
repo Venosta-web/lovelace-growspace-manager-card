@@ -16,6 +16,8 @@ import type {
   SerializedShotComposition,
   SerializedSubstrateMetrics,
   SetupModules,
+  SupplementalLight,
+  SupplementalLightStatus,
 } from '../slices/growspace/schema';
 import type {
   CropSteeringRecipeValues,
@@ -424,6 +426,8 @@ export interface EnvironmentAttributes {
   growlightEntities?: string[];
   growlightAcInfinityDevices?: AcInfinityGrowLight[];
   growlightConfig?: GrowLightConfig;
+  supplementalLights?: SupplementalLight[];
+  supplementalLightStatuses?: SupplementalLightStatus[];
   lightLeakConfig?: LightLeakConfig;
   irrigationPumpState?: string;
   drainPumpState?: string;

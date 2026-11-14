@@ -12,7 +12,11 @@
  */
 
 import type { ConfigDialogSM } from '../../../dialogs/config-dialog-sm';
-import type { AcInfinityGrowLight } from '../../../slices/growspace/schema';
+import type {
+  AcInfinityGrowLight,
+  SupplementalLight,
+  SupplementalLightStatus,
+} from '../../../slices/growspace/schema';
 import type { LightLeakConfig } from '../../../slices/subarea/schema';
 import type { PortDeviceOption } from './ac-infinity-port-resolver';
 import { buildDuplicatePortWarnings, acInfinityRoleLists } from './ac-infinity-conflicts';
@@ -49,6 +53,11 @@ export interface GrowlightTabViewModel {
   growlightDuplicateWarnings: string[];
   /** Editable lights-on anchor, sourced live from the strategy atom; null if unknown. */
   lightsOnTime: string | null;
+  /** Derived main-light photoperiod hours for supplemental window local-time preview. */
+  photoperiodHours: number;
+  /** Saved supplemental light outputs and their live status. */
+  supplementalLights: SupplementalLight[];
+  supplementalLightStatuses: SupplementalLightStatus[];
 }
 
 /** Hass adapter the shell injects so the component stays hass-free. */
@@ -56,6 +65,11 @@ export interface GrowlightTabDeps {
   entityOptions: (domains: string[], deviceClass: string | null) => string[];
   /** The growspace's crop-steering lights-on time, read live from the strategy atom. */
   lightsOnTime?: string | null;
+  /** Derived main-light photoperiod hours (resolved_day_hours). */
+  photoperiodHours?: number | null;
+  /** Saved supplemental lights and statuses for the selected growspace. */
+  supplementalLights?: SupplementalLight[];
+  supplementalLightStatuses?: SupplementalLightStatus[];
   /** Hass-reading: the pickable `ac_infinity` port devices for the picker. */
   acInfinityPortDevices: () => PortDeviceOption[];
   /** Hass-reading: the device a saved mode entity belongs to (picker value on reopen). */
@@ -109,5 +123,8 @@ export function createGrowlightTabViewModel(
     growlightDuplicateWarnings: buildDuplicatePortWarnings(acInfinityRoleLists(d))
       .growlightAcInfinityDevices,
     lightsOnTime: deps.lightsOnTime ?? null,
+    photoperiodHours: deps.photoperiodHours ?? 18,
+    supplementalLights: deps.supplementalLights ?? [],
+    supplementalLightStatuses: deps.supplementalLightStatuses ?? [],
   };
 }

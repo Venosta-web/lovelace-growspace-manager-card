@@ -23,11 +23,13 @@ import '../../shared/ui/md3-text-input';
 import { renderGrowlightAcInfinityDevices } from './ac-infinity-growlight-editor';
 import './config-entity-multi-select';
 import './config-section-header';
+import './config-supplemental-lights-editor';
 import type { EnvironmentDraft } from '../../../dialogs/config-dialog-sm';
 import type { GrowLightConfig, AcInfinityGrowLight } from '../../../slices/growspace/schema';
 import type { LightLeakConfig } from '../../../slices/subarea/schema';
 import '../../shared/ui/gm-entity-picker';
 import type { GrowlightTabViewModel } from '../viewmodels/growlight-tab.viewmodel';
+import type { SupplementalReleaseBlocker } from '../viewmodels/supplemental-lights';
 
 @customElement('config-growlight-tab')
 export class ConfigGrowlightTab extends LitElement {
@@ -35,6 +37,9 @@ export class ConfigGrowlightTab extends LitElement {
 
   /** Deep-link: when set to `lightsOnTime`, scroll the input into view and pulse it (#433). */
   @property({ type: String }) scrollToField?: string;
+  @property({ type: Boolean }) supplementalSaving = false;
+  @property({ type: String }) supplementalError: string | null = null;
+  @property({ attribute: false }) supplementalReleaseBlockers: SupplementalReleaseBlocker[] = [];
 
   static styles = [
     dialogStyles,
@@ -225,6 +230,16 @@ export class ConfigGrowlightTab extends LitElement {
           </div>
         </div>
       </div>
+      <config-supplemental-lights-editor
+        .lights=${vm.supplementalLights}
+        .statuses=${vm.supplementalLightStatuses}
+        .entityOptions=${vm.growlightEntityOptions}
+        .lightsOnTime=${vm.lightsOnTime}
+        .photoperiodHours=${vm.photoperiodHours}
+        .saving=${this.supplementalSaving}
+        .errorMessage=${this.supplementalError}
+        .releaseBlockers=${this.supplementalReleaseBlockers}
+      ></config-supplemental-lights-editor>
       <div class="detail-card">
         <config-section-header
           .icon=${mdiWhiteBalanceSunny}

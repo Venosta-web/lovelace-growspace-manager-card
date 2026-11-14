@@ -192,6 +192,8 @@ describe('Growspace Zod Schemas', () => {
           dehumidifier_thresholds: {},
           vpd_optimal_overrides: {},
           substrate_temperature_sensors: [],
+          supplemental_lights: [],
+          supplemental_light_statuses: [],
           camera_entities: [],
           energy_sensors: [],
           irrigation_tanks: [],

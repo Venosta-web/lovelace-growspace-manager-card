@@ -61,6 +61,11 @@ import '../features/config/components/config-climate-tab';
 import '../features/config/components/config-growlight-tab';
 import { createGrowlightTabViewModel } from '../features/config/viewmodels/growlight-tab.viewmodel';
 import {
+  saveSupplementalLights,
+  type SupplementalReleaseBlocker,
+} from '../features/config/viewmodels/supplemental-lights';
+import type { SupplementalLight, SupplementalLightStatus } from '../slices/growspace/schema';
+import {
   isAutomatedMode,
   type AcInfinityConflict,
 } from '../features/config/components/ac-infinity-conflict';
@@ -177,6 +182,15 @@ export class ConfigDialog extends LitElement {
 
   // ── Humidity accordion (pure UI ephemeral state) ──────────────────────────
   @state() private _openHumidityStageId: HumidityStageId | '' = '';
+
+  // ── Supplemental Lights state ────────────────────────────────────────────
+  @state() private _supplementalSaving = false;
+  @state() private _supplementalError: string | null = null;
+  @state() private _supplementalReleaseBlockers: SupplementalReleaseBlocker[] = [];
+  @state() private _supplementalByGrowspace: Record<
+    string,
+    { lights: SupplementalLight[]; statuses: SupplementalLightStatus[] }
+  > = {};
 
   // ── VPD targets accordion (pure UI ephemeral state) ───────────────────────
   @state() private _openVpdStageId: FanVpdStageKey | '' = '';
@@ -2140,12 +2154,24 @@ export class ConfigDialog extends LitElement {
 
   private _renderGrowlightTab() {
     const growspaceId = this._sm.environment.values.selectedGrowspaceId;
+    const device = growspaceId ? this.devices.find((d) => d.deviceId === growspaceId) : undefined;
+    const liveSupp = growspaceId ? this._supplementalByGrowspace[growspaceId] : undefined;
+    const supplementalLights =
+      liveSupp?.lights ?? device?.environmentAttributes?.supplementalLights ?? [];
+    const supplementalLightStatuses =
+      device?.environmentAttributes?.supplementalLightStatuses?.length
+        ? device.environmentAttributes.supplementalLightStatuses
+        : (liveSupp?.statuses ?? []);
+    const photoperiodHours = device?.irrigationConfig?.resolvedDayHours ?? 18;
     const deps = {
       entityOptions: (domains: string[], deviceClass: EntityClassFilter, platform?: string) =>
         this._getEntities(domains, deviceClass, platform),
       lightsOnTime: growspaceId
         ? (irrigationStrategies$.get().get(growspaceId)?.lightsOnTime ?? null)
         : null,
+      photoperiodHours,
+      supplementalLights,
+      supplementalLightStatuses,
       acInfinityPortDevices: () => this._acInfinityPortDevices(),
       acInfinityPortDeviceId: (modeEntity: string) => this._acInfinityPortDeviceId(modeEntity),
       acInfinityPrefillWarning: (field: string, index: number) =>
@@ -2155,12 +2181,50 @@ export class ConfigDialog extends LitElement {
       <config-growlight-tab
         .vm=${createGrowlightTabViewModel(this._sm, deps)}
         .scrollToField=${this.scrollToField}
+        .supplementalSaving=${this._supplementalSaving}
+        .supplementalError=${this._supplementalError}
+        .supplementalReleaseBlockers=${this._supplementalReleaseBlockers}
         @env-draft-changed=${(e: CustomEvent) => this._setEnv(e.detail.partial)}
         @lights-on-changed=${(e: CustomEvent) => this._onLightsOnChanged(e.detail.lightsOnTime)}
         @pick-ac-infinity-device=${(e: CustomEvent) =>
           this._pickAcInfinityPort(e.detail.field, e.detail.index, e.detail.deviceId)}
+        @save-supplemental-lights=${(
+          e: CustomEvent<{ supplementalLights: SupplementalLight[]; releaseAnyway: boolean }>
+        ) => void this._onSaveSupplementalLights(e.detail.supplementalLights, e.detail.releaseAnyway)}
+        @cancel-supplemental-release=${() => {
+          this._supplementalReleaseBlockers = [];
+        }}
       ></config-growlight-tab>
     `;
+  }
+
+  private async _onSaveSupplementalLights(
+    supplementalLights: SupplementalLight[],
+    releaseAnyway: boolean
+  ) {
+    const growspaceId = this._sm.environment.values.selectedGrowspaceId;
+    if (!growspaceId) return;
+    this._supplementalSaving = true;
+    this._supplementalError = null;
+    try {
+      const res = await saveSupplementalLights(growspaceId, supplementalLights, releaseAnyway);
+      if (res.status === 'needs_confirmation') {
+        this._supplementalReleaseBlockers = res.blockers;
+        return;
+      }
+      this._supplementalReleaseBlockers = [];
+      this._supplementalByGrowspace = {
+        ...this._supplementalByGrowspace,
+        [growspaceId]: {
+          lights: res.supplemental_lights,
+          statuses: res.statuses,
+        },
+      };
+    } catch (err) {
+      this._supplementalError = err instanceof Error ? err.message : String(err);
+    } finally {
+      this._supplementalSaving = false;
+    }
   }
 
   /**

@@ -32,6 +32,9 @@ function makeVm(over: Partial<GrowlightTabViewModel> = {}): GrowlightTabViewMode
     growlightPrefillWarnings: [],
     growlightDuplicateWarnings: [],
     lightsOnTime: null,
+    photoperiodHours: 18,
+    supplementalLights: [],
+    supplementalLightStatuses: [],
     ...over,
   };
 }
