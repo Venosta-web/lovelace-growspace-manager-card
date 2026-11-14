@@ -5,7 +5,7 @@
       "id": "entry",
       "label": "Entry",
       "match": "growspace-manager-card.js",
-      "maxGzipBytes": 208500
+      "maxGzipBytes": 216500
     },
     {
       "id": "three",
@@ -70,6 +70,11 @@
       "date": "2026-09-30",
       "rules": ["entry"],
       "change": "#1032 raises the entry limit from 208,128 to 208,500 gzip bytes for the probe_unresponsive and zone_migration_invalid safety labels, shared recovery advice and optional zone context. The safety chip and its details stay eager (ADR 0053); the Overview banner stays in the lazy irrigation dialog. Measured on b7fbac8c plus #1032: entry 208,334 gzip bytes versus 208,000 on dev, a 334-byte increase and 206 bytes over the previous limit."
+    },
+    {
+      "date": "2026-11-14",
+      "rules": ["entry"],
+      "change": "#1054 raises the entry limit from 208,500 to 216,500 gzip bytes for the Zod 4.6.6 security update. The shared response schemas use Zod during card initialization. Measured on dev 5c6e8843 at 208,473 gzip bytes and with the update at 215,829 gzip bytes, an increase of 7,356 bytes."
     }
   ]
 }
